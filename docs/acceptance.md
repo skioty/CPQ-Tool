@@ -2,14 +2,22 @@
 
 Status vocabulary: Backlog → Ready → In progress → In review → Validation → Done. Evidence/review/acceptance are separate. No stakeholder acceptance or release authorization has been obtained. No item is Done here.
 
+## Tested integration commit
+
+- Code commit: `361713d79757a647df92d4929ce09ec9c556b893` on `feat/tenant-navigation`; [draft PR #20](https://github.com/skioty/CPQ-Tool/pull/20).
+- [Frontend/Backend CI passed](https://github.com/skioty/CPQ-Tool/actions/runs/39831607352). Local locked npm install, production build and 45 frontend tests passed. Fresh cpq_member4_test passed 42 backend tests / 248 assertions, including real tenancy tests.
+- Real scratch-browser checks: login/logout, Super Admin list/search/details, nullable edit loading, saved branding preview, CPQ Admin assigned-only list and direct unassigned denial. Fixture records were explicitly not created by the UI.
+- Browser layout measured 1280px desktop and 304px narrow; page width matched viewport (no horizontal overflow). Labelled controls and keyboard Enter login/search verified. Native modal focus trapping remains unverified in browser because no lifecycle action is approved.
+- Existing previews/development DB preserved. Four-laptop startup, real create/edit/upload/lifecycle/archive acceptance and stakeholder review remain blocked/pending. No release.
+
 ## Integration gate
 
 | Flow | Current evidence / limitation | Owner / reviewer | Gate |
 | --- | --- | --- | --- |
-| Administrator login/logout | Real Devise/CSRF backend tests; Angular session integration and HTTP tests | Member 3 + Member 4 / Member 2 + Member 1 | Validation pending browser evidence and peer review |
+| Administrator login/logout | Real Devise/CSRF backend tests; Angular session integration and HTTP tests | Member 3 + Member 4 / Member 2 + Member 1 | Browser flow verified; independent peer review pending |
 | Create tenant / required fields | Form exists, but requiredness/reference/business rules remain open; API writes deliberately gated | Members 1+2 / Members 4+3 | Blocked |
 | Contacts / exactly one primary | Member 1 interactions and Member 2 PostgreSQL atomic/constraint/concurrency tests | Members 1+2 / Members 4+3 | Automated evidence; full create acceptance blocked |
-| Tenant list/search/pagination/detail | Real API components, cancellation/error/empty tests; browser evidence recorded in PR | Member 4 / Member 1 | In review when PR opens |
+| Tenant list/search/pagination/detail | Real API components, cancellation/error/empty tests; browser evidence recorded in PR | Member 4 / Member 1 | In review, #20 |
 | Status filters | Transport/configuration tested with synthetic choice; actual approved catalogue unavailable | Members 2+4 / Members 3+1 | Blocked for real status filtering |
 | Edit / persistence | Backend update tests; UI loads saved values, ETag compatibility; saving gated | Members 1+2 / Members 4+3 | Blocked for integrated browser save |
 | Saved branding preview | Member 1 preview, nullable adapter compatibility; upload/authorized asset URLs missing | Member 1 / Member 4 | Partial; upload acceptance blocked |
@@ -28,7 +36,7 @@ Status vocabulary: Backlog → Ready → In progress → In review → Validatio
 | #3, #9 forms | Member 1 | Member 4 | Days 2–4; #2/#8 | In review, #17; integration blocked |
 | #4, #5, #7 auth/tenancy/access | Member 3 | Member 2 | Days 2–3; decisions/models | In review, #19 |
 | #6, #8 models/API | Member 2 | Member 3 | Day 3; decisions/tenancy/access | In review, #18 |
-| #10 navigation | Member 4 | Member 1 | Day 3; #8/#7 | In progress / draft review |
+| #10 navigation | Member 4 | Member 1 | Day 3; #8/#7 | In review, #20 |
 | #11 lifecycle API | Member 2 | Member 3 | Day 4; #2/#8/#7 | Backlog, policy blocked |
 | #12 lifecycle dialogs | Member 4 | Member 1 | Day 4; #10/#11 | In progress component; integration blocked |
 | #13 release candidate | Member 4 | Members 1,2,3 | Day 5; create/dialogs/isolation | In progress evidence; no RC acceptance |
