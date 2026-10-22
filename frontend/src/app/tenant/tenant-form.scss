@@ -45,6 +45,7 @@ h2 {
 .notice,
 .success,
 .error-summary {
+  overflow-wrap: anywhere;
   padding: 18px 22px;
   border-radius: 10px;
   margin: 20px 0;

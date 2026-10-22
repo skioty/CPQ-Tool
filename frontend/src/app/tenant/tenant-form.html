@@ -148,7 +148,7 @@
       <section class="card" aria-labelledby="contacts-heading">
         <div class="section-heading">
           <h2 id="contacts-heading">Contacts</h2>
-          <button type="button" (click)="addContact()">Add contact</button>
+          <button #addContactButton type="button" (click)="addContact()">Add contact</button>
         </div>
         <p id="primary-help">
           Choose exactly one primary contact. A contact is not a user account.
@@ -188,6 +188,7 @@
               <div class="contact-actions">
                 <label class="check"
                   ><input
+                    #primaryRadio
                     type="radio"
                     name="primaryContact"
                     [checked]="contact.controls.primary.value"

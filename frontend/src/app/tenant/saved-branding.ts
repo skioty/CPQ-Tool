@@ -4,6 +4,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TenantGateway } from './tenant.gateway';
 import { Tenant } from './tenant.types';
 import { BrandingPreview } from './branding-preview';
+import { HttpErrorResponse } from '@angular/common/http';
+import { EMPTY, Subject, catchError, distinctUntilChanged, map, startWith, switchMap } from 'rxjs';
 
 @Component({
   selector: 'app-saved-branding',
@@ -25,8 +27,7 @@ import { BrandingPreview } from './branding-preview';
       <app-branding-preview [tenant]="t" />
       @if (t.branding.logo_attachment_id || t.branding.favicon_attachment_id) {
         <p>
-          Saved asset references are retained; displaying them awaits the approved asset URL
-          adapter.
+          Saved asset references are retained; displaying them uses the approved asset URL adapter.
         </p>
       }
       <p><a [routerLink]="['/tenants', t.id, 'edit']">Edit branding settings</a></p>
@@ -57,29 +58,46 @@ export class SavedBranding {
   readonly tenant = signal<Tenant | null>(null);
   readonly loading = signal(false);
   readonly error = signal('');
+  private readonly retry = new Subject<void>();
   constructor() {
-    this.load();
+    this.route.paramMap
+      .pipe(
+        map((params) => params.get('id')),
+        distinctUntilChanged(),
+        switchMap((id) =>
+          this.retry.pipe(
+            startWith(undefined),
+            switchMap(() => {
+              this.loading.set(true);
+              this.error.set('');
+              this.tenant.set(null);
+              if (!id) {
+                this.loading.set(false);
+                this.error.set('A tenant identifier is required.');
+                return EMPTY;
+              }
+              return this.gateway.load(id).pipe(
+                catchError((error) => {
+                  this.loading.set(false);
+                  this.error.set(
+                    error instanceof HttpErrorResponse && error.status === 403
+                      ? 'You do not have access to this tenant.'
+                      : 'Saved branding could not be loaded. Check your API connection and administrator access, then retry.',
+                  );
+                  return EMPTY;
+                }),
+              );
+            }),
+          ),
+        ),
+        takeUntilDestroyed(this.destroy),
+      )
+      .subscribe((t) => {
+        this.tenant.set(t);
+        this.loading.set(false);
+      });
   }
   load() {
-    const id = this.route.snapshot.paramMap.get('id');
-    if (!id) return;
-    this.loading.set(true);
-    this.error.set('');
-    this.tenant.set(null);
-    this.gateway
-      .load(id)
-      .pipe(takeUntilDestroyed(this.destroy))
-      .subscribe({
-        next: (t) => {
-          this.tenant.set(t);
-          this.loading.set(false);
-        },
-        error: () => {
-          this.error.set(
-            'Saved branding could not be loaded. The tenant API, authentication and asset integration are not yet available in the foundation.',
-          );
-          this.loading.set(false);
-        },
-      });
+    this.retry.next();
   }
 }

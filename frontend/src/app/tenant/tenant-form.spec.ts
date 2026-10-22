@@ -247,4 +247,65 @@ describe('tenant form', () => {
     expect(form.draft().branding.primary_colour).toBe('#abcdef');
     expect(form.saved()?.branding.primary_colour).toBe('#123456');
   });
+  it('keeps keyboard focus in contacts after removing a row', async () => {
+    const { form, fixture, dom } = await setup();
+    form.addContact();
+    fixture.detectChanges();
+    dom.querySelector<HTMLButtonElement>('button[aria-label="Remove contact 2"]')!.click();
+    await fixture.whenStable();
+    expect(dom.ownerDocument.activeElement).toBe(dom.querySelector('input[type=radio]'));
+    dom.querySelector<HTMLButtonElement>('button[aria-label="Remove contact 1"]')!.click();
+    await fixture.whenStable();
+    expect(dom.ownerDocument.activeElement?.textContent).toContain('Add contact');
+  });
+  it('retains a failed upload selection and completed IDs after partial upload failure', async () => {
+    const upload = vi.fn((kind: string) =>
+      kind === 'logo' ? of({ id: 'new-logo' }) : throwError(() => new Error('Upload failed')),
+    );
+    const { form, gateway } = await setup('tenant-1', settings(), undefined, upload);
+    const icon = new File(['test'], 'icon.bin');
+    form.files.set({ logo: new File(['test'], 'logo.bin'), favicon: icon });
+    form.submit();
+    expect(gateway.save).not.toHaveBeenCalled();
+    expect(form.status()).toBe('failed');
+    expect(form.draft().branding.logo_attachment_id).toBe('new-logo');
+    expect(form.draft().branding.favicon_attachment_id).toBe('saved-icon');
+    expect(form.files().favicon).toBe(icon);
+    expect(form.files().logo).toBeUndefined();
+  });
+  it('revokes local image previews on replacement, cancellation and destruction', async () => {
+    const OriginalURL = URL;
+    const create = vi
+      .fn()
+      .mockReturnValueOnce('blob:first')
+      .mockReturnValueOnce('blob:second')
+      .mockReturnValueOnce('blob:third');
+    const revoke = vi.fn();
+    class TestURL extends OriginalURL {
+      static override createObjectURL(_file: Blob | MediaSource) {
+        return create();
+      }
+      static override revokeObjectURL(url: string) {
+        revoke(url);
+      }
+    }
+    vi.stubGlobal('URL', TestURL);
+    try {
+      const { form, fixture } = await setup();
+      const event = () =>
+        ({
+          target: { files: [new File(['test'], 'logo.png', { type: 'image/png' })], value: '' },
+        }) as unknown as Event;
+      form.selectFile('logo', event());
+      form.selectFile('logo', event());
+      expect(revoke).toHaveBeenCalledWith('blob:first');
+      form.cancelFile('logo');
+      expect(revoke).toHaveBeenCalledWith('blob:second');
+      form.selectFile('logo', event());
+      fixture.destroy();
+      expect(revoke).toHaveBeenCalledWith('blob:third');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
 });

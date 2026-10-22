@@ -40,6 +40,7 @@ import { ASSET_URL, FORM_OPTIONS, Tenant } from './tenant.types';
       color: #17263a;
     }
     header {
+      overflow-wrap: anywhere;
       display: flex;
       align-items: center;
       gap: 12px;

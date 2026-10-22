@@ -2,10 +2,13 @@ import {
   Component,
   DestroyRef,
   ElementRef,
+  Injector,
   OnInit,
   inject,
   signal,
   viewChild,
+  viewChildren,
+  afterNextRender,
 } from '@angular/core';
 import {
   FormArray,
@@ -125,7 +128,10 @@ export class TenantForm implements OnInit {
   private readonly upload = inject(ASSET_UPLOAD);
   private readonly route = inject(ActivatedRoute);
   private readonly destroy = inject(DestroyRef);
+  private readonly injector = inject(Injector);
   readonly summary = viewChild<ElementRef<HTMLElement>>('summary');
+  readonly primaryRadios = viewChildren<ElementRef<HTMLInputElement>>('primaryRadio');
+  readonly addContactButton = viewChild<ElementRef<HTMLButtonElement>>('addContactButton');
   readonly status = signal<'loading' | 'ready' | 'saving' | 'success' | 'failed'>('ready');
   readonly errors = signal<string[]>([]);
   readonly saved = signal<Tenant | null>(null);
@@ -134,7 +140,15 @@ export class TenantForm implements OnInit {
   readonly urls = signal<Partial<Record<AssetKind, string>>>({});
   readonly sections = ['Company', 'Subscription', 'Branding'];
   readonly assetKinds = ['logo', 'favicon'] as const;
-  readonly fields = FIELDS;
+  readonly fields = FIELDS.map((field) =>
+    field.key === 'discount_duration' && this.options.discountDurationLabel
+      ? {
+          ...field,
+          label: this.options.discountDurationLabel,
+          help: 'Enter the duration in the units specified by the approved contract.',
+        }
+      : field,
+  );
   readonly form = this.fb.group({
     fields: this.fb.record(
       Object.fromEntries(
@@ -231,6 +245,15 @@ export class TenantForm implements OnInit {
   removeContact(index: number) {
     this.contacts.removeAt(index);
     this.form.markAsDirty(); /* Never silently promote a replacement primary. */
+    afterNextRender(
+      () => {
+        const radios = this.primaryRadios();
+        (
+          radios[Math.min(index, radios.length - 1)] || this.addContactButton()
+        )?.nativeElement.focus();
+      },
+      { injector: this.injector },
+    );
   }
   choosePrimary(index: number) {
     this.contacts.controls.forEach((c, i) => c.controls.primary.setValue(i === index));
@@ -317,15 +340,13 @@ export class TenantForm implements OnInit {
       description: f['description'],
       industry_id: f['industry_id'],
       responsible_admin_ids: [...this.form.controls.admins.value],
-      contacts: this.contacts
-        .getRawValue()
-        .map((c) => ({
-          ...base.contacts.find((old) => old.id && old.id === c.id),
-          ...(c.id ? { id: c.id } : {}),
-          name: c.name,
-          email: c.email,
-          primary: c.primary,
-        })),
+      contacts: this.contacts.getRawValue().map((c) => ({
+        ...base.contacts.find((old) => old.id && old.id === c.id),
+        ...(c.id ? { id: c.id } : {}),
+        name: c.name,
+        email: c.email,
+        primary: c.primary,
+      })),
       branding: {
         ...base.branding,
         primary_colour: f['primary_colour'],
@@ -352,6 +373,7 @@ export class TenantForm implements OnInit {
     if (!file) return;
     this.cancelFile(kind);
     this.files.update((files) => ({ ...files, [kind]: file }));
+    if (this.status() === 'success') this.status.set('ready');
     // Preview decoder capability only; not an invented upload acceptance policy.
     if (
       [
@@ -407,6 +429,14 @@ export class TenantForm implements OnInit {
       this.fail(
         new Error(
           'Saving is unavailable until the API contract and business rules are approved. Your draft is retained.',
+        ),
+      );
+      return;
+    }
+    if (this.options.assignment === 'one' && this.form.controls.admins.value.length > 1) {
+      this.fail(
+        new Error(
+          'The approved assignment contract allows at most one responsible administrator. Review the saved assignments.',
         ),
       );
       return;
@@ -510,6 +540,6 @@ export class TenantForm implements OnInit {
       ];
     this.errors.set(messages);
     this.status.set('failed');
-    queueMicrotask(() => this.summary()?.nativeElement.focus());
+    afterNextRender(() => this.summary()?.nativeElement.focus(), { injector: this.injector });
   }
 }
