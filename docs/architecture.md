@@ -6,6 +6,8 @@ One monorepo contains Angular UI (`frontend/`), Rails REST modular monolith (`ba
 
 ## Foundation facts
 
+Member 2 adds public-qualified management models and closed-by-default CRUD handlers. Devise, authorization and Apartment remain Member 3 integration points. [Backend handoff](member2-backend.md) describes the proposed synchronous provisioning transaction and crash/recovery limitations. Shared placement/exclusions require Member 3 review before integration.
+
 The remote was empty at inspection. Generated applications and a health route are foundation work; no tenant domain models, administrator login, policies or tenant switching are implemented by this setup. Installed gems are dependencies, not proof of functioning authentication or isolation.
 
 ## Proposed boundaries

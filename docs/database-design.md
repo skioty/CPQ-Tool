@@ -2,7 +2,9 @@
 
 ## Existing facts
 
-Before setup: no schema, migrations, seeds or application existed. The foundation uses PostgreSQL and Rails database tasks; it introduces no tenant tables or demo accounts. Rails migrations and seeds belong in `backend/db/`.
+Member 2 branch adds a new forward migration and six public-qualified platform_tenant tables for registry, contacts, branding, subscription, assignments and audit. UUIDs, restricted foreign keys, a partial unique index and deferred exactly-one-primary triggers protect records. Public placement needs Member 3 review before development migration. Money uses unconstrained numeric without guessed rounding. See [handoff](member2-backend.md). SQL schema format preserves triggers on fresh databases.
+
+Before setup: no schema, migrations, seeds or application existed. The original foundation introduced no tenant tables or demo accounts; the Member 2 increment above adds proposed management tables. Rails migrations and seeds belong in `backend/db/`.
 
 ## Proposed entities (not approved migrations)
 

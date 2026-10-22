@@ -28,5 +28,7 @@ module Backend
     # Middleware like session, flash, cookies can be added back manually.
     # Skip views, helpers and assets when generating a new resource.
     config.api_only = true
+    # Deferred PostgreSQL constraints/functions cannot round-trip through schema.rb.
+    config.active_record.schema_format = :sql
   end
 end

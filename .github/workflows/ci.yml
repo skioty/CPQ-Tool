@@ -49,6 +49,9 @@ jobs:
         working-directory: backend
     steps:
       - uses: actions/checkout@v4
+      # structure.sql includes PostgreSQL constraint triggers; pg_dump must match server 17.
+      - run: sudo apt-get update && sudo apt-get install -y postgresql-client-17
+      - run: echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
       - uses: ruby/setup-ruby@v1
         with:
           working-directory: backend

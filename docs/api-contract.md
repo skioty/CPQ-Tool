@@ -1,8 +1,28 @@
 # API contract
 
-## Implemented foundation
+## Member 2 implemented increment (integration gated)
 
-`GET /up` is the generated Rails health route. It checks application boot, not database readiness, authorization or tenant isolation. No tenant or authentication endpoints are implemented yet.
+See [backend handoff](member2-backend.md) for interfaces, transactions and limits. Default domain requests return 401 without data access; success paths currently use synthetic test collaborators. Devise/Apartment, uploads and reference data are not integrated.
+
+| Method/path | Implemented handler |
+| --- | --- |
+| GET /api/v1/tenants | authorized scope, literal case-insensitive company-name substring q, exact approved status; page default 1, per_page default 20/max 100; stable created_at/id order |
+| POST /api/v1/tenants | atomic create and synchronous provisioning collaborator; 201 only after completion; full detail + ETag |
+| GET /api/v1/tenants/:id | full detail + ETag; out-of-scope/malformed UUID -> 404 after authentication |
+| PATCH /api/v1/tenants/:id | partial nested settings; supplied contacts/admin arrays replace collection; omitted collections/assets/settings preserved |
+| POST /api/v1/tenants/:id/lifecycle | access checks then 503 policy_unavailable, no mutation |
+
+List behavior remains an engineering proposal for Member 4 review. Response meta contains page, per_page, total_count, total_pages (0 for empty). Invalid pagination/unapproved status -> 400. No statuses invented. No DELETE/upload/reference-data routes.
+
+PATCH requires `If-Match: "<lock_version>"` copied from latest ETag. Missing/malformed -> 428, stale -> 409. **Member 1 must add this header before integrating**. All responses use Cache-Control: no-store. Update reauthorizes under lock.
+
+The payload below is implemented structurally, with business approval still required. Scalars are string/null except company_name_display (boolean/null) and primary (boolean). Decimal fee/discount value must be finite decimal strings, not JSON floats; blank becomes null. Serialization preserves precision, not textual trailing zeroes. No inferred required fields/bounds/units/currency rules. Contacts required on create; supplied arrays must have exactly one primary, owned IDs and no duplicates. Unknown fields -> 422. Nested supplied keys merge; clear individual scalars with null. No automatic contact accounts.
+
+Full detail includes id, company fields, lifecycle_status (nullable pending policy), provisioning_status, lock_version, contacts with IDs, responsible_admin_ids, every branding key and complete subscription/discount keys. No schema identifiers. Error envelope adds server request_id: `{"error":{"code":"validation_failed","message":"Review the highlighted fields","fields":{"contacts":["Exactly one primary contact is required"]},"request_id":"correlation-id"}}`. Other codes: unauthenticated 401, forbidden 403, not_found 404, invalid_filter 400, precondition_required 428, stale_version/persistence_failed 409, integration_unavailable/provisioning_failed/provisioning_recovery_required/policy_unavailable 503, sanitized internal_error 500. No raw SQL or submitted values in database errors. Automatic idempotent create retries are not implemented.
+
+## Foundation
+
+`GET /up` is the generated Rails health route. It checks application boot, not database readiness, authorization or tenant isolation. Authentication remains Member 3's responsibility.
 
 ## Proposed REST contract for review
 

@@ -27,5 +27,10 @@ Confirmed means supplied project direction; proposed means a reviewable engineer
 | Authentication/session approach | Open | cookie+CSRF vs another reviewed Devise-compatible approach; API-only middleware needs work | Member 3 |
 | Contact invitations / Tenant Admin account | Open | contacts never automatically become active accounts | Member 3 |
 | Member identity mapping | Open | verified names/usernames required before assignment/invitation | Member 4 |
+| Public-qualified management records | Proposed implementation | six new models; Member 3 must review placement and Apartment exclusions before development migration | Members 2 and 3 |
+| PATCH concurrency and array replacement | Proposed implementation | If-Match required; omitted collections preserved, supplied arrays replace owned records; UI integration pending | Members 1, 2 and 4 |
+| Decimal storage | Proposed implementation | unconstrained PostgreSQL numeric / decimal strings, no guessed currency scale or discount rules | Member 2 |
+| Synchronous provisioning and compensation | Proposed implementation, integration blocked | no success before ready; durable crash recovery and idempotency remain missing | Members 2 and 3 |
+| Admin control of lifecycle/deletion/discounts | Partial clarification | user said admin; exact roles/transitions, archive/deletion/retention and discount semantics still unspecified; mutations disabled | Members 2 and 3 |
 
 Sources inspected for compatibility: [Angular matrix](https://angular.dev/reference/versions), [Rails 8.1.4 metadata](https://rubygems.org/gems/rails/versions/8.1.4), [Devise](https://rubygems.org/gems/devise/versions/5.0.4), [ros-apartment 3.4.4](https://rubygems.org/gems/ros-apartment/versions/3.4.4), [maintained fork](https://github.com/rails-on-services/apartment), [Rails maintenance policy](https://guides.rubyonrails.org/maintenance_policy.html). Consult version 3 documentation for Apartment configuration; upstream main now describes version 4.

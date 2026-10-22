@@ -4,6 +4,8 @@ Four-student final-year SELISE project: a reusable multi-tenant CPQ SaaS adaptab
 
 ## Current status
 
+Member 2 branch adds tenant persistence and integration-gated CRUD handlers. Domain requests are denied until Member 3 auth/policies/provisioning and approved business validation are integrated. Lifecycle/archive/uploads remain unavailable. See [backend handoff](docs/member2-backend.md). Member 1 work remains on its separate branch/PR #17; setup PR #16 is still a dependency. Do not apply the proposed public migration to development before Member 3 review. Backend SQL schema tasks require PostgreSQL 17 client tools (installed by Docker/CI); rebuild backend images after this change.
+
 This is a repository foundation: official Angular and Rails API scaffolds, PostgreSQL local environment, CI, collaboration docs and a planned backlog. Tenant CRUD, branding, lifecycle, Devise login/authorization and Apartment provisioning are **not implemented**. Installed dependencies do not prove authentication or tenant isolation. See [verification](docs/verification.md) for checks actually run and limitations.
 
 ## Stack and layout
@@ -37,9 +39,9 @@ docker compose up -d --wait backend frontend
 docker compose ps
 ```
 
-Open [Angular](http://localhost:4200) and [Rails health](http://localhost:3000/up). The latter proves boot only, not DB readiness or isolation. No login or tenant API exists yet. The frontend scaffold does not yet call Rails; session/proxy integration is planned with Member 3. Services bind host ports to loopback and PostgreSQL is internal to Compose. Change port variables in `.env` if occupied. Run `docker compose logs backend frontend` for diagnostics.
+Open [Angular](http://localhost:4200) and [Rails health](http://localhost:3000/up). The latter proves boot only, not DB readiness or isolation. No login exists yet; tenant handlers are present but deny access until reviewed integration. The frontend scaffold does not yet call Rails; session/proxy integration is planned with Member 3. Services bind host ports to loopback and PostgreSQL is internal to Compose. Change port variables in `.env` if occupied. Run `docker compose logs backend frontend` for diagnostics.
 
-Database preparation uses the real Rails `db:prepare` task; no domain migrations or demo seed accounts exist. Do not use `db:reset` as startup. PostgreSQL data persists in a named volume; `docker compose down` keeps it. Changing the password after database initialization requires coordinating the database role password; environment variables do not reinitialize an existing volume. Avoid `down -v` unless intentionally discarding local data.
+Database preparation uses the real Rails `db:prepare` task; a proposed domain migration exists, pending Member 3 review before development application; no demo seed accounts exist. Do not use `db:reset` as startup. PostgreSQL data persists in a named volume; `docker compose down` keeps it. Changing the password after database initialization requires coordinating the database role password; environment variables do not reinitialize an existing volume. Avoid `down -v` unless intentionally discarding local data.
 
 Source mounts support local edits. Rebuild frontend after dependency/config changes and backend after Gemfile changes. This setup is a development environment, not a production container or deployment.
 
@@ -53,7 +55,7 @@ docker compose run --rm frontend npm test -- --watch=false
 docker compose --profile test run --rm backend-test
 ```
 
-The test service explicitly uses `RAILS_ENV=test` and the separate test database. Never set `TEST_DATABASE_NAME` to your development database. It prepares the test DB and runs existing Rails tests. CI also installs locked dependencies, builds Angular and runs its configured tests plus Rails tests against PostgreSQL. No lint command is claimed where none is configured. Domain acceptance tests remain planned.
+The test service explicitly uses `RAILS_ENV=test` and the separate test database. Never set `TEST_DATABASE_NAME` to your development database. It prepares the test DB and runs existing Rails tests. CI also installs locked dependencies, builds Angular and runs its configured tests plus Rails tests against PostgreSQL. No lint command is claimed where none is configured. Member 2 adds PostgreSQL request/integrity tests; real authentication/provisioning and remaining domain acceptance tests are pending.
 
 For optional native frontend checks: use Node `.nvmrc`, `cd frontend`, `npm ci`, `npm run build`, `npm test -- --watch=false`. For native Rails use Ruby `backend/.ruby-version`, `bundle install`, set database environment variables matching `backend/config/database.yml`, then run Rails tasks in `backend/`. Compose is the supported common path.
 
