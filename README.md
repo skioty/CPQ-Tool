@@ -4,7 +4,7 @@ Four-student final-year SELISE project: a reusable multi-tenant CPQ SaaS adaptab
 
 ## Current status
 
-This Member 4 integration branch combines the existing Member 1 forms and Member 2/3 backend increments. Member 1 form details and remaining gates are in [forms handoff](docs/member1-forms.md). Member 4 adds list/detail/session navigation and release evidence; no feature branch is merged to main by this task.
+This Member 4 integration branch combines existing Member 1 forms and Member 2/3 backend increments. It adds real API list/search/pagination/details, login/logout/CSRF, links to forms/saved preview, a gated lifecycle dialog, and acceptance/release preparation. [Member 4 handoff](docs/member4-integration.md), [acceptance tracker](docs/acceptance.md) and [demo plan](docs/demo-release.md) separate evidence from blockers. Lifecycle, status catalogue, business form saving and uploads remain unavailable pending decisions. No feature branch is merged to main by this task.
 
 Member 3 adds real Devise cookie authentication/CSRF, backend role/assignment access, atomic Apartment schema provisioning, tenant-only migrations and isolation tests. User approved this session approach and a test-only isolation probe. Unknown business/lifecycle/upload policies remain closed; no frontend login UI or production readiness is claimed. See [Member 3 handoff](docs/member3-auth-tenancy.md) for controlled runtime account setup, session endpoints, migration commands and limits. This branch depends on setup #16 and Member 2 #18. The original Member 1 preview checkout remains unchanged.
 
@@ -30,6 +30,8 @@ Angular 21 / Node 24 tooling; Ruby 3.3 / Rails 8.1 REST modular monolith; Postgr
 Git and Docker Desktop/Engine with Compose v2 and Linux containers are the shared cross-platform prerequisites. Docker Desktop must be running; Windows may need WSL2. The backend uses `linux/amd64` for the locked native gems; ARM laptops need Docker amd64 emulation (normally supplied by Docker Desktop), with a performance cost. Native ARM Rails is not verified. Native Ruby/Node are optional when using Compose. Setup used Docker Engine 28.4.0, Ruby 3.3.10, Node 24.21.0 and npm 11.19.1; manifests/lockfiles record application dependencies. The [decision log](docs/decisions.md) explains compatibility and open version review. [Verification](docs/verification.md) distinguishes selected versions from runtime checks.
 
 ## Local setup (PowerShell, macOS or Linux)
+
+Until reviewed PRs are merged, `main` remains bootstrap-only: after cloning, run `git fetch origin` and `git switch feat/tenant-navigation` to inspect this combined increment. Existing worktrees should preserve their own branches. No release is published.
 
 The selected/locked foundation versions are Angular core 21.2.25 (CLI 21.2.28, TypeScript 5.9.3), Rails 8.1.4, Devise 5.0.4, ros-apartment 3.4.4 and PostgreSQL 17.11. Runtime verification and planned integrations are distinguished in the verification document.
 

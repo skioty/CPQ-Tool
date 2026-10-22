@@ -1,27 +1,92 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { map } from 'rxjs';
+import { map, throwError } from 'rxjs';
 import { Tenant } from './tenant.types';
 
 // Proposed contract adapter only. No mock backend or local simulated persistence.
 @Injectable({ providedIn: 'root' })
 export class TenantGateway {
   private readonly http = inject(HttpClient);
+  private readonly originals = new Map<string, Tenant>();
+  private readonly etags = new Map<string, string>();
   private path(id: string) {
     return `/api/v1/tenants/${encodeURIComponent(id)}`;
   }
   load(id: string) {
-    return this.http.get<{ data: Tenant }>(this.path(id)).pipe(map((r) => this.complete(r.data)));
+    return this.http.get<{ data: Tenant }>(this.path(id), { observe: 'response' }).pipe(
+      map((r) => {
+        const t = this.complete(r.body!.data);
+        const etag = r.headers.get('ETag');
+        if (etag) this.etags.set(id, etag);
+        return t;
+      }),
+    );
   }
   save(value: Tenant, id?: string) {
-    const body = { tenant: value };
+    if (id && !this.etags.has(id))
+      return throwError(
+        () => new Error('Reload tenant details before editing; a saved version is required.'),
+      );
+    const body = { tenant: id ? this.preserveNulls(this.originals.get(id), value) : value };
     return (
       id
-        ? this.http.patch<{ data: Tenant }>(this.path(id), body)
-        : this.http.post<{ data: Tenant }>('/api/v1/tenants', body)
-    ).pipe(map((r) => this.complete(r.data)));
+        ? this.http.patch<{ data: Tenant }>(this.path(id), body, {
+            observe: 'response',
+            headers: { 'If-Match': this.etags.get(id)! },
+          })
+        : this.http.post<{ data: Tenant }>('/api/v1/tenants', body, { observe: 'response' })
+    ).pipe(
+      map((r) => {
+        const t = this.complete(r.body!.data);
+        const etag = r.headers.get('ETag');
+        if (t.id && etag) this.etags.set(t.id, etag);
+        return t;
+      }),
+    );
+  }
+  private preserveNulls(original: unknown, value: unknown): unknown {
+    if (original === null && (value === '' || value === false)) return null;
+    if (Array.isArray(value))
+      return value.map((item) =>
+        this.preserveNulls(
+          Array.isArray(original)
+            ? original.find((old) => old?.id && old.id === item?.id)
+            : undefined,
+          item,
+        ),
+      );
+    if (value && typeof value === 'object')
+      return Object.fromEntries(
+        Object.entries(value).map(([key, item]) => [
+          key,
+          this.preserveNulls((original as Record<string, unknown> | undefined)?.[key], item),
+        ]),
+      );
+    return value;
   }
   private complete(t: Tenant): Tenant {
+    const raw = structuredClone(t);
+    t = structuredClone(t);
+    if (t && typeof t === 'object') {
+      for (const key of ['company_name', 'description', 'industry_id'])
+        if (t[key] === null) t[key] = '';
+      if (t.company_name_display === null) t.company_name_display = false;
+      if (Array.isArray(t.contacts))
+        t.contacts.forEach((c) => {
+          if (c?.name === null) c.name = '';
+          if (c?.email === null) c.email = '';
+        });
+      if (t.branding)
+        for (const key of ['primary_colour', 'secondary_colour', 'typography'])
+          if (t.branding[key] === null) t.branding[key] = '';
+      if (t.subscription) {
+        for (const key of ['currency', 'fee', 'payment_method'])
+          if (t.subscription[key] === null) t.subscription[key] = '';
+        if (t.subscription.discount)
+          for (const key of ['type', 'value', 'duration'])
+            if (t.subscription.discount[key] === null) t.subscription.discount[key] = '';
+      }
+    }
     // Refuse partial edit responses rather than replacing missing server settings with blanks.
     if (
       typeof t?.id !== 'string' ||
@@ -62,6 +127,7 @@ export class TenantGateway {
         'The API returned incomplete tenant settings. Editing requires a complete detail response.',
       );
     }
+    this.originals.set(t.id!, raw);
     return t;
   }
 }

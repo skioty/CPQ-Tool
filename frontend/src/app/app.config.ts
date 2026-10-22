@@ -2,8 +2,13 @@ import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/
 import { provideRouter } from '@angular/router';
 
 import { routes } from './app.routes';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { sessionHeaders } from './navigation/session';
 
 export const appConfig: ApplicationConfig = {
-  providers: [provideHttpClient(), provideBrowserGlobalErrorListeners(), provideRouter(routes)],
+  providers: [
+    provideHttpClient(withInterceptors([sessionHeaders])),
+    provideBrowserGlobalErrorListeners(),
+    provideRouter(routes),
+  ],
 };

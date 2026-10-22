@@ -1,12 +1,21 @@
 import { TestBed } from '@angular/core/testing';
 import { App } from './app';
 import { provideRouter } from '@angular/router';
+import { Session } from './navigation/session';
+import { signal } from '@angular/core';
+import { of } from 'rxjs';
 
 describe('App', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [App],
-      providers: [provideRouter([])],
+      providers: [
+        provideRouter([]),
+        {
+          provide: Session,
+          useValue: { actor: signal({ id: 'test', role: 'super_admin' }), refresh: () => of(null) },
+        },
+      ],
     }).compileComponents();
   });
 
