@@ -1,0 +1,67 @@
+name: CI
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - run: npm test -- --watch=false
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17.11
+        env:
+          POSTGRES_USER: cpq
+          POSTGRES_PASSWORD: ci-ephemeral-only
+          POSTGRES_DB: cpq_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U cpq -d cpq_test"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      BUNDLE_FROZEN: 'true'
+      RAILS_ENV: test
+      DATABASE_HOST: localhost
+      DATABASE_USER: cpq
+      DATABASE_PASSWORD: ci-ephemeral-only
+      TEST_DATABASE_NAME: cpq_test
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      # structure.sql includes PostgreSQL constraint triggers; pg_dump must match server 17.
+      - name: Install PostgreSQL 17 client
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl --fail --show-error --silent -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          . /etc/os-release
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt ${VERSION_CODENAME}-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-17
+      - run: echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+      - uses: ruby/setup-ruby@v1
+        with:
+          working-directory: backend
+          bundler-cache: true
+      - run: bundle exec rails db:prepare
+      - run: bundle exec rails test

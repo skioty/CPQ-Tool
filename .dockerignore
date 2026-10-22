@@ -1,0 +1,15 @@
+.git
+**/node_modules
+**/dist
+**/.angular
+**/.bundle
+**/vendor/bundle
+**/vendor/cache
+**/coverage
+**/log/*
+**/tmp/*
+**/storage/*
+.env
+.env.*
+**/config/master.key
+**/config/credentials/*.key
