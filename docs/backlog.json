@@ -1,0 +1,77 @@
+[
+    {
+        "key":  "SETUP",
+        "title":  "chore: review repository foundation",
+        "body":  "Tracking key: SETUP\n\nCategory: Current setup\nOwner role: Member 4\nReviewer role: Member 3\nPriority: P0\nTarget: Day 1\nDependencies (tracking keys in docs/backlog.json): None\n\n## Acceptance criteria\n\nReview scaffolds, Compose, CI and collaboration docs; another member approves setup; fresh startup and check results recorded; business feature gaps disclosed.\n\nEvery owner supplies tests, documentation and defect fixes for their work. See docs/requirements.md, docs/decisions.md and docs/test-plan.md. No real assignee until verified member mapping is supplied."
+    },
+    {
+        "key":  "DECISIONS",
+        "title":  "docs: approve prototype rules and contracts",
+        "body":  "Tracking key: DECISIONS\n\nCategory: Subsequent implementation / delivery\nOwner role: Member 2\nReviewer role: Members 1, 3 and 4\nPriority: P0\nTarget: Day 1\nDependencies (tracking keys in docs/backlog.json): SETUP\n\n## Acceptance criteria\n\nResolve or explicitly defer every open decision in docs/decisions.md with SELISE/team; approve field requiredness, lifecycle matrix, money and upload rules; publish contract changes before dependent work.\n\nEvery owner supplies tests, documentation and defect fixes for their work. See docs/requirements.md, docs/decisions.md and docs/test-plan.md. No real assignee until verified member mapping is supplied."
+    },
+    {
+        "key":  "FORMS",
+        "title":  "feat: Angular shell and shared tenant form components",
+        "body":  "Tracking key: FORMS\n\nCategory: Subsequent implementation / delivery\nOwner role: Member 1\nReviewer role: Member 4\nPriority: P1\nTarget: Day 2\nDependencies (tracking keys in docs/backlog.json): DECISIONS\n\n## Acceptance criteria\n\nProvide shell and reusable controls from reviewed Figma states; accessible labels, loading and API error states; relevant frontend tests and documentation.\n\nEvery owner supplies tests, documentation and defect fixes for their work. See docs/requirements.md, docs/decisions.md and docs/test-plan.md. No real assignee until verified member mapping is supplied."
+    },
+    {
+        "key":  "AUTH",
+        "title":  "feat: Devise platform authentication and controlled demo provisioning",
+        "body":  "Tracking key: AUTH\n\nCategory: Subsequent implementation / delivery\nOwner role: Member 3\nReviewer role: Member 2\nPriority: P0\nTarget: Day 2\nDependencies (tracking keys in docs/backlog.json): DECISIONS\n\n## Acceptance criteria\n\nAgree session/CSRF transport; implement login/logout and role identity; no public registration; runtime-only development/test provisioning; no committed password or automatic contact account; success/failure/logout tests.\n\nEvery owner supplies tests, documentation and defect fixes for their work. See docs/requirements.md, docs/decisions.md and docs/test-plan.md. No real assignee until verified member mapping is supplied."
+    },
+    {
+        "key":  "SCHEMA",
+        "title":  "feat: Apartment provisioning and schema isolation proof",
+        "body":  "Tracking key: SCHEMA\n\nCategory: Subsequent implementation / delivery\nOwner role: Member 3\nReviewer role: Member 2\nPriority: P0\nTarget: Day 2\nDependencies (tracking keys in docs/backlog.json): DECISIONS\n\n## Acceptance criteria\n\nConfigure stable ros-apartment v3; review shared model exclusions with Member 2; two-schema test, exception cleanup, failed provisioning and idempotent retry evidence; document coordinated tenant migrations.\n\nEvery owner supplies tests, documentation and defect fixes for their work. See docs/requirements.md, docs/decisions.md and docs/test-plan.md. No real assignee until verified member mapping is supplied."
+    },
+    {
+        "key":  "MODELS",
+        "title":  "feat: tenant models contacts and setting persistence",
+        "body":  "Tracking key: MODELS\n\nCategory: Subsequent implementation / delivery\nOwner role: Member 2\nReviewer role: Member 3\nPriority: P0\nTarget: Day 3\nDependencies (tracking keys in docs/backlog.json): DECISIONS, SCHEMA\n\n## Acceptance criteria\n\nAdd reviewed tenant/contact/branding/subscription/assignment migrations in backend/db; enforce exactly one primary contact atomically; test rollback and persistence; coordinate migration order with Member 3.\n\nEvery owner supplies tests, documentation and defect fixes for their work. See docs/requirements.md, docs/decisions.md and docs/test-plan.md. No real assignee until verified member mapping is supplied."
+    },
+    {
+        "key":  "ACCESS",
+        "title":  "feat: enforce platform roles and tenant assignments",
+        "body":  "Tracking key: ACCESS\n\nCategory: Subsequent implementation / delivery\nOwner role: Member 3\nReviewer role: Member 2\nPriority: P0\nTarget: Day 3\nDependencies (tracking keys in docs/backlog.json): AUTH, MODELS\n\n## Acceptance criteria\n\nSuper Admin can use all approved implemented platform actions; CPQ Admin limited to assigned tenants; deny unassigned direct reads/writes/lists/uploads/lifecycle; tests prove shared-table checks independent of schema switching.\n\nEvery owner supplies tests, documentation and defect fixes for their work. See docs/requirements.md, docs/decisions.md and docs/test-plan.md. No real assignee until verified member mapping is supplied."
+    },
+    {
+        "key":  "API",
+        "title":  "feat: tenant create view update REST APIs",
+        "body":  "Tracking key: API\n\nCategory: Subsequent implementation / delivery\nOwner role: Member 2\nReviewer role: Member 3\nPriority: P0\nTarget: Day 3\nDependencies (tracking keys in docs/backlog.json): MODELS, ACCESS\n\n## Acceptance criteria\n\nImplement reviewed create/read/update contracts and validation errors; no arbitrary schema selection or role grants; primary contact and settings round trip; document actual endpoints and backend tests.\n\nEvery owner supplies tests, documentation and defect fixes for their work. See docs/requirements.md, docs/decisions.md and docs/test-plan.md. No real assignee until verified member mapping is supplied."
+    },
+    {
+        "key":  "CREATE",
+        "title":  "feat: tenant create edit contacts and branding forms",
+        "body":  "Tracking key: CREATE\n\nCategory: Subsequent implementation / delivery\nOwner role: Member 1\nReviewer role: Member 4\nPriority: P0\nTarget: Day 3â€“4\nDependencies (tracking keys in docs/backlog.json): FORMS, API\n\n## Acceptance criteria\n\nIntegrate create/edit forms with agreed fields and contacts; enforce client validation plus server errors; authorized logo/favicon upload and branding preview after restrictions approved; frontend tests and documented evidence.\n\nEvery owner supplies tests, documentation and defect fixes for their work. See docs/requirements.md, docs/decisions.md and docs/test-plan.md. No real assignee until verified member mapping is supplied."
+    },
+    {
+        "key":  "NAV",
+        "title":  "feat: tenant list filters and details integration",
+        "body":  "Tracking key: NAV\n\nCategory: Subsequent implementation / delivery\nOwner role: Member 4\nReviewer role: Member 1\nPriority: P0\nTarget: Day 3\nDependencies (tracking keys in docs/backlog.json): API, ACCESS\n\n## Acceptance criteria\n\nList/search/status filters and detail screens consume authorized APIs; loading/empty/error states; direct navigation handles denied access; relevant frontend tests.\n\nEvery owner supplies tests, documentation and defect fixes for their work. See docs/requirements.md, docs/decisions.md and docs/test-plan.md. No real assignee until verified member mapping is supplied."
+    },
+    {
+        "key":  "LIFECYCLE",
+        "title":  "feat: approved tenant lifecycle APIs and audit",
+        "body":  "Tracking key: LIFECYCLE\n\nCategory: Subsequent implementation / delivery\nOwner role: Member 2\nReviewer role: Member 3\nPriority: P1\nTarget: Day 4\nDependencies (tracking keys in docs/backlog.json): DECISIONS, API, ACCESS\n\n## Acceptance criteria\n\nImplement approved activate/deactivate/suspend/reactivate matrix and audit actor/state; preserve distinct inactive/suspended rules; invalid/unauthorized transitions tested; deletion/archive stays disabled without explicit retention policy.\n\nEvery owner supplies tests, documentation and defect fixes for their work. See docs/requirements.md, docs/decisions.md and docs/test-plan.md. No real assignee until verified member mapping is supplied."
+    },
+    {
+        "key":  "DIALOGS",
+        "title":  "feat: lifecycle confirmation dialogs and integration",
+        "body":  "Tracking key: DIALOGS\n\nCategory: Subsequent implementation / delivery\nOwner role: Member 4\nReviewer role: Member 1\nPriority: P1\nTarget: Day 4\nDependencies (tracking keys in docs/backlog.json): NAV, LIFECYCLE\n\n## Acceptance criteria\n\nConfirm approved lifecycle action and show server failures/status refresh; keyboard-accessible dialogs; UI does not imply unapproved deletion/archive behavior; tests and evidence.\n\nEvery owner supplies tests, documentation and defect fixes for their work. See docs/requirements.md, docs/decisions.md and docs/test-plan.md. No real assignee until verified member mapping is supplied."
+    },
+    {
+        "key":  "RC",
+        "title":  "chore: integrate release candidate and acceptance evidence",
+        "body":  "Tracking key: RC\n\nCategory: Subsequent implementation / delivery\nOwner role: Member 4\nReviewer role: Members 1, 2 and 3\nPriority: P1\nTarget: Day 5\nDependencies (tracking keys in docs/backlog.json): CREATE, DIALOGS, SCHEMA\n\n## Acceptance criteria\n\nCoordinate small reviewed PRs, acceptance matrix and release candidate; each owner supplies their own tests/docs/defect fixes; record approved scope and remaining gaps.\n\nEvery owner supplies tests, documentation and defect fixes for their work. See docs/requirements.md, docs/decisions.md and docs/test-plan.md. No real assignee until verified member mapping is supplied."
+    },
+    {
+        "key":  "REGRESSION",
+        "title":  "test: cross-laptop regression and recovery verification",
+        "body":  "Tracking key: REGRESSION\n\nCategory: Subsequent implementation / delivery\nOwner role: Member 3\nReviewer role: Members 2 and 4\nPriority: P0\nTarget: Day 6\nDependencies (tracking keys in docs/backlog.json): RC\n\n## Acceptance criteria\n\nAll four members execute owned test-plan areas; prove fresh setup, permission/isolation failures, migrations and provisioning recovery; log failed/skipped results; Member 4 coordinates evidence.\n\nEvery owner supplies tests, documentation and defect fixes for their work. See docs/requirements.md, docs/decisions.md and docs/test-plan.md. No real assignee until verified member mapping is supplied."
+    },
+    {
+        "key":  "DEMO",
+        "title":  "docs: acceptance demonstration and next-semester handover",
+        "body":  "Tracking key: DEMO\n\nCategory: Subsequent implementation / delivery\nOwner role: Member 4\nReviewer role: Members 1, 2 and 3\nPriority: P1\nTarget: Day 7\nDependencies (tracking keys in docs/backlog.json): REGRESSION\n\n## Acceptance criteria\n\nDemonstrate approved prototype with controlled synthetic accounts; link acceptance evidence and known limitations; each member demonstrates their area; document CPQ extension backlog without claiming deployment readiness.\n\nEvery owner supplies tests, documentation and defect fixes for their work. See docs/requirements.md, docs/decisions.md and docs/test-plan.md. No real assignee until verified member mapping is supplied."
+    }
+]
