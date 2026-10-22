@@ -1,0 +1,67 @@
+name: cpq-prototype
+services:
+  db:
+    image: postgres:17.11
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-cpq}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set a local POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-cpq_development}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  backend:
+    build:
+      context: .
+      dockerfile: infra/backend.Dockerfile
+    environment: &backend_environment
+      RAILS_ENV: development
+      DATABASE_HOST: db
+      DATABASE_USER: ${POSTGRES_USER:-cpq}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:?Set a local POSTGRES_PASSWORD in .env}
+      DATABASE_NAME: ${POSTGRES_DB:-cpq_development}
+      TEST_DATABASE_NAME: ${TEST_DATABASE_NAME:-cpq_test}
+    ports:
+      - '127.0.0.1:${BACKEND_PORT:-3000}:3000'
+    volumes:
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, ruby, -rnet/http, -e, "exit(Net::HTTP.get_response(URI('http://127.0.0.1:3000/up')).is_a?(Net::HTTPSuccess) ? 0 : 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+  frontend:
+    build:
+      context: .
+      dockerfile: infra/frontend.Dockerfile
+    ports:
+      - '127.0.0.1:${FRONTEND_PORT:-4200}:4200'
+    volumes:
+      - ./frontend/src:/app/src
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:4200').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+  backend-test:
+    profiles: [test]
+    build:
+      context: .
+      dockerfile: infra/backend.Dockerfile
+    environment:
+      <<: *backend_environment
+      RAILS_ENV: test
+    volumes:
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+    command: [sh, -c, 'bundle exec rails db:prepare && bundle exec rails test']
+volumes:
+  postgres_data:
