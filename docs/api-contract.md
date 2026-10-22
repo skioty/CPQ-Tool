@@ -1,5 +1,7 @@
 # API contract
 
+The Member 1 typed adapter and draft form are now included on the integration branch. [Form handoff](member1-forms.md) still records missing product/reference/upload decisions; inclusion does not approve those contracts.
+
 ## Member 3 authentication / tenancy increment
 
 User approved same-origin Devise cookie sessions with CSRF. Implemented GET /api/v1/session/csrf, POST /api/v1/session (administrator.email/password), GET /api/v1/session and DELETE /api/v1/session. Send X-CSRF-Token from the same cookie session on unsafe requests; login returns a new token. No public registration. Cookie is HttpOnly/SameSite=Lax, Secure in production. Angular Compose /api/** proxy supports same-origin requests. See [Member 3 handoff](member3-auth-tenancy.md) for exact account setup and frontend integration requirements.

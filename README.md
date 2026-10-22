@@ -4,6 +4,8 @@ Four-student final-year SELISE project: a reusable multi-tenant CPQ SaaS adaptab
 
 ## Current status
 
+This Member 4 integration branch combines the existing Member 1 forms and Member 2/3 backend increments. Member 1 form details and remaining gates are in [forms handoff](docs/member1-forms.md). Member 4 adds list/detail/session navigation and release evidence; no feature branch is merged to main by this task.
+
 Member 3 adds real Devise cookie authentication/CSRF, backend role/assignment access, atomic Apartment schema provisioning, tenant-only migrations and isolation tests. User approved this session approach and a test-only isolation probe. Unknown business/lifecycle/upload policies remain closed; no frontend login UI or production readiness is claimed. See [Member 3 handoff](docs/member3-auth-tenancy.md) for controlled runtime account setup, session endpoints, migration commands and limits. This branch depends on setup #16 and Member 2 #18. The original Member 1 preview checkout remains unchanged.
 
 The inherited Member 2 increment adds tenant persistence and CRUD handlers. Member 3 now supplies auth/access/provisioning; business validation remains gated. Lifecycle/archive/uploads remain unavailable. See [backend handoff](docs/member2-backend.md). Member 1 work remains on its separate branch/PR #17; setup PR #16 is still a dependency. Do not apply the proposed public migration to development before Member 3 review. Backend SQL schema tasks require PostgreSQL 17 client tools (installed by Docker/CI); rebuild backend images after this change.
