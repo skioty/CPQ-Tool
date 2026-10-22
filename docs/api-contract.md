@@ -2,6 +2,10 @@
 
 The Member 1 typed adapter and draft form are now included on the integration branch. [Form handoff](member1-forms.md) still records missing product/reference/upload decisions; inclusion does not approve those contracts.
 
+## Member 4 frontend integration
+
+Implemented clients consume session, tenant list and detail APIs. Search/pagination follow the handler contract below. The form gateway captures ETag, requires it for PATCH and preserves unchanged nullable values and assets. Empty versus explicit clearing needs Member 1/2 review before enabling writes. Status filters and lifecycle actions remain unavailable until an approved catalogue/policy is supplied. No upload/reference-data endpoint is assumed.
+
 ## Member 3 authentication / tenancy increment
 
 User approved same-origin Devise cookie sessions with CSRF. Implemented GET /api/v1/session/csrf, POST /api/v1/session (administrator.email/password), GET /api/v1/session and DELETE /api/v1/session. Send X-CSRF-Token from the same cookie session on unsafe requests; login returns a new token. No public registration. Cookie is HttpOnly/SameSite=Lax, Secure in production. Angular Compose /api/** proxy supports same-origin requests. See [Member 3 handoff](member3-auth-tenancy.md) for exact account setup and frontend integration requirements.
@@ -24,7 +28,7 @@ See [backend handoff](member2-backend.md) for interfaces, transactions and limit
 
 List behavior remains an engineering proposal for Member 4 review. Response meta contains page, per_page, total_count, total_pages (0 for empty). Invalid pagination/unapproved status -> 400. No statuses invented. No DELETE/upload/reference-data routes.
 
-PATCH requires `If-Match: "<lock_version>"` copied from latest ETag. Missing/malformed -> 428, stale -> 409. **Member 1 must add this header before integrating**. All responses use Cache-Control: no-store. Update reauthorizes under lock.
+PATCH requires `If-Match: "<lock_version>"` copied from latest ETag. Missing/malformed -> 428, stale -> 409. Member 4 added ETag capture and this header to the shared form gateway; Member 1 reviews that compatibility change. All responses use Cache-Control: no-store. Update reauthorizes under lock.
 
 The payload below is implemented structurally, with business approval still required. Scalars are string/null except company_name_display (boolean/null) and primary (boolean). Decimal fee/discount value must be finite decimal strings, not JSON floats; blank becomes null. Serialization preserves precision, not textual trailing zeroes. No inferred required fields/bounds/units/currency rules. Contacts required on create; supplied arrays must have exactly one primary, owned IDs and no duplicates. Unknown fields -> 422. Nested supplied keys merge; clear individual scalars with null. No automatic contact accounts.
 
@@ -36,7 +40,7 @@ Full detail includes id, company fields, lifecycle_status (nullable pending poli
 
 ## Proposed REST contract for review
 
-All domain endpoints below are proposed. Authentication transport and session/CSRF handling remain open. Use Devise login/logout, no registration routes, and a server-verified role/assignment on every domain request. An anonymous request must fail before tenant data access. Super Admin can use approved implemented platform actions; CPQ Admin can access assigned tenants only. Decide whether unauthorized identifiers produce 403 or concealed 404 consistently.
+The historical planning contract below remains proposed wherever it differs from the implemented increments above. Authentication transport and session/CSRF handling are now resolved as described above. Use Devise login/logout, no registration routes, and a server-verified role/assignment on every domain request. An anonymous request must fail before tenant data access. Super Admin can use approved implemented platform actions; CPQ Admin can access assigned tenants only. Decide whether unauthorized identifiers produce 403 or concealed 404 consistently.
 
 | Method and path | Intent | Proposed success |
 | --- | --- | --- |
