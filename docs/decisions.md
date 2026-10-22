@@ -24,7 +24,7 @@ Confirmed means supplied project direction; proposed means a reviewable engineer
 | Lifecycle permissions | Open | role/action matrix and restricted admin powers need approval | Members 2 and 3 |
 | Archive vs permanent deletion | Open | retention, recovery, schema/media disposition need approval | Members 2 and 3 |
 | Logo/favicon restrictions | Open | MIME/content validation, dimensions, size, SVG policy, storage | Members 1 and 2 |
-| Authentication/session approach | Open | cookie+CSRF vs another reviewed Devise-compatible approach; API-only middleware needs work | Member 3 |
+| Authentication/session approach | Confirmed by user | same-origin Devise cookie session with CSRF; explicit API-only middleware and Angular development proxy implemented by Member 3 | Member 3 |
 | Contact invitations / Tenant Admin account | Open | contacts never automatically become active accounts | Member 3 |
 | Member identity mapping | Open | verified names/usernames required before assignment/invitation | Member 4 |
 | Public-qualified management records | Proposed implementation | six new models; Member 3 must review placement and Apartment exclusions before development migration | Members 2 and 3 |
@@ -32,5 +32,9 @@ Confirmed means supplied project direction; proposed means a reviewable engineer
 | Decimal storage | Proposed implementation | unconstrained PostgreSQL numeric / decimal strings, no guessed currency scale or discount rules | Member 2 |
 | Synchronous provisioning and compensation | Proposed implementation, integration blocked | no success before ready; durable crash recovery and idempotency remain missing | Members 2 and 3 |
 | Admin control of lifecycle/deletion/discounts | Partial clarification | user said admin; exact roles/transitions, archive/deletion/retention and discount semantics still unspecified; mutations disabled | Members 2 and 3 |
+| Isolation evidence record/endpoint | Confirmed by user | synthetic tenant-local marker, endpoint routed only in test | Member 3 |
+| Public shared model placement | Member 3 technical review; peer review pending | public-qualified cross-tenant management records excluded from Apartment cloning/migration | Members 2 and 3 |
+| PostgreSQL-only atomic provisioning | Implemented engineering choice for review | registry and schema DDL use same transaction; confirmed failed attempts can retry without orphan schemas; ambiguous success still lacks idempotency key | Members 2 and 3 |
+| CPQ Admin assignment changes | Proposed conservative restriction | unchanged sets allowed, changes require Super Admin pending reassignment policy | Members 2 and 3 |
 
 Sources inspected for compatibility: [Angular matrix](https://angular.dev/reference/versions), [Rails 8.1.4 metadata](https://rubygems.org/gems/rails/versions/8.1.4), [Devise](https://rubygems.org/gems/devise/versions/5.0.4), [ros-apartment 3.4.4](https://rubygems.org/gems/ros-apartment/versions/3.4.4), [maintained fork](https://github.com/rails-on-services/apartment), [Rails maintenance policy](https://guides.rubyonrails.org/maintenance_policy.html). Consult version 3 documentation for Apartment configuration; upstream main now describes version 4.

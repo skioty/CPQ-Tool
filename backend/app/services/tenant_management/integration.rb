@@ -19,5 +19,6 @@ module TenantManagement
     def filter_status!(_status) = unavailable!
     def provision!(_tenant) = unavailable!
     def compensate!(_receipt) = unavailable!
+    def record_provisioning_failure!(_tenant_id, _code) = nil
   end
 end

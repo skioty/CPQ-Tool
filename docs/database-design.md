@@ -1,5 +1,9 @@
 # Database design
 
+## Member 3 forward migration
+
+New migration 20261022000200 adds public.platform_administrators, public.platform_provisioning_failures and immutable unique server-generated platform_tenants.schema_key. Member 2's existing migration is unchanged. Administrator IDs are UUIDs; existing assignment string identifiers are not coerced or silently deleted. A database identity FK remains pending reconciliation; service-level eligibility uses real enabled CPQ Admin records. Public structure.sql excludes tenant schemas. Tenant-only db/tenant_migrate creates isolation_markers and tenant_schema_versions inside each schema; neither public management tables nor their constraint functions are cloned. See [Member 3 handoff](member3-auth-tenancy.md).
+
 ## Existing facts
 
 Member 2 branch adds a new forward migration and six public-qualified platform_tenant tables for registry, contacts, branding, subscription, assignments and audit. UUIDs, restricted foreign keys, a partial unique index and deferred exactly-one-primary triggers protect records. Public placement needs Member 3 review before development migration. Money uses unconstrained numeric without guessed rounding. See [handoff](member2-backend.md). SQL schema format preserves triggers on fresh databases.

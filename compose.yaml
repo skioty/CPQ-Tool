@@ -38,6 +38,7 @@ services:
       timeout: 5s
       retries: 12
   frontend:
+    command: [npm, start, --, --host, 0.0.0.0, --poll, '1000', --proxy-config, proxy.conf.json]
     build:
       context: .
       dockerfile: infra/frontend.Dockerfile
@@ -45,6 +46,7 @@ services:
       - '127.0.0.1:${FRONTEND_PORT:-4200}:4200'
     volumes:
       - ./frontend/src:/app/src
+      - ./frontend/proxy.conf.json:/app/proxy.conf.json:ro
     healthcheck:
       test: [CMD, node, -e, "fetch('http://127.0.0.1:4200').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 10s

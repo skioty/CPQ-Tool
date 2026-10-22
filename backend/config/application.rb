@@ -28,6 +28,10 @@ module Backend
     # Middleware like session, flash, cookies can be added back manually.
     # Skip views, helpers and assets when generating a new resource.
     config.api_only = true
+    config.middleware.use ActionDispatch::Cookies
+    config.middleware.use ActionDispatch::Session::CookieStore,
+      key: "cpq_platform_session", httponly: true, same_site: :lax,
+      secure: Rails.env.production?, expire_after: 30.minutes
     # Deferred PostgreSQL constraints/functions cannot round-trip through schema.rb.
     config.active_record.schema_format = :sql
   end

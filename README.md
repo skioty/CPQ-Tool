@@ -4,9 +4,11 @@ Four-student final-year SELISE project: a reusable multi-tenant CPQ SaaS adaptab
 
 ## Current status
 
-Member 2 branch adds tenant persistence and integration-gated CRUD handlers. Domain requests are denied until Member 3 auth/policies/provisioning and approved business validation are integrated. Lifecycle/archive/uploads remain unavailable. See [backend handoff](docs/member2-backend.md). Member 1 work remains on its separate branch/PR #17; setup PR #16 is still a dependency. Do not apply the proposed public migration to development before Member 3 review. Backend SQL schema tasks require PostgreSQL 17 client tools (installed by Docker/CI); rebuild backend images after this change.
+Member 3 adds real Devise cookie authentication/CSRF, backend role/assignment access, atomic Apartment schema provisioning, tenant-only migrations and isolation tests. User approved this session approach and a test-only isolation probe. Unknown business/lifecycle/upload policies remain closed; no frontend login UI or production readiness is claimed. See [Member 3 handoff](docs/member3-auth-tenancy.md) for controlled runtime account setup, session endpoints, migration commands and limits. This branch depends on setup #16 and Member 2 #18. The original Member 1 preview checkout remains unchanged.
 
-The original foundation provides official Angular/Rails scaffolds, PostgreSQL local environment, CI and collaboration documentation. The increment above adds backend persistence and handlers; real Devise authorization, Apartment provisioning, lifecycle and uploads remain unavailable. Installed dependencies do not prove authentication or tenant isolation. See [setup verification](docs/verification.md) for original foundation evidence and [backend handoff](docs/member2-backend.md) for this increment.
+The inherited Member 2 increment adds tenant persistence and CRUD handlers. Member 3 now supplies auth/access/provisioning; business validation remains gated. Lifecycle/archive/uploads remain unavailable. See [backend handoff](docs/member2-backend.md). Member 1 work remains on its separate branch/PR #17; setup PR #16 is still a dependency. Do not apply the proposed public migration to development before Member 3 review. Backend SQL schema tasks require PostgreSQL 17 client tools (installed by Docker/CI); rebuild backend images after this change.
+
+The original foundation provides official Angular/Rails scaffolds, PostgreSQL local environment, CI and collaboration documentation. The increment above adds backend persistence and handlers; Member 3 now adds real Devise authorization and Apartment provisioning; lifecycle and uploads remain unavailable. Installed dependencies do not prove authentication or tenant isolation. See [setup verification](docs/verification.md) for original foundation evidence and [backend handoff](docs/member2-backend.md) for this increment.
 
 ## Stack and layout
 
@@ -39,7 +41,7 @@ docker compose up -d --wait backend frontend
 docker compose ps
 ```
 
-Open [Angular](http://localhost:4200) and [Rails health](http://localhost:3000/up). The latter proves boot only, not DB readiness or isolation. No login exists yet; tenant handlers are present but deny access until reviewed integration. The frontend scaffold does not yet call Rails; session/proxy integration is planned with Member 3. Services bind host ports to loopback and PostgreSQL is internal to Compose. Change port variables in `.env` if occupied. Run `docker compose logs backend frontend` for diagnostics.
+Open [Angular](http://localhost:4200) and [Rails health](http://localhost:3000/up). The latter proves boot only, not DB readiness or isolation. Session APIs exist; frontend login UI is pending and tenant writes require approved product validation. The frontend scaffold does not yet call Rails; the Compose proxy is available, with client session/CSRF handling still to integrate. Services bind host ports to loopback and PostgreSQL is internal to Compose. Change port variables in `.env` if occupied. Run `docker compose logs backend frontend` for diagnostics.
 
 Database preparation uses the real Rails `db:prepare` task; a proposed domain migration exists, pending Member 3 review before development application; no demo seed accounts exist. Do not use `db:reset` as startup. PostgreSQL data persists in a named volume; `docker compose down` keeps it. Changing the password after database initialization requires coordinating the database role password; environment variables do not reinitialize an existing volume. Avoid `down -v` unless intentionally discarding local data.
 
@@ -55,7 +57,7 @@ docker compose run --rm frontend npm test -- --watch=false
 docker compose --profile test run --rm backend-test
 ```
 
-The test service explicitly uses `RAILS_ENV=test` and the separate test database. Never set `TEST_DATABASE_NAME` to your development database. It prepares the test DB and runs existing Rails tests. CI also installs locked dependencies, builds Angular and runs its configured tests plus Rails tests against PostgreSQL. No lint command is claimed where none is configured. Member 2 adds PostgreSQL request/integrity tests; real authentication/provisioning and remaining domain acceptance tests are pending.
+The test service explicitly uses `RAILS_ENV=test` and the separate test database. Never set `TEST_DATABASE_NAME` to your development database. It prepares the test DB and runs existing Rails tests. CI also installs locked dependencies, builds Angular and runs its configured tests plus Rails tests against PostgreSQL. No lint command is claimed where none is configured. Member 2 adds PostgreSQL request/integrity tests; Member 3 adds real authentication/provisioning/isolation tests; remaining business acceptance tests are pending.
 
 For optional native frontend checks: use Node `.nvmrc`, `cd frontend`, `npm ci`, `npm run build`, `npm test -- --watch=false`. For native Rails use Ruby `backend/.ruby-version`, `bundle install`, set database environment variables matching `backend/config/database.yml`, then run Rails tasks in `backend/`. Compose is the supported common path.
 

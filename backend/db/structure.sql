@@ -33,6 +33,22 @@ $$;
 
 
 --
+-- Name: immutable_platform_schema_key(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.immutable_platform_schema_key() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF NEW.schema_key IS DISTINCT FROM OLD.schema_key THEN
+    RAISE EXCEPTION 'Schema identity is immutable' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
 -- Name: lock_platform_contact_parent(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -68,6 +84,35 @@ CREATE TABLE public.ar_internal_metadata (
     value character varying,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: platform_administrators; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.platform_administrators (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    email character varying NOT NULL,
+    encrypted_password character varying NOT NULL,
+    role character varying NOT NULL,
+    enabled boolean DEFAULT true NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT platform_administrator_role CHECK (((role)::text = ANY ((ARRAY['super_admin'::character varying, 'admin'::character varying])::text[])))
+);
+
+
+--
+-- Name: platform_provisioning_failures; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.platform_provisioning_failures (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    tenant_id uuid NOT NULL,
+    request_id character varying NOT NULL,
+    error_code character varying NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL
 );
 
 
@@ -164,7 +209,9 @@ CREATE TABLE public.platform_tenants (
     lock_version integer DEFAULT 0 NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT platform_provisioning_status CHECK (((provisioning_status)::text = ANY ((ARRAY['pending'::character varying, 'ready'::character varying])::text[])))
+    schema_key character varying DEFAULT ('cpq_t_'::text || replace((gen_random_uuid())::text, '-'::text, ''::text)) NOT NULL,
+    CONSTRAINT platform_provisioning_status CHECK (((provisioning_status)::text = ANY (ARRAY[('pending'::character varying)::text, ('ready'::character varying)::text]))),
+    CONSTRAINT platform_schema_key_format CHECK (((schema_key)::text ~ '^cpq_t_[0-9a-f]{32}$'::text))
 );
 
 
@@ -178,11 +225,35 @@ CREATE TABLE public.schema_migrations (
 
 
 --
+-- Name: platform_administrators administrator_id_text_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.platform_administrators
+    ADD CONSTRAINT administrator_id_text_unique UNIQUE (id);
+
+
+--
 -- Name: ar_internal_metadata ar_internal_metadata_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.ar_internal_metadata
     ADD CONSTRAINT ar_internal_metadata_pkey PRIMARY KEY (key);
+
+
+--
+-- Name: platform_administrators platform_administrators_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.platform_administrators
+    ADD CONSTRAINT platform_administrators_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: platform_provisioning_failures platform_provisioning_failures_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.platform_provisioning_failures
+    ADD CONSTRAINT platform_provisioning_failures_pkey PRIMARY KEY (id);
 
 
 --
@@ -277,6 +348,13 @@ CREATE UNIQUE INDEX index_platform_tenant_subscriptions_on_tenant_id ON public.p
 
 
 --
+-- Name: index_platform_tenants_on_schema_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_platform_tenants_on_schema_key ON public.platform_tenants USING btree (schema_key);
+
+
+--
 -- Name: one_platform_primary_contact; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -284,10 +362,24 @@ CREATE UNIQUE INDEX one_platform_primary_contact ON public.platform_tenant_conta
 
 
 --
+-- Name: unique_platform_administrator_email; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX unique_platform_administrator_email ON public.platform_administrators USING btree (lower((email)::text));
+
+
+--
 -- Name: unique_platform_tenant_admin; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX unique_platform_tenant_admin ON public.platform_tenant_assignments USING btree (tenant_id, administrator_id);
+
+
+--
+-- Name: platform_tenants immutable_platform_schema_key; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER immutable_platform_schema_key BEFORE UPDATE ON public.platform_tenants FOR EACH ROW EXECUTE FUNCTION public.immutable_platform_schema_key();
 
 
 --
@@ -358,4 +450,5 @@ ALTER TABLE ONLY public.platform_tenant_subscriptions
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261022000200'),
 ('20261022000100');

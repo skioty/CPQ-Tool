@@ -1,8 +1,16 @@
 # API contract
 
+## Member 3 authentication / tenancy increment
+
+User approved same-origin Devise cookie sessions with CSRF. Implemented GET /api/v1/session/csrf, POST /api/v1/session (administrator.email/password), GET /api/v1/session and DELETE /api/v1/session. Send X-CSRF-Token from the same cookie session on unsafe requests; login returns a new token. No public registration. Cookie is HttpOnly/SameSite=Lax, Secure in production. Angular Compose /api/** proxy supports same-origin requests. See [Member 3 handoff](member3-auth-tenancy.md) for exact account setup and frontend integration requirements.
+
+Real Devise authentication and role/assignment checks now replace the unavailable Member 3 collaborator. Super Admin can list/read/create/update implemented management actions; CPQ Admin can list/read/update assigned tenants, not create unassigned tenants or change assignments. Product validation and initial lifecycle/filter/upload decisions still block tenant writes until supplied by Member 2; no runtime business bypass. Anonymous safe requests return 401, unsafe requests missing CSRF are rejected 422 before data access. Existing proposed contracts below do not approve unknown business rules.
+
+Schema provisioning uses the same PostgreSQL transaction as the registry, with trusted generated immutable keys never exposed to clients. GET /api/v1/tenants/:id/isolation-probe exists only in test and is absent from development/production routes. Workspace lifecycle policy defaults closed for all statuses; no inactive/suspended/archive semantics have been invented. Session/tenancy tests use real authentication and schemas, with only unresolved product/lifecycle rules supplied as synthetic test policy.
+
 ## Member 2 implemented increment (integration gated)
 
-See [backend handoff](member2-backend.md) for interfaces, transactions and limits. Default domain requests return 401 without data access; success paths currently use synthetic test collaborators. Devise/Apartment, uploads and reference data are not integrated.
+See [backend handoff](member2-backend.md) for interfaces, transactions and limits. At Member 2 delivery, default requests returned 401 and success paths used synthetic collaborators. Member 3 now integrates Devise/Apartment as described above; uploads/reference data remain unavailable.
 
 | Method/path | Implemented handler |
 | --- | --- |
@@ -22,7 +30,7 @@ Full detail includes id, company fields, lifecycle_status (nullable pending poli
 
 ## Foundation
 
-`GET /up` is the generated Rails health route. It checks application boot, not database readiness, authorization or tenant isolation. Authentication remains Member 3's responsibility.
+`GET /up` is the generated Rails health route. It checks application boot, not database readiness, authorization or tenant isolation. Authentication is implemented in Member 3's increment above.
 
 ## Proposed REST contract for review
 

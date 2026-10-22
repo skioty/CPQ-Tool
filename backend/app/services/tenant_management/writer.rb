@@ -6,6 +6,8 @@ module TenantManagement
 
     def create(attributes)
       receipt = nil
+      tenant = nil
+      attempt_tenant_id = nil
       begin
         Tenant.transaction do
           Tenant.connection.execute("SET CONSTRAINTS ALL DEFERRED")
@@ -16,6 +18,7 @@ module TenantManagement
           tenant.assign_attributes(attributes.slice(*Payload::SCALARS))
           tenant.lifecycle_status = @integration.initial_lifecycle!
           tenant.save!
+          attempt_tenant_id = tenant.id
           persist_settings!(tenant, attributes)
           # Validate constraints before external effects (not just at commit).
           Tenant.connection.execute("SET CONSTRAINTS ALL IMMEDIATE")
@@ -25,7 +28,7 @@ module TenantManagement
           audit!(tenant, "created", attributes)
           tenant
         end
-      rescue StandardError
+      rescue StandardError => original_error
         # Adapter must clean its own partial effects when provision! raises before returning.
         if receipt
           begin
@@ -34,6 +37,9 @@ module TenantManagement
             Rails.logger.error("Tenant provisioning compensation failed request_id=#{@request_id} error_class=#{cleanup_error.class.name}")
             raise Error.new("provisioning_recovery_required", "Tenant provisioning requires administrator recovery", status: 503)
           end
+        end
+        if attempt_tenant_id && original_error.is_a?(Error) && %w[provisioning_failed schema_conflict].include?(original_error.code)
+          @integration.record_provisioning_failure!(attempt_tenant_id, original_error.code)
         end
         raise
       end

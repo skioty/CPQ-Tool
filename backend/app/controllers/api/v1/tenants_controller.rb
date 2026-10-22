@@ -20,6 +20,9 @@ module Api
         render_error("persistence_failed", "Tenant data could not be saved", 409)
       end
       rescue_from TenantManagement::Error, with: :domain_error
+      rescue_from ActionController::InvalidAuthenticityToken do
+        render_error("invalid_csrf", "Refresh your session and retry", 422)
+      end
 
       def index
         authorize!(:list)

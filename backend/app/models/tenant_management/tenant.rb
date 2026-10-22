@@ -1,6 +1,8 @@
 module TenantManagement
   class Tenant < ApplicationRecord
     self.table_name = "public.platform_tenants"
+    attr_readonly :schema_key
+    before_validation(on: :create) { self.schema_key ||= "cpq_t_#{SecureRandom.hex(16)}" }
     has_many :contacts, class_name: "TenantManagement::Contact", foreign_key: :tenant_id
     has_one :branding, class_name: "TenantManagement::Branding", foreign_key: :tenant_id
     has_one :subscription, class_name: "TenantManagement::Subscription", foreign_key: :tenant_id
