@@ -220,4 +220,86 @@ class PlatformSecurityTest < ActionDispatch::IntegrationTest
       end
     end
   end
+
+  test "disabled accounts and expired sessions cannot access platform APIs" do
+    login(@admin)
+    @admin.update!(enabled: false)
+    get "/api/v1/tenants"
+    assert_response :unauthorized
+    login(@super)
+    travel 31.minutes do
+      get "/api/v1/session"
+      assert_response :unauthorized
+    end
+  end
+
+  test "later audit failure rolls back real provisioned schema and settings" do
+    key = nil
+    failing = Class.new(TenantManagement::Writer) do
+      define_method(:audit!) do |tenant, *_args|
+        key = tenant.schema_key
+        raise "Synthetic post-provision failure"
+      end
+      private :audit!
+    end.new(integration: FixtureIntegration.new, actor: @super, request_id: SecureRandom.uuid)
+    assert_no_difference "TenantManagement::Tenant.count" do
+      assert_raises(RuntimeError) { failing.create({ "contacts" => [{ "primary" => true }] }) }
+    end
+    assert key
+    assert_not ActiveRecord::Base.connection.schema_exists?(key)
+    assert_equal "public", Apartment::Tenant.current
+  end
+
+  test "forward tenant migration preserves existing data and rerun resumes safely" do
+    record = fixture_tenant("Existing data")
+    paths = [Platform::TenantMigrator::PATH, Rails.root.join("test/fixtures/tenant_migrations").to_s]
+    record.with_lock do
+      Apartment::Tenant.switch(record.schema_key) do
+        assert_not Platform::TenantMigrator.current?(paths: paths)
+        Platform::TenantMigrator.migrate_current!(paths: paths)
+        assert Platform::TenantMigrator.current?(paths: paths)
+        Platform::TenantMigrator.migrate_current!(paths: paths)
+        assert_equal ["Existing data"], TenantData::IsolationMarker.pluck(:value)
+        assert ActiveRecord::Base.connection.column_exists?(:isolation_markers, :evidence)
+      end
+    end
+  end
+
+  test "stale CSRF is rejected and real default business rules stay closed" do
+    get "/api/v1/session/csrf"
+    stale = response.parsed_body["csrf_token"]
+    token = login
+    Rails.application.config.x.tenant_management.integration = -> { Platform::TenantIntegration.new }
+    assert_no_difference "TenantManagement::Tenant.count" do
+      post "/api/v1/tenants", params: { tenant: { contacts: [{ primary: true }] } }, headers: { "X-CSRF-Token" => stale }, as: :json
+      assert_response :unprocessable_entity
+      assert_equal "invalid_csrf", response.parsed_body.dig("error", "code")
+      post "/api/v1/tenants", params: { tenant: { contacts: [{ primary: true }] } }, headers: { "X-CSRF-Token" => token }, as: :json
+      assert_response :service_unavailable
+      assert_equal "integration_unavailable", response.parsed_body.dig("error", "code")
+    end
+  end
+
+  test "controlled account task uses runtime credentials and refuses duplicate overwrite" do
+    require "rake"
+    Rails.application.load_tasks unless Rake::Task.task_defined?("platform:provision_admin")
+    task = Rake::Task["platform:provision_admin"]
+    keys = %w[CPQ_ADMIN_EMAIL CPQ_ADMIN_PASSWORD CPQ_ADMIN_ROLE]
+    previous = keys.index_with { |key| ENV[key] }
+    email = "#{SecureRandom.hex(8)}@example.invalid"
+    begin
+      ENV["CPQ_ADMIN_EMAIL"], ENV["CPQ_ADMIN_PASSWORD"], ENV["CPQ_ADMIN_ROLE"] = email, @password, "admin"
+      task.reenable
+      assert_output(/Administrator provisioned/) { task.invoke }
+      account = Platform::Administrator.find_by!(email: email)
+      @accounts << account.id
+      assert account.valid_password?(@password)
+      task.reenable
+      assert_output(nil, /Account already exists/) { assert_raises(SystemExit) { task.invoke } }
+      assert_equal 1, Platform::Administrator.where(email: email).count
+    ensure
+      previous.each { |key, value| ENV[key] = value }
+      task.reenable
+    end
+  end
 end

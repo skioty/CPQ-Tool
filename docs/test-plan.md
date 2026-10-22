@@ -1,5 +1,9 @@
 # Test plan
 
+## Implemented Member 3 evidence
+
+See [authentication/tenancy evidence](member3-auth-tenancy.md): 42 Rails tests / 248 assertions passed, including real Devise/CSRF, assigned access, alternating/concurrent schema requests, context cleanup, provisioning failures/retry and forward tenant migration. Tests use synthetic product/lifecycle rules only where decisions remain open; no production policy approval or deployment readiness is implied. Remaining planned cases below are not claimed as implemented.
+
 ## Foundation vs feature evidence
 
 Actual checks run and their outcomes belong in [verification](verification.md). Generated Angular tests and the Rails health test are scaffold checks only. The following domain tests are planned and not implemented by setup.
