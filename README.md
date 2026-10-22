@@ -6,7 +6,7 @@ Four-student final-year SELISE project: a reusable multi-tenant CPQ SaaS adaptab
 
 Member 2 branch adds tenant persistence and integration-gated CRUD handlers. Domain requests are denied until Member 3 auth/policies/provisioning and approved business validation are integrated. Lifecycle/archive/uploads remain unavailable. See [backend handoff](docs/member2-backend.md). Member 1 work remains on its separate branch/PR #17; setup PR #16 is still a dependency. Do not apply the proposed public migration to development before Member 3 review. Backend SQL schema tasks require PostgreSQL 17 client tools (installed by Docker/CI); rebuild backend images after this change.
 
-This is a repository foundation: official Angular and Rails API scaffolds, PostgreSQL local environment, CI, collaboration docs and a planned backlog. Tenant CRUD, branding, lifecycle, Devise login/authorization and Apartment provisioning are **not implemented**. Installed dependencies do not prove authentication or tenant isolation. See [verification](docs/verification.md) for checks actually run and limitations.
+The original foundation provides official Angular/Rails scaffolds, PostgreSQL local environment, CI and collaboration documentation. The increment above adds backend persistence and handlers; real Devise authorization, Apartment provisioning, lifecycle and uploads remain unavailable. Installed dependencies do not prove authentication or tenant isolation. See [setup verification](docs/verification.md) for original foundation evidence and [backend handoff](docs/member2-backend.md) for this increment.
 
 ## Stack and layout
 
