@@ -1,0 +1,18 @@
+name: Feature
+description: Plan an approved prototype increment
+title: "feat: "
+body:
+  - type: textarea
+    id: ownership
+    attributes:
+      label: Ownership and scheduling
+      description: Owner Member role, reviewer role, priority, target Day, dependencies
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Scope and acceptance criteria
+      description: Include permissions, validation, tests and unresolved decisions. Do not assume business rules.
+    validations:
+      required: true
