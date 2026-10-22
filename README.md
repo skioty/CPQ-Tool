@@ -21,9 +21,11 @@ Angular 21 / Node 24 tooling; Ruby 3.3 / Rails 8.1 REST modular monolith; Postgr
 
 ## Prerequisites and versions
 
-Git and Docker Desktop/Engine with Compose v2 and Linux containers are the shared cross-platform prerequisites. Docker Desktop must be running; Windows may need WSL2. Native Ruby/Node are optional when using Compose. Setup used Docker Engine 28.4.0, Ruby 3.3.10, Node 24.21.0 and npm 11.19.1; manifests/lockfiles record application dependencies. The [decision log](docs/decisions.md) explains compatibility and open version review. [Verification](docs/verification.md) distinguishes selected versions from runtime checks.
+Git and Docker Desktop/Engine with Compose v2 and Linux containers are the shared cross-platform prerequisites. Docker Desktop must be running; Windows may need WSL2. The backend uses `linux/amd64` for the locked native gems; ARM laptops need Docker amd64 emulation (normally supplied by Docker Desktop), with a performance cost. Native ARM Rails is not verified. Native Ruby/Node are optional when using Compose. Setup used Docker Engine 28.4.0, Ruby 3.3.10, Node 24.21.0 and npm 11.19.1; manifests/lockfiles record application dependencies. The [decision log](docs/decisions.md) explains compatibility and open version review. [Verification](docs/verification.md) distinguishes selected versions from runtime checks.
 
 ## Local setup (PowerShell, macOS or Linux)
+
+The selected/locked foundation versions are Angular core 21.2.25 (CLI 21.2.28, TypeScript 5.9.3), Rails 8.1.4, Devise 5.0.4, ros-apartment 3.4.4 and PostgreSQL 17.11. Runtime verification and planned integrations are distinguished in the verification document.
 
 Clone this repository and enter it. Copy `.env.example` to `.env` (`Copy-Item .env.example .env` in PowerShell, `cp .env.example .env` in POSIX shells). Set a personal local `POSTGRES_PASSWORD` before starting; no demo account password is supplied. Defaults use database user `cpq`, development database `cpq_development`, test database `cpq_test`, backend port 3000 and frontend port 4200. Real `.env` files are ignored. Do not use real credentials or production data.
 
@@ -31,7 +33,7 @@ Clone this repository and enter it. Copy `.env.example` to `.env` (`Copy-Item .e
 docker compose build
 docker compose up -d db
 docker compose run --rm backend bundle exec rails db:prepare
-docker compose up -d backend frontend
+docker compose up -d --wait backend frontend
 docker compose ps
 ```
 
@@ -40,6 +42,8 @@ Open [Angular](http://localhost:4200) and [Rails health](http://localhost:3000/u
 Database preparation uses the real Rails `db:prepare` task; no domain migrations or demo seed accounts exist. Do not use `db:reset` as startup. PostgreSQL data persists in a named volume; `docker compose down` keeps it. Changing the password after database initialization requires coordinating the database role password; environment variables do not reinitialize an existing volume. Avoid `down -v` unless intentionally discarding local data.
 
 Source mounts support local edits. Rebuild frontend after dependency/config changes and backend after Gemfile changes. This setup is a development environment, not a production container or deployment.
+
+The backend build reuses a BuildKit gem cache when available and falls back to a normal locked `bundle install` on a cold builder. First builds need registry network access and can be slow. No separately installed Ruby gems or manually seeded cache are required by the normal setup instructions.
 
 ## Checks
 

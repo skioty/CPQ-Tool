@@ -10,6 +10,7 @@ Confirmed means supplied project direction; proposed means a reviewable engineer
 | Ruby 3.3.10 / Rails 8.1.4 | Proposed setup selection | Rails 8.1 supports Ruby >=3.2 and stable Apartment permits ActiveRecord <8.2; select a supported line and current patch after rejecting end-of-support 7.2 | Member 3 |
 | Angular core 21.2.25 / CLI 21.2.28 / Node 24.21.0 | Proposed setup selection | Angular 21 supports Node ^24.0.0 and TS >=5.9 <6; locked TypeScript is 5.9.3 | Member 1 |
 | PostgreSQL 17.11 | Proposed setup selection | mature supported schema-capable line; exact patch observed in the running service and image tag verified | Member 3 |
+| Backend containers use linux/amd64 | Proposed setup selection | locked native gems verified on x86 Linux; ARM laptops use Docker emulation pending native platform validation | Members 3 and 4 |
 | Devise 5.0.4 | Proposed dependency selection | published railties >=7.0 and Ruby >=2.7; login integration remains a feature issue | Member 3 |
 | ros-apartment 3.4.4, require apartment | Proposed dependency selection | maintained Apartment fork; published ActiveRecord >=7 <8.2 and Ruby >=3.1 fit Rails 8.1. Avoid 4.x alpha and its different configuration model | Member 3 |
 | Shared platform vs tenant business records | Proposed | management across tenants; see architecture and isolation risks | Members 2 and 3 |

@@ -4,6 +4,7 @@
 **/.angular
 **/.bundle
 **/vendor/bundle
+**/vendor/cache
 **/coverage
 **/log/*
 **/tmp/*
