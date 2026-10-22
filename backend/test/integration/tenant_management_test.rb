@@ -142,6 +142,39 @@ class TenantManagementTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "approved status filter and pagination return only matching authorized rows" do
+    first = create_tenant(company_name: "First")
+    create_tenant(company_name: "Second")
+    TenantManagement::Tenant.find(first["id"]).update!(lifecycle_status: "test-state")
+    get "/api/v1/tenants", params: { status: "test-state", per_page: 1, page: 1 }
+    assert_response :success
+    assert_equal [first["id"]], response.parsed_body["data"].map { |tenant| tenant["id"] }
+    get "/api/v1/tenants", params: { status: "test-state", per_page: 1, page: 2 }
+    assert_empty response.parsed_body["data"]
+    assert_equal 1, response.parsed_body.dig("meta", "total_pages")
+  end
+
+  test "ineligible reassignment rolls back other submitted changes and audit" do
+    data = create_tenant
+    patch "/api/v1/tenants/#{data['id']}", params: { tenant: { description: "Should roll back", responsible_admin_ids: ["ineligible"] } }, headers: { "If-Match" => response.headers["ETag"] }, as: :json
+    assert_response :unprocessable_entity
+    record = TenantManagement::Tenant.find(data["id"])
+    assert_equal "Sample", record.description
+    assert_equal ["eligible-admin"], record.assignments.pluck(:administrator_id)
+    assert_equal 1, record.audit_events.count
+  end
+
+  test "unexpected provisioning error is sanitized and cannot become a success" do
+    def @adapter.provision!(_tenant)
+      raise "synthetic-secret-must-not-appear"
+    end
+    post "/api/v1/tenants", params: { tenant: payload }, as: :json
+    assert_response :internal_server_error
+    assert_equal "internal_error", response.parsed_body.dig("error", "code")
+    assert_not_includes response.body, "synthetic-secret"
+    assert_equal 0, TenantManagement::Tenant.count
+  end
+
   test "authentication and action denials happen before data exposure" do
     @adapter.actor = nil
     get "/api/v1/tenants"
