@@ -1,0 +1,245 @@
+<div class="page-heading">
+  <div>
+    <p class="eyebrow">TENANT WORKSPACE</p>
+    <h1>{{ edit ? 'Edit tenant' : 'Create tenant' }}</h1>
+    <p>Company details, contacts and a consistent workspace identity.</p>
+  </div>
+  @if (saved()?.id) {
+    <a [routerLink]="['/tenants', saved()?.id, 'branding']">View saved branding</a>
+  }
+</div>
+@if (!integrationReady) {
+  <aside class="notice" role="status">
+    <strong>Draft workspace</strong>
+    <p>
+      Saving awaits an approved API contract and business rules. Reference choices have not been
+      supplied. Nothing entered here is persisted.
+    </p>
+  </aside>
+}
+@if (status() === 'loading') {
+  <p role="status">Loading saved tenant settings…</p>
+}
+@if (status() === 'saving') {
+  <p role="status">Uploading selected files and saving tenant…</p>
+}
+@if (status() === 'success') {
+  <p class="success" role="status">
+    Tenant saved. The preview below uses the returned saved settings.
+  </p>
+}
+@if (errors().length) {
+  <section #summary tabindex="-1" class="error-summary" role="alert" aria-label="Form errors">
+    <h2>We could not complete this action</h2>
+    <ul>
+      @for (error of errors(); track $index) {
+        <li>{{ error }}</li>
+      }
+    </ul>
+    @if (edit && !loaded) {
+      <button type="button" (click)="load()">Retry loading tenant</button>
+    }
+  </section>
+}
+<div class="layout">
+  <form
+    (ngSubmit)="submit()"
+    [formGroup]="form"
+    novalidate
+    [attr.aria-busy]="status() === 'loading' || status() === 'saving'"
+  >
+    <fieldset
+      class="form-body"
+      [disabled]="status() === 'loading' || status() === 'saving' || !loaded"
+    >
+      @for (section of sections; track section) {
+        <section class="card" [attr.aria-label]="section">
+          <h2>{{ section }}</h2>
+          <div class="field-grid">
+            @for (field of fields; track field.key) {
+              @if (field.section === section) {
+                <app-tenant-field
+                  [field]="field"
+                  [control]="form.controls.fields.controls[field.key]"
+                  [choices]="choices(field.key)"
+                  [required]="options.requiredFields.includes(field.path)"
+                />
+              }
+            }
+          </div>
+          @if (section === 'Company') {
+            <label class="check"
+              ><input type="checkbox" formControlName="company_name_display" /> Display company name
+              in workspace branding</label
+            >
+            <label for="admins">Responsible SELISE CPQ Admin</label>
+            <select
+              id="admins"
+              [multiple]="options.assignment === 'many'"
+              (change)="selectedAdmins($event)"
+              [attr.disabled]="options.assignment === null || !options.admins.length ? '' : null"
+              aria-describedby="admin-help"
+            >
+              @if (options.assignment !== 'many') {
+                <option value="">Select an administrator</option>
+              }
+              @for (admin of options.admins; track admin.id) {
+                <option
+                  [value]="admin.id"
+                  [selected]="form.controls.admins.value.includes(admin.id)"
+                >
+                  {{ admin.label }}
+                </option>
+              }
+              @for (id of unknownAdmins(); track id) {
+                <option [value]="id" selected>Current saved assignment: {{ id }}</option>
+              }</select
+            ><small id="admin-help"
+              >Assignment cardinality and approved administrators must be supplied before editing
+              assignments.</small
+            >
+          }
+          @if (section === 'Subscription') {
+            <p class="muted">
+              Configuration only. This form does not collect card details or process payments.
+            </p>
+          }
+          @if (section === 'Branding') {
+            <div class="asset-grid">
+              @for (kind of assetKinds; track kind) {
+                <div class="asset">
+                  <label [for]="kind">{{ kind === 'logo' ? 'Company logo' : 'Favicon' }}</label>
+                  <input
+                    type="file"
+                    [id]="kind"
+                    (change)="selectFile(kind, $event)"
+                    [attr.aria-describedby]="kind + '-help'"
+                  />
+                  <small [id]="kind + '-help'"
+                    >Upload rules and transport await agreement. Selection is local until a save
+                    succeeds.</small
+                  >
+                  @if (files()[kind]) {
+                    <p>{{ files()[kind]?.name }} — selected locally</p>
+                    <button type="button" (click)="cancelFile(kind)">
+                      Cancel {{ kind }} selection
+                    </button>
+                    @if (!urls()[kind]) {
+                      <p>
+                        Inline preview is unavailable for this file type. This is not a server
+                        validation result.
+                      </p>
+                    }
+                  }
+                </div>
+              }
+            </div>
+            @if (
+              saved()?.branding?.logo_attachment_id || saved()?.branding?.favicon_attachment_id
+            ) {
+              <p class="muted">
+                Saved asset references are preserved unless a replacement upload succeeds. Saved
+                asset display needs the approved asset URL adapter.
+              </p>
+            }
+          }
+        </section>
+      }
+      <section class="card" aria-labelledby="contacts-heading">
+        <div class="section-heading">
+          <h2 id="contacts-heading">Contacts</h2>
+          <button type="button" (click)="addContact()">Add contact</button>
+        </div>
+        <p id="primary-help">
+          Choose exactly one primary contact. A contact is not a user account.
+        </p>
+        @if (contacts.hasError('primaryContact')) {
+          <p class="error" id="primary-error">Select exactly one primary contact.</p>
+        }
+        <div formArrayName="contacts">
+          @for (contact of contacts.controls; track contact; let i = $index) {
+            <fieldset [formGroupName]="i" class="contact">
+              <legend>Contact {{ i + 1 }}</legend>
+              <div class="field-grid">
+                <div>
+                  <label [for]="'contact-name-' + i">Name</label
+                  ><input [id]="'contact-name-' + i" formControlName="name" autocomplete="name" />
+                  @if (contact.controls.name.touched && contact.controls.name.invalid) {
+                    <p class="error">A contact name is required.</p>
+                  }
+                </div>
+                <div>
+                  <label [for]="'contact-email-' + i">Email</label
+                  ><input
+                    type="email"
+                    [id]="'contact-email-' + i"
+                    formControlName="email"
+                    autocomplete="email"
+                  />
+                  @if (contact.controls.email.touched && contact.controls.email.invalid) {
+                    <p class="error">
+                      Enter a valid email address{{
+                        contact.controls.email.hasError('required') ? ' (required)' : ''
+                      }}.
+                    </p>
+                  }
+                </div>
+              </div>
+              <div class="contact-actions">
+                <label class="check"
+                  ><input
+                    type="radio"
+                    name="primaryContact"
+                    [checked]="contact.controls.primary.value"
+                    (change)="choosePrimary(i)"
+                    [attr.aria-describedby]="
+                      contacts.hasError('primaryContact')
+                        ? 'primary-help primary-error'
+                        : 'primary-help'
+                    "
+                  />
+                  Primary contact {{ i + 1 }}</label
+                >
+                <button
+                  type="button"
+                  (click)="removeContact(i)"
+                  [attr.aria-label]="'Remove contact ' + (i + 1)"
+                >
+                  Remove contact
+                </button>
+              </div>
+            </fieldset>
+          }
+        </div>
+      </section>
+      <div class="actions">
+        <span>Backend validation is authoritative.</span
+        ><button
+          class="primary"
+          type="submit"
+          [disabled]="!integrationReady || status() === 'saving'"
+        >
+          {{ edit ? 'Save changes' : 'Create tenant' }}
+        </button>
+      </div>
+    </fieldset>
+  </form>
+  <aside class="preview-column">
+    <h2>{{ status() === 'success' ? 'Saved branding' : 'Draft branding preview' }}</h2>
+    <p>
+      {{
+        status() === 'success'
+          ? 'Returned by the API after saving.'
+          : 'Changes here are not saved. Saved workspace branding has its own preview route.'
+      }}
+    </p>
+    <app-branding-preview
+      [tenant]="status() === 'success' ? saved() : draft()"
+      [logo]="urls().logo || null"
+      [favicon]="urls().favicon || null"
+    />
+    <p class="muted">
+      This sample shows workspace appearance only. Preview actions are not interactive.
+    </p>
+  </aside>
+</div>

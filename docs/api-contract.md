@@ -1,5 +1,7 @@
 # API contract
 
+Member 1 implements an isolated **proposed-contract** adapter and draft UI; this does not approve the contract. See [form handoff](member1-forms.md) for complete-response, reference-data, uploads, session and navigation coordination gates.
+
 ## Implemented foundation
 
 `GET /up` is the generated Rails health route. It checks application boot, not database readiness, authorization or tenant isolation. No tenant or authentication endpoints are implemented yet.

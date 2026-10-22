@@ -4,7 +4,7 @@ Four-student final-year SELISE project: a reusable multi-tenant CPQ SaaS adaptab
 
 ## Current status
 
-This is a repository foundation: official Angular and Rails API scaffolds, PostgreSQL local environment, CI, collaboration docs and a planned backlog. Tenant CRUD, branding, lifecycle, Devise login/authorization and Apartment provisioning are **not implemented**. Installed dependencies do not prove authentication or tenant isolation. See [verification](docs/verification.md) for checks actually run and limitations.
+This branch adds Member 1's Angular create/edit/contact form workspace and branding previews to the foundation. The default UI is explicitly a draft: tenant APIs, reference lists, upload transport, business rules and session integration are unavailable/unapproved, so saving is disabled. No real tenant persistence or authentication is claimed. See [Member 1 handoff](docs/member1-forms.md) for implemented UI, tests and integration gates; [setup verification](docs/verification.md) covers the original foundation.
 
 ## Stack and layout
 
@@ -37,7 +37,7 @@ docker compose up -d --wait backend frontend
 docker compose ps
 ```
 
-Open [Angular](http://localhost:4200) and [Rails health](http://localhost:3000/up). The latter proves boot only, not DB readiness or isolation. No login or tenant API exists yet. The frontend scaffold does not yet call Rails; session/proxy integration is planned with Member 3. Services bind host ports to loopback and PostgreSQL is internal to Compose. Change port variables in `.env` if occupied. Run `docker compose logs backend frontend` for diagnostics.
+Open [Angular form](http://localhost:4200/tenants/new) and [Rails health](http://localhost:3000/up). The latter proves boot only, not DB readiness or isolation. No login or tenant API exists yet. The proposed Angular HTTP adapter needs approved session/proxy integration with Members 2–4; draft saving stays disabled. Services bind host ports to loopback and PostgreSQL is internal to Compose. Change port variables in `.env` if occupied. Run `docker compose logs backend frontend` for diagnostics.
 
 Database preparation uses the real Rails `db:prepare` task; no domain migrations or demo seed accounts exist. Do not use `db:reset` as startup. PostgreSQL data persists in a named volume; `docker compose down` keeps it. Changing the password after database initialization requires coordinating the database role password; environment variables do not reinitialize an existing volume. Avoid `down -v` unless intentionally discarding local data.
 
