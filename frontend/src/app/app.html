@@ -1,0 +1,27 @@
+<a class="skip" href="#main">Skip to main content</a>
+<header class="topbar">
+  <a class="wordmark" routerLink="/">CPQ <span>tenant workspace</span></a
+  ><span class="prototype">PROTOTYPE</span>
+</header>
+<div class="shell">
+  <nav aria-label="Workspace navigation">
+    <p>PLATFORM</p>
+    <a routerLink="/tenants">Tenant list</a>
+    @if (session.actor()?.role === 'super_admin') {
+      <a routerLink="/tenants/new">Create tenant</a>
+      <a routerLink="/reference-options">Reference options</a>
+    }
+    @if (session.actor()) {
+      <span>{{ session.actor()?.role === 'super_admin' ? 'CPQ Super Admin' : 'CPQ Admin' }}</span
+      ><button (click)="logout()">Log out</button>
+    } @else {
+      <a routerLink="/login">Administrator login</a>
+    }
+  </nav>
+  <main id="main" tabindex="-1">
+    @if (message()) {
+      <p role="status">{{ message() }}</p>
+    }
+    <router-outlet />
+  </main>
+</div>

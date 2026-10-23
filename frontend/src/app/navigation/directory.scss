@@ -1,0 +1,138 @@
+:host {
+  display: block;
+  max-width: 1200px;
+  margin: auto;
+  overflow-wrap: anywhere;
+}
+h1 {
+  font-size: 2rem;
+  margin: 8px 0 16px;
+}
+h2 {
+  font-size: 1.15rem;
+  margin-top: 0;
+}
+a {
+  color: #493278;
+}
+button,
+input,
+select {
+  font: inherit;
+  padding: 10px;
+  border: 1px solid #bdc7d8;
+  border-radius: 7px;
+  min-width: 0;
+}
+button {
+  cursor: pointer;
+  background: #f0ebf8;
+  color: #332451;
+}
+button:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+.heading,
+.actions,
+.filters,
+.pagination {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.filters {
+  justify-content: flex-start;
+  margin: 24px 0;
+}
+.filters label {
+  display: grid;
+  gap: 7px;
+}
+.filters input {
+  width: min(300px, 100%);
+}
+.tenant-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 20px;
+  list-style: none;
+  padding: 0;
+}
+.card {
+  background: white;
+  border: 1px solid #dce3ee;
+  padding: 22px;
+  border-radius: 12px;
+  margin: 16px 0;
+  min-width: 0;
+}
+.tenant-grid .card {
+  margin: 0;
+}
+dl {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+dt {
+  color: #53627a;
+}
+dd {
+  margin: 0;
+}
+.muted {
+  color: #53627a;
+  font-size: 0.9rem;
+}
+.eyebrow {
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  color: #53627a;
+}
+.button {
+  background: #493278;
+  color: white;
+  padding: 12px;
+  border-radius: 8px;
+  text-decoration: none;
+}
+.pagination {
+  margin: 24px 0;
+}
+[role='alert'] {
+  color: #9b263b;
+}
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 3px solid #7464cf;
+  outline-offset: 3px;
+}
+@media (max-width: 580px) {
+  .filters {
+    display: grid;
+  }
+  .filters input {
+    width: auto;
+  }
+  .card {
+    padding: 16px;
+  }
+  dl {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  dd {
+    margin-bottom: 10px;
+  }
+  .heading {
+    align-items: flex-start;
+  }
+  .actions {
+    justify-content: flex-start;
+  }
+}
