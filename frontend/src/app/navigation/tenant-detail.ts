@@ -86,7 +86,7 @@ import { LifecycleDialog } from './lifecycle-dialog';
             }
           </dl>
           <p class="muted">
-            Asset references are preserved. Authorized image URLs await upload integration.
+            Authorized saved images are available in the branding preview.
           </p>
         </section>
         <section class="card">
@@ -96,6 +96,7 @@ import { LifecycleDialog } from './lifecycle-dialog';
             <dd>{{ t.subscription.currency || 'Not set' }}</dd>
             <dt>Fee</dt>
             <dd>{{ t.subscription.fee ?? 'Not set' }}</dd>
+            <dt>Billing interval</dt><dd>Monthly</dd>
             <dt>Payment method</dt>
             <dd>{{ t.subscription.payment_method || 'Not set' }}</dd>
             <dt>Discount type</dt>
@@ -105,7 +106,7 @@ import { LifecycleDialog } from './lifecycle-dialog';
             <dt>Discount duration</dt>
             <dd>{{ t.subscription.discount.duration || 'Not set' }}</dd>
           </dl>
-          <p class="muted">No billing interval, discount unit or currency conversion is assumed.</p>
+          <p class="muted">Monthly billing. Discount duration is measured in monthly cycles; no currency conversion or payment processing occurs.</p>
         </section>
       </div>
       <section class="card">
