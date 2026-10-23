@@ -89,7 +89,9 @@ import { switchMap } from 'rxjs';
                 </button>
               </li>
             } @empty {
-              @if(!loading()){<li class="muted">No reference options to display.</li>}
+              @if (!loading()) {
+                <li class="muted">No reference options to display.</li>
+              }
             }
           </ul>
         </section>
@@ -114,7 +116,7 @@ import { switchMap } from 'rxjs';
       margin-top: 24px;
     }
     label {
-      font-size: 11px;
+      font-size: 12px;
       color: #667388;
       margin-top: 8px;
     }
@@ -124,7 +126,7 @@ import { switchMap } from 'rxjs';
       width: 100%;
     }
     small {
-      font-size: 10px;
+      font-size: 12px;
       color: #687487;
       line-height: 1.7;
     }
@@ -152,7 +154,7 @@ import { switchMap } from 'rxjs';
       display: grid;
       place-content: center;
       color: #687487;
-      font-size: 9px;
+      font-size: 12px;
       flex-shrink: 0;
     }
     .reference-name {
@@ -165,18 +167,18 @@ import { switchMap } from 'rxjs';
     }
     .reference-name small {
       display: block;
-      font-size: 9px;
+      font-size: 12px;
       color: #687487;
       text-transform: capitalize;
       margin-top: 4px;
     }
     .reference-list button {
-      font-size: 10px;
-      min-height: 29px;
+      font-size: 12px;
+      min-height: 44px;
       padding: 5px 9px;
     }
     .reference-list .badge {
-      font-size: 9px;
+      font-size: 12px;
     }
     @media (max-width: 1100px) {
       .reference-layout {

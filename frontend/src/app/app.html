@@ -2,19 +2,42 @@
 <div class="workspace" [class.auth-layout]="isLogin">
   @if (!isLogin) {
     <aside class="sidebar">
-      <a class="brand" routerLink="/tenants" aria-label="CPQ home"
-        ><span class="brand-symbol" aria-hidden="true">c<span>p</span>q</span
-        ><span>SELISE <b>CPQ</b><small>ADMINISTRATION</small></span></a
-      >
+      <div class="sidebar-heading">
+        <a class="brand" routerLink="/tenants" aria-label="CPQ home"
+          ><span class="brand-symbol" aria-hidden="true">c<span>p</span>q</span
+          ><span>SELISE <b>CPQ</b><small>ADMINISTRATION</small></span></a
+        >
+        <button
+          class="menu-toggle"
+          #menuButton
+          type="button"
+          aria-controls="workspace-nav"
+          [attr.aria-expanded]="menuOpen()"
+          (click)="menuOpen.set(!menuOpen())"
+        >
+          {{ menuOpen() ? 'Close menu' : 'Menu' }}
+        </button>
+      </div>
       <div class="workspace-label">
         <span class="workspace-avatar">S</span>
         <div>Platform workspace<small>Tenant management</small></div>
       </div>
-      <nav aria-label="Workspace navigation">
+      <nav
+        id="workspace-nav"
+        aria-label="Workspace navigation"
+        (keydown.escape)="menuOpen.set(false); menuButton.focus()"
+        [class.menu-open]="menuOpen()"
+        (click)="menuOpen.set(false)"
+      >
         <p class="nav-caption">WORKSPACE</p>
         <a
           routerLink="/tenants"
-          aria-label="Tenant list" [attr.aria-current]="router.url.startsWith('/tenants') && !router.url.startsWith('/tenants/new') ? 'page' : null"
+          aria-label="Tenant list"
+          [attr.aria-current]="
+            router.url.startsWith('/tenants') && !router.url.startsWith('/tenants/new')
+              ? 'page'
+              : null
+          "
           [class.active]="
             router.url.startsWith('/tenants') && !router.url.startsWith('/tenants/new')
           "
@@ -82,7 +105,7 @@
         }
       </div>
     </header>
-    <main id="main" tabindex="-1" [class.login-main]="isLogin">
+    <main #mainContent id="main" tabindex="-1" [class.login-main]="isLogin">
       @if (message()) {
         <p class="notice" role="status">{{ message() }}</p>
       }

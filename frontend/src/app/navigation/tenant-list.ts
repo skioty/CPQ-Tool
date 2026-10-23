@@ -24,7 +24,7 @@ import { Session } from './session';
         >
       }
     </div>
-    <section class="directory-panel" aria-label="Tenant directory">
+    <section class="directory-panel" aria-label="Tenant directory" [attr.aria-busy]="loading()">
       <div class="panel-heading">
         <div>
           <h2>Tenant directory</h2>
@@ -55,6 +55,11 @@ import { Session } from './session';
           </select></label
         >
         <button class="filter-submit">Search</button>
+        @if (hasFilters()) {
+          <button class="clear-filters" type="button" (click)="clearFilters()">
+            Clear filters
+          </button>
+        }
       </form>
       @if (loading()) {
         <div class="loading-state" role="status">
@@ -81,9 +86,20 @@ import { Session } from './session';
         @if (!r.data.length) {
           <div class="empty-state">
             <div class="state-symbol">⌕</div>
-            <h2>No tenants found</h2>
-            <p>Try another company name or status. Assigned companies will appear here.</p>
-            @if (session.actor()?.role === 'super_admin') {
+            <h2>{{ hasFilters() ? 'No tenants match your filters' : 'No tenants yet' }}</h2>
+            <p>
+              {{
+                hasFilters()
+                  ? 'Try a different company name or clear your filters to see all available tenants.'
+                  : session.actor()?.role === 'super_admin'
+                    ? 'Create a tenant to bring company details, contacts and branding into your workspace.'
+                    : 'Companies will appear here when a Super Admin assigns them to you.'
+              }}
+            </p>
+            @if (hasFilters()) {
+              <button type="button" (click)="clearFilters()">Clear filters</button>
+            }
+            @if (!hasFilters() && session.actor()?.role === 'super_admin') {
               <a class="button primary" routerLink="/tenants/new">Create your first tenant</a>
             }
           </div>
@@ -203,6 +219,14 @@ export class TenantList {
         this.result.set(r);
         this.loading.set(false);
       });
+  }
+  hasFilters() {
+    return Boolean(this.activeQuery || this.activeStatus);
+  }
+  clearFilters() {
+    this.query = '';
+    this.status = '';
+    this.search();
   }
   search() {
     this.activeQuery = this.query.trim();

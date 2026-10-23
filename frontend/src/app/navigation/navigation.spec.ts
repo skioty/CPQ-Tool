@@ -154,9 +154,31 @@ describe('tenant directory', () => {
       .expectOne((r) => r.url === '/api/v1/tenants')
       .flush({ data: [], meta: { page: 1, per_page: 20, total_count: 0, total_pages: 0 } });
     fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('No tenants found');
+    expect(fixture.nativeElement.textContent).toContain('No tenants yet');
     await fixture.whenStable();
     expect(fixture.nativeElement.querySelector('select').disabled).toBe(false);
+  });
+  it('distinguishes filtered empty results and clears submitted filters through the API', () => {
+    const fixture = TestBed.createComponent(TenantList);
+    fixture.detectChanges();
+    http.expectOne((r) => r.url === '/api/v1/tenants').flush(page);
+    fixture.componentInstance.query = 'No matching company';
+    fixture.componentInstance.status = 'archived';
+    fixture.componentInstance.search();
+    http
+      .expectOne((r) => r.url === '/api/v1/tenants')
+      .flush({ data: [], meta: { page: 1, per_page: 20, total_count: 0, total_pages: 0 } });
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('No tenants match your filters');
+    expect(fixture.nativeElement.textContent).not.toContain('Create your first tenant');
+    fixture.componentInstance.clearFilters();
+    const request = http.expectOne((r) => r.url === '/api/v1/tenants');
+    expect(request.request.params.has('q')).toBe(false);
+    expect(request.request.params.has('status')).toBe(false);
+    expect(request.request.params.get('page')).toBe('1');
+    request.flush(page);
+    expect(fixture.componentInstance.query).toBe('');
+    expect(fixture.componentInstance.status).toBe('');
   });
   it('shows denied/connection failures and retries without stale tenant rows', () => {
     const fixture = TestBed.createComponent(TenantList);
@@ -270,6 +292,8 @@ describe('native lifecycle confirmation dialog', () => {
     await fixture.whenStable();
     const dialog = fixture.nativeElement.querySelector('dialog');
     expect(dialog.getAttribute('aria-labelledby')).toBe('action-title');
+    expect(dialog.getAttribute('aria-describedby')).toBe('action-description action-company');
+    expect(dialog.querySelector('#action-company')?.textContent).toContain('Fixture company');
     dialog.dispatchEvent(new Event('cancel'));
     fixture.nativeElement.querySelectorAll('button')[1].click();
     expect(cancel).toHaveBeenCalledOnce();

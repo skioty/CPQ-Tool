@@ -10,21 +10,34 @@ import {
 import { LifecycleAction } from './tenant-directory';
 @Component({
   selector: 'app-lifecycle-dialog',
-  template: `<dialog #dialog aria-labelledby="action-title" (cancel)="cancelled.emit()">
+  template: `<dialog
+    #dialog
+    aria-labelledby="action-title"
+    aria-describedby="action-description action-company"
+    (cancel)="cancelled.emit()"
+  >
     <div class="dialog-mark" aria-hidden="true">↗</div>
     <p class="eyebrow">TENANT STATUS</p>
     <h2 id="action-title">{{ action().label }}</h2>
-    <p>{{ action().confirmation }}</p>
-    <p class="dialog-company">{{ company() }}</p>
+    <p id="action-description">{{ action().confirmation }}</p>
+    <p class="dialog-company" id="action-company">{{ company() }}</p>
     <div>
       <button autofocus (click)="cancelled.emit()">Cancel</button
-      ><button class="primary" (click)="confirmed.emit()">Confirm {{ action().label }}</button>
+      ><button
+        [class.danger]="action().code === 'archive' || action().code === 'suspend'"
+        [class.primary]="action().code !== 'archive' && action().code !== 'suspend'"
+        (click)="confirmed.emit()"
+      >
+        Confirm {{ action().label }}
+      </button>
     </div>
   </dialog>`,
   styles: `
     dialog {
       width: min(460px, calc(100vw - 40px));
       max-width: none;
+      max-height: calc(100dvh - 40px);
+      overflow-y: auto;
       border: 1px solid #e1e6ed;
       border-radius: 16px;
       padding: 30px;
@@ -33,16 +46,15 @@ import { LifecycleAction } from './tenant-directory';
     }
     dialog::backdrop {
       background: #10203680;
-      backdrop-filter: blur(3px);
     }
     h2 {
-      font-size: 23px;
+      font-size: 20px;
       letter-spacing: -0.7px;
       margin: 10px 0 14px;
     }
     p {
       font-size: 12px;
-      color: #8792a4;
+      color: var(--muted);
       line-height: 1.8;
     }
     .dialog-mark {
@@ -58,7 +70,7 @@ import { LifecycleAction } from './tenant-directory';
       font-size: 24px;
     }
     .eyebrow {
-      font-size: 8px;
+      font-size: 12px;
     }
     .dialog-company {
       border: 1px solid #e8ecf2;
@@ -71,13 +83,14 @@ import { LifecycleAction } from './tenant-directory';
     }
     dialog > div:last-child {
       display: flex;
+      flex-wrap: wrap;
       justify-content: flex-end;
       gap: 10px;
       padding-top: 18px;
       border-top: 1px solid #eceff4;
     }
     button {
-      font-size: 11px;
+      font-size: 12px;
     }
     @media (max-width: 400px) {
       dialog {

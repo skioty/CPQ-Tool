@@ -24,7 +24,9 @@ export interface Field {
       <textarea
         [id]="field().key"
         [formControl]="control()"
-        [attr.aria-describedby]="field().help ? field().key + '-help' : null"
+        [attr.aria-describedby]="describedBy()"
+        [attr.aria-invalid]="invalid() ? 'true' : null"
+        [attr.aria-required]="required()"
         rows="3"
       ></textarea>
     } @else if (field().kind === 'select') {
@@ -32,7 +34,9 @@ export interface Field {
         [id]="field().key"
         [formControl]="control()"
         [attr.disabled]="!choices().length ? '' : null"
-        [attr.aria-describedby]="field().help ? field().key + '-help' : null"
+        [attr.aria-describedby]="describedBy()"
+        [attr.aria-invalid]="invalid() ? 'true' : null"
+        [attr.aria-required]="required()"
       >
         <option value="">
           {{ choices().length ? 'Select an option' : 'No options available' }}
@@ -46,16 +50,21 @@ export interface Field {
       </select>
     } @else {
       <input
+        [attr.inputmode]="numeric() ? 'decimal' : null"
         [id]="field().key"
         [formControl]="control()"
-        [attr.aria-describedby]="field().help ? field().key + '-help' : null"
+        [attr.aria-describedby]="describedBy()"
+        [attr.aria-invalid]="invalid() ? 'true' : null"
+        [attr.aria-required]="required()"
       />
     }
     @if (field().help) {
       <small [id]="field().key + '-help'">{{ field().help }}</small>
     }
-    @if (control().touched && control().invalid) {
-      <p class="error" role="alert">{{ field().label }} is required.</p>
+    @if (invalid()) {
+      <p class="error" role="alert" [id]="field().key + '-error'">
+        {{ serverErrors().length ? serverErrors().join(' ') : field().label + ' is required.' }}
+      </p>
     }
   `,
   styles: `
@@ -66,20 +75,20 @@ export interface Field {
       min-width: 0;
     }
     label {
-      font-size: 12px;
+      font-size: 14px;
       color: #536175;
       font-weight: 550;
     }
     label span {
       color: #687487;
-      font-size: 10px;
+      font-size: 12px;
       font-weight: 400;
     }
     input,
     select,
     textarea {
       width: 100%;
-      font-size: 12px;
+      font-size: 14px;
       min-height: 44px;
     }
     textarea {
@@ -88,12 +97,12 @@ export interface Field {
     }
     small {
       color: #687487;
-      font-size: 10px;
+      font-size: 12px;
       line-height: 1.6;
     }
     .error {
-      font-size: 11px;
-      color: #bd4e40;
+      font-size: 13px;
+      color: var(--danger);
       margin: 0;
     }
   `,
@@ -103,6 +112,23 @@ export class TenantField {
   readonly control = input.required<FormControl<string>>();
   readonly choices = input<Choice[]>([]);
   readonly required = input(false);
+  readonly serverErrors = input<string[]>([]);
+  invalid() {
+    return (this.control().touched && this.control().invalid) || this.serverErrors().length > 0;
+  }
+  numeric() {
+    return ['fee', 'discount_value', 'discount_duration'].includes(this.field().key);
+  }
+  describedBy() {
+    return (
+      [
+        this.field().help ? this.field().key + '-help' : '',
+        this.invalid() ? this.field().key + '-error' : '',
+      ]
+        .filter(Boolean)
+        .join(' ') || null
+    );
+  }
   known() {
     return this.choices().some((option) => option.id === this.control().value);
   }

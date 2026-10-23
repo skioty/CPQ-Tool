@@ -1,5 +1,14 @@
-import { Component, inject, signal } from '@angular/core';
-import { Router, RouterLink, RouterOutlet } from '@angular/router';
+import {
+  Component,
+  ElementRef,
+  Injector,
+  afterNextRender,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
+import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Session } from './navigation/session';
 
 @Component({
@@ -15,7 +24,17 @@ export class App {
     return this.router.url.startsWith('/login');
   }
   readonly message = signal('');
+  readonly menuOpen = signal(false);
+  private readonly main = viewChild<ElementRef<HTMLElement>>('mainContent');
+  private readonly injector = inject(Injector);
   constructor() {
+    this.router.events.pipe(takeUntilDestroyed()).subscribe((event) => {
+      if (event instanceof NavigationEnd && !event.urlAfterRedirects.includes('#')) {
+        afterNextRender(() => this.main()?.nativeElement.focus({ preventScroll: true }), {
+          injector: this.injector,
+        });
+      }
+    });
     this.session.refresh().subscribe({
       error: () =>
         this.message.set('Session could not be checked. Use administrator login to retry.'),

@@ -33,12 +33,12 @@ import { LifecycleDialog } from './lifecycle-dialog';
     @if (loading()) {
       <div class="loading-state" role="status">
         <span class="loading-dot"></span>
-        <h2>Loading tenant details…</h2>
+        <h1>Loading tenant details…</h1>
       </div>
     } @else if (error()) {
       <div class="state empty-state" role="alert">
         <div class="state-symbol">!</div>
-        <h2>Tenant unavailable</h2>
+        <h1>Tenant unavailable</h1>
         <p>{{ error() }}</p>
         <button (click)="reload()">Retry</button>
       </div>
@@ -209,9 +209,12 @@ import { LifecycleDialog } from './lifecycle-dialog';
           <h2>Tenant status</h2>
           <p>Manage availability while keeping company records intact.</p>
           @if (actionError()) {
-            <p role="alert">{{ actionError() }}</p>
+            <p class="action-error" role="alert">{{ actionError() }}</p>
           }
         </div>
+        @if (busy()) {
+          <p class="busy-status" role="status">Updating tenant status…</p>
+        }
         <div class="actions">
           @for (action of policy.actions(t); track action.code) {
             <button
