@@ -4,7 +4,7 @@ Four-student final-year SELISE project: a reusable multi-tenant CPQ SaaS adaptab
 
 ## Current status
 
-This approved-rules branch builds on the combined Member 1–4 increment. It implements tenant create/edit validation, one responsible CPQ Admin, monthly subscription settings, reference-list management, branding upload/removal and the approved lifecycle matrix. Read and write access remains enforced by Rails. Contacts never become user accounts automatically. See [approved-rule handoff](docs/approved-rules.md) for verification, setup and limits; older member handoffs record historical implementation states.
+This approved-rules branch builds on the combined Member 1â€“4 increment. It implements tenant create/edit validation, one responsible CPQ Admin, monthly subscription settings, reference-list management, branding upload/removal and the approved lifecycle matrix. Read and write access remains enforced by Rails. Contacts never become user accounts automatically. See [approved-rule handoff](docs/approved-rules.md) for verification, setup and limits; older member handoffs record historical implementation states.
 
 Default `main` remains unchanged pending reviewed PRs. This is a development prototype, not a production release.
 

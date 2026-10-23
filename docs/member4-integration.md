@@ -1,5 +1,8 @@
 # Member 4 integration handoff
 
+Current follow-up: the user approved the final business table and lifecycle matrix. [Approved-rule implementation/evidence](approved-rules.md) supersedes policy blockers below; these earlier results remain historical evidence, not final stakeholder acceptance.
+
+
 ## Inspection and branch
 
 Confirmed skioty/CPQ-Tool, default main, clean starting worktrees and no AGENTS.md. Read source, README, CONTRIBUTING, requirements, architecture, decisions, sprint, API/workflow and tracking documents. Main remains bootstrap-only; #16–#19 remain open dependencies. This branch starts from verified main, fast-forwards Member 3's backend and merges Member 1's frontend, preserving all original commits. The two documentation conflicts were resolved by retaining backend facts and adding Member 1's handoff. No feature was merged to main or another member's branch.

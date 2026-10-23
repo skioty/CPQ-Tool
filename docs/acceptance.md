@@ -1,5 +1,8 @@
 # Acceptance evidence and work status
 
+Current follow-up: the user approved the final business table and lifecycle matrix. [Approved-rule implementation/evidence](approved-rules.md) supersedes policy blockers below; these earlier results remain historical evidence, not final stakeholder acceptance.
+
+
 Status vocabulary: Backlog → Ready → In progress → In review → Validation → Done. Evidence/review/acceptance are separate. No stakeholder acceptance or release authorization has been obtained. No item is Done here.
 
 ## Tested integration commit

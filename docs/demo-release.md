@@ -1,5 +1,8 @@
 # Demonstration and release preparation
 
+Current follow-up: the user approved the final business table and lifecycle matrix. [Approved-rule implementation/evidence](approved-rules.md) supersedes policy blockers below; these earlier results remain historical evidence, not final stakeholder acceptance.
+
+
 Unreleased integration draft. No tag, release publication or stakeholder acceptance. All four roles own tests/docs/defects; Member 4 coordinates evidence only.
 
 ## Before demonstration

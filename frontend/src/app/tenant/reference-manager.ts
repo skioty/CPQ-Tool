@@ -15,7 +15,7 @@ import { switchMap } from 'rxjs';
 <label for="label">Label</label><input id="label" [(ngModel)]="label" name="label" required>
 <button [disabled]="busy() || !code.trim() || !label.trim()">Add option</button>
 </form>
-<ul>@for(o of options(); track o.id) { <li>{{o.kind}}: {{o.label}} ({{o.code}}) — {{o.enabled ? 'Enabled' : 'Disabled'}} <button [disabled]="busy()" (click)="toggle(o)">{{o.enabled ? 'Disable' : 'Enable'}}</button></li> }</ul>
+<ul>@for(o of options(); track o.id) { <li>{{o.kind}}: {{o.label}} ({{o.code}}) â€” {{o.enabled ? 'Enabled' : 'Disabled'}} <button [disabled]="busy()" (click)="toggle(o)">{{o.enabled ? 'Disable' : 'Enable'}}</button></li> }</ul>
 } @else { <p>Super Admin access is required to manage these lists.</p> }
 `, styles: `form {display:grid;gap:10px;max-width:36rem} input,select,button {font:inherit;padding:10px} li {margin:12px 0}`})
 export class ReferenceManager {

@@ -29,3 +29,7 @@ Use separate lifecycle and provisioning states; their enum values and allowed tr
 Proposed metadata tables reside in `public`; future CPQ business tables reside in tenant schemas. Validate this boundary before migrations. Money must use a reviewed decimal/minor-unit representation with currency precision; no floating point or assumed billing interval. Payment method means configuration only until agreed; do not store payment card secrets.
 
 Member 3 coordinates shared vs tenant migrations and schema version evidence with Member 2. Test new databases, existing schemas, partial provisioning and retry/recovery before adopting a migration process.
+
+## Approved-rule forward migration
+
+Migration 20261023000100 adds optional contact phone, payment-method description and trusted first-invoice timestamp to shared tenant settings. New shared platform_reference_options records enabled/disabled global industry/currency/payment codes; codes are stable and rows retained. New shared platform_brand_assets stores validated image bytes with generated storage keys, owner, kind and nullable tenant ID while staged. Successful registry updates bind staged assets under lock; references are authorized by tenant and asset kind. Both new models are Apartment exclusions and are never cloned into tenant schemas. Tenant-local migrations are unchanged. See approved-rules.md for transaction and retention limits.
