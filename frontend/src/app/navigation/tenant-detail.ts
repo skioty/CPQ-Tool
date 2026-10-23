@@ -1,3 +1,4 @@
+import { brandingInk } from '../tenant/branding-colour';
 import { DecimalPipe } from '@angular/common';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -89,7 +90,9 @@ import { LifecycleDialog } from './lifecycle-dialog';
         <section class="card">
           <div class="card-heading">
             <h2>Contacts</h2>
-            <span class="section-kicker">{{ t.contacts.length }} CONTACTS</span>
+            <span class="section-kicker"
+              >{{ t.contacts.length }} {{ t.contacts.length === 1 ? 'CONTACT' : 'CONTACTS' }}</span
+            >
           </div>
           <ul class="contacts-list">
             @for (c of t.contacts; track c.id) {
@@ -120,7 +123,10 @@ import { LifecycleDialog } from './lifecycle-dialog';
             <a class="text-link" [routerLink]="['/tenants', t.id, 'branding']">Full preview ↗</a>
           </div>
           <div class="inline-preview">
-            <header [style.background-color]="colour(t.branding['primary_colour'])">
+            <header
+              [style.background-color]="colour(t.branding['primary_colour'])"
+              [style.color]="ink(t.branding['primary_colour'])"
+            >
               @if (assetUrl(t.branding['logo_attachment_id']); as logo) {
                 <img [src]="logo" alt="Company logo" />
               }
@@ -136,6 +142,7 @@ import { LifecycleDialog } from './lifecycle-dialog';
             <div
               class="swatch"
               [style.background-color]="colour(t.branding['primary_colour'])"
+              [style.color]="ink(t.branding['primary_colour'])"
               aria-hidden="true"
             ></div>
             <div>
@@ -230,6 +237,7 @@ import { LifecycleDialog } from './lifecycle-dialog';
     }`,
 })
 export class TenantDetail {
+  readonly ink = brandingInk;
   private api = inject(TenantDirectory);
   private references = inject(FORM_OPTIONS);
   private asset = inject(ASSET_URL);

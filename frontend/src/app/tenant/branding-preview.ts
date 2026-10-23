@@ -1,3 +1,4 @@
+import { brandingInk } from './branding-colour';
 import { Component, input, inject } from '@angular/core';
 import { ASSET_URL, FORM_OPTIONS, Tenant } from './tenant.types';
 
@@ -96,14 +97,7 @@ export class BrandingPreview {
   colour(value: unknown) {
     return typeof value === 'string' && globalThis.CSS?.supports('color', value) ? value : null;
   }
-  ink(value: unknown) {
-    if (typeof value !== 'string' || !/^#[0-9a-f]{6}$/i.test(value)) return '#17263a';
-    const channels = [1, 3, 5]
-      .map((i) => parseInt(value.slice(i, i + 2), 16) / 255)
-      .map((v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
-    const light = channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
-    return light > 0.179 ? '#000000' : '#ffffff';
-  }
+  readonly ink = brandingInk;
   font() {
     return (
       this.options.typography.find((x) => x.id === this.tenant()?.branding.typography)

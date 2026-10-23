@@ -62,9 +62,12 @@ import { switchMap } from 'rxjs';
               <h2>Your reference lists</h2>
               <p>Disable an option to keep it out of new selections.</p>
             </div>
-            <span class="badge">{{ options().length }} options</span>
+            <span class="badge">{{ loading() ? 'Loading…' : options().length + ' options' }}</span>
           </div>
           <ul class="reference-list">
+            @if (loading()) {
+              <li role="status">Loading reference options…</li>
+            }
             @for (o of options(); track o.id) {
               <li>
                 <div class="reference-type">
@@ -86,7 +89,7 @@ import { switchMap } from 'rxjs';
                 </button>
               </li>
             } @empty {
-              <li class="muted">No reference options to display.</li>
+              @if(!loading()){<li class="muted">No reference options to display.</li>}
             }
           </ul>
         </section>
@@ -206,6 +209,7 @@ export class ReferenceManager {
   options = signal<ReferenceOption[]>([]);
   message = signal('');
   busy = signal(false);
+  loading = signal(true);
   kind = 'industry';
   code = '';
   label = '';
@@ -213,9 +217,16 @@ export class ReferenceManager {
     this.load();
   }
   load() {
+    this.loading.set(true);
     this.http.get<ReferenceResponse>('/api/v1/reference_options?include_disabled=true').subscribe({
-      next: (r) => this.options.set(r.data),
-      error: () => this.message.set('Reference options could not be loaded. Sign in and retry.'),
+      next: (r) => {
+        this.options.set(r.data);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.loading.set(false);
+        this.message.set('Reference options could not be loaded. Sign in and retry.');
+      },
     });
   }
   private mutate(method: 'post' | 'patch', path: string, option: unknown) {
@@ -228,6 +239,10 @@ export class ReferenceManager {
         next: () => {
           this.busy.set(false);
           this.message.set('Reference option saved.');
+          if (method === 'post') {
+            this.code = '';
+            this.label = '';
+          }
           this.load();
         },
         error: () => {
