@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
+import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Observable, Subject, of, throwError } from 'rxjs';
 import { vi } from 'vitest';
@@ -80,6 +80,7 @@ async function setup(
       },
     ],
   }).compileComponents();
+  vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
   const fixture = TestBed.createComponent(TenantForm);
   fixture.detectChanges();
   return {
@@ -309,5 +310,14 @@ describe('tenant form', () => {
     } finally {
       vi.unstubAllGlobals();
     }
+  });
+});
+
+it('opens the saved edit route after creation so reload cannot lose the tenant context', async () => {
+  const { form } = await setup();
+  form.choosePrimary(0);
+  form.submit();
+  expect(TestBed.inject(Router).navigate).toHaveBeenCalledWith(['/tenants', 'created-1', 'edit'], {
+    replaceUrl: true,
   });
 });

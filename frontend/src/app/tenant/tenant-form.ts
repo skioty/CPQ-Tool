@@ -17,7 +17,7 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Subscription, concatMap, finalize, from, switchMap, tap, toArray } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -139,6 +139,7 @@ export class TenantForm implements OnInit {
   private readonly gateway = inject(TenantGateway);
   private readonly upload = inject(ASSET_UPLOAD);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly destroy = inject(DestroyRef);
   private readonly injector = inject(Injector);
   readonly summary = viewChild<ElementRef<HTMLElement>>('summary');
@@ -583,10 +584,13 @@ export class TenantForm implements OnInit {
       )
       .subscribe({
         next: (t) => {
+          const created = !this.id;
           this.id = t.id;
           this.saved.set(structuredClone(t));
           this.patch(t);
           this.status.set('success');
+          if (created && t.id)
+            void this.router.navigate(['/tenants', t.id, 'edit'], { replaceUrl: true });
         },
         error: (e) => this.fail(e),
       });
