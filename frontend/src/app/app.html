@@ -1,27 +1,97 @@
 <a class="skip" href="#main">Skip to main content</a>
-<header class="topbar">
-  <a class="wordmark" routerLink="/">CPQ <span>tenant workspace</span></a
-  ><span class="prototype">PROTOTYPE</span>
-</header>
-<div class="shell">
-  <nav aria-label="Workspace navigation">
-    <p>PLATFORM</p>
-    <a routerLink="/tenants">Tenant list</a>
-    @if (session.actor()?.role === 'super_admin') {
-      <a routerLink="/tenants/new">Create tenant</a>
-      <a routerLink="/reference-options">Reference options</a>
+<div class="workspace" [class.auth-layout]="isLogin">
+  @if (!isLogin) {
+    <aside class="sidebar">
+      <a class="brand" routerLink="/tenants" aria-label="CPQ home"
+        ><span class="brand-symbol" aria-hidden="true">c<span>p</span>q</span
+        ><span>SELISE <b>CPQ</b><small>ADMINISTRATION</small></span></a
+      >
+      <div class="workspace-label">
+        <span class="workspace-avatar">S</span>
+        <div>Platform workspace<small>Tenant management</small></div>
+      </div>
+      <nav aria-label="Workspace navigation">
+        <p class="nav-caption">WORKSPACE</p>
+        <a
+          routerLink="/tenants"
+          aria-label="Tenant list" [attr.aria-current]="router.url.startsWith('/tenants') && !router.url.startsWith('/tenants/new') ? 'page' : null"
+          [class.active]="
+            router.url.startsWith('/tenants') && !router.url.startsWith('/tenants/new')
+          "
+          ><svg viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="3" y="3" width="7" height="7" rx="1.5" />
+            <rect x="14" y="3" width="7" height="7" rx="1.5" />
+            <rect x="3" y="14" width="7" height="7" rx="1.5" />
+            <rect x="14" y="14" width="7" height="7" rx="1.5" /></svg
+          >Tenants<span class="nav-chevron">›</span></a
+        >
+        @if (session.actor()?.role === 'super_admin') {
+          <a
+            routerLink="/tenants/new"
+            [class.active]="router.url.startsWith('/tenants/new')"
+            [attr.aria-current]="router.url.startsWith('/tenants/new') ? 'page' : null"
+            ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>Create
+            tenant</a
+          >
+          <p class="nav-caption settings-caption">CONFIGURATION</p>
+          <a
+            routerLink="/reference-options"
+            [class.active]="router.url.startsWith('/reference-options')"
+            [attr.aria-current]="router.url.startsWith('/reference-options') ? 'page' : null"
+            ><svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 6h16M4 12h16M4 18h16" />
+              <circle cx="9" cy="6" r="2" />
+              <circle cx="15" cy="12" r="2" />
+              <circle cx="9" cy="18" r="2" /></svg
+            >Reference options</a
+          >
+        }
+      </nav>
+      <div class="sidebar-bottom">
+        <span class="sidebar-mark" aria-hidden="true">S.</span>
+        <p>One workspace.<br /><strong>Every tenant, connected.</strong></p>
+        <small>SELISE CPQ Platform</small>
+      </div>
+    </aside>
+  }
+  <div class="content-shell">
+    <header class="topbar">
+      @if (isLogin) {
+        <a routerLink="/" class="login-wordmark">SELISE <strong>CPQ</strong></a>
+      } @else {
+        <div class="topbar-location">
+          <span>Workspace</span><span class="divider">/</span><strong>Tenant management</strong>
+        </div>
+      }
+      <div class="account">
+        @if (session.actor()) {
+          <div class="account-description">
+            <strong>{{
+              session.actor()?.role === 'super_admin' ? 'Super Administrator' : 'CPQ Administrator'
+            }}</strong
+            ><span>Platform administration</span>
+          </div>
+          <span class="account-avatar" aria-hidden="true">{{
+            session.actor()?.role === 'super_admin' ? 'SA' : 'CA'
+          }}</span
+          ><button class="logout" (click)="logout()">Log out</button>
+        } @else if (!isLogin) {
+          <a class="button" routerLink="/login">Administrator login</a>
+        } @else {
+          <span class="login-context">Tenant management platform</span>
+        }
+      </div>
+    </header>
+    <main id="main" tabindex="-1" [class.login-main]="isLogin">
+      @if (message()) {
+        <p class="notice" role="status">{{ message() }}</p>
+      }
+      <router-outlet />
+    </main>
+    @if (!isLogin) {
+      <footer class="workspace-footer">
+        <span>SELISE CPQ</span><span>Tenant administration workspace</span>
+      </footer>
     }
-    @if (session.actor()) {
-      <span>{{ session.actor()?.role === 'super_admin' ? 'CPQ Super Admin' : 'CPQ Admin' }}</span
-      ><button (click)="logout()">Log out</button>
-    } @else {
-      <a routerLink="/login">Administrator login</a>
-    }
-  </nav>
-  <main id="main" tabindex="-1">
-    @if (message()) {
-      <p role="status">{{ message() }}</p>
-    }
-    <router-outlet />
-  </main>
+  </div>
 </div>

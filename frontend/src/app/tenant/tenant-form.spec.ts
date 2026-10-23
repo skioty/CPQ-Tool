@@ -67,7 +67,7 @@ async function setup(
     imports: [TenantForm],
     providers: [
       provideRouter([]),
-      {provide: Session, useValue: {actor: () => ({role: 'super_admin'})}},
+      { provide: Session, useValue: { actor: () => ({ role: 'super_admin' }) } },
       { provide: TenantGateway, useValue: gateway },
       { provide: FORM_OPTIONS, useValue: options },
       { provide: ASSET_UPLOAD, useValue: upload },
@@ -148,8 +148,8 @@ describe('tenant form', () => {
     form.choosePrimary(0);
     form.submit();
     expect(gateway.save).not.toHaveBeenCalled();
-    expect(dom.textContent).toContain('Draft workspace');
-    expect(form.errors().join()).toContain('contract');
+    expect(dom.textContent).toContain('Saving is temporarily unavailable');
+    expect(form.errors().join()).toContain('temporarily unavailable');
   });
   it('loads edit values and preserves exact fees, contact IDs and unchanged assets in PATCH data', async () => {
     const { form, gateway } = await setup('tenant-1');
@@ -194,7 +194,7 @@ describe('tenant form', () => {
     fixture.detectChanges();
     await fixture.whenStable();
     expect(form.form.controls.fields.controls['description'].value).toBe('Keep this draft');
-    expect(form.errors().join()).toContain('contacts.0.email: Rejected by server');
+    expect(form.errors().join()).toContain('Contact 1 email: Rejected by server');
     expect(form.status()).toBe('failed');
     expect(form.form.enabled).toBe(true);
     expect(dom.ownerDocument.activeElement?.getAttribute('aria-label')).toBe('Form errors');

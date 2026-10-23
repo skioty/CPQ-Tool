@@ -11,29 +11,81 @@ import { LifecycleAction } from './tenant-directory';
 @Component({
   selector: 'app-lifecycle-dialog',
   template: `<dialog #dialog aria-labelledby="action-title" (cancel)="cancelled.emit()">
+    <div class="dialog-mark" aria-hidden="true">↗</div>
+    <p class="eyebrow">TENANT STATUS</p>
     <h2 id="action-title">{{ action().label }}</h2>
     <p>{{ action().confirmation }}</p>
-    <p>Tenant: {{ company() }}</p>
+    <p class="dialog-company">{{ company() }}</p>
     <div>
       <button autofocus (click)="cancelled.emit()">Cancel</button
-      ><button (click)="confirmed.emit()">Confirm {{ action().label }}</button>
+      ><button class="primary" (click)="confirmed.emit()">Confirm {{ action().label }}</button>
     </div>
   </dialog>`,
   styles: `
     dialog {
-      max-width: min(480px, 90vw);
-      border: 1px solid #c8cfdf;
+      width: min(460px, calc(100vw - 40px));
+      max-width: none;
+      border: 1px solid #e1e6ed;
       border-radius: 16px;
-      padding: 24px;
-      color: #17263a;
+      padding: 30px;
+      color: var(--ink);
+      box-shadow: 0 20px 100px #17233a26;
     }
     dialog::backdrop {
-      background: #17263a88;
+      background: #10203680;
+      backdrop-filter: blur(3px);
+    }
+    h2 {
+      font-size: 23px;
+      letter-spacing: -0.7px;
+      margin: 10px 0 14px;
+    }
+    p {
+      font-size: 12px;
+      color: #8792a4;
+      line-height: 1.8;
+    }
+    .dialog-mark {
+      height: 42px;
+      width: 42px;
+      display: grid;
+      place-content: center;
+      border: 1px solid #f2ddd6;
+      background: #fff2ed;
+      color: #ce765e;
+      border-radius: 11px;
+      margin-bottom: 22px;
+      font-size: 24px;
+    }
+    .eyebrow {
+      font-size: 8px;
+    }
+    .dialog-company {
+      border: 1px solid #e8ecf2;
+      background: #f8f9fb;
+      border-radius: 8px;
+      padding: 12px;
+      color: #536175;
+      font-weight: 550;
+      margin: 20px 0 26px;
+    }
+    dialog > div:last-child {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      padding-top: 18px;
+      border-top: 1px solid #eceff4;
     }
     button {
-      font: inherit;
-      padding: 10px;
-      margin: 4px;
+      font-size: 11px;
+    }
+    @media (max-width: 400px) {
+      dialog {
+        padding: 24px;
+      }
+      button {
+        padding: 10px 12px;
+      }
     }
   `,
 })

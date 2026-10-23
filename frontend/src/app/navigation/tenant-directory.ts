@@ -17,6 +17,7 @@ export interface DirectoryTenant {
     currency: string | null;
     fee: string | null;
     payment_method: string | null;
+    payment_method_description?: string | null;
     discount: { type: string | null; value: string | null; duration: string | null };
   };
 }
@@ -29,18 +30,38 @@ export interface LifecycleAction {
   label: string;
   confirmation: string;
 }
-// Supply only reviewed backend-derived capabilities. None are approved yet.
+// Display only capabilities returned by the backend for this tenant.
 export const DIRECTORY_POLICY = new InjectionToken<{
   statuses: { value: string; label: string }[];
   actions: (tenant: DirectoryTenant) => LifecycleAction[];
 }>('DIRECTORY_POLICY', {
   providedIn: 'root',
   factory: () => ({
-    statuses: ['inactive','active','suspended','archived'].map(value=>({value,label:value[0].toUpperCase()+value.slice(1)})),
-    actions: tenant => (tenant.permitted_actions || []).map(code=>({code,
-      label: ({activate:'Activate',deactivate:'Deactivate',suspend:'Suspend',reactivate:'Return to inactive',archive:'Archive',restore:'Restore to inactive'} as Record<string,string>)[code] || code,
-      confirmation: code === 'archive' ? 'Archive this tenant? Records and the tenant schema are retained. Tenant-user access is blocked.' : code === 'restore' || code === 'reactivate' ? 'Return this tenant to inactive? Activation is a separate step.' : `Confirm ${code}? Status changes do not automatically change subscription charges.`
-    }))
+    statuses: ['inactive', 'active', 'suspended', 'archived'].map((value) => ({
+      value,
+      label: value[0].toUpperCase() + value.slice(1),
+    })),
+    actions: (tenant) =>
+      (tenant.permitted_actions || []).map((code) => ({
+        code,
+        label:
+          (
+            {
+              activate: 'Activate',
+              deactivate: 'Deactivate',
+              suspend: 'Suspend',
+              reactivate: 'Return to inactive',
+              archive: 'Archive',
+              restore: 'Restore to inactive',
+            } as Record<string, string>
+          )[code] || code,
+        confirmation:
+          code === 'archive'
+            ? 'Archive this tenant? Company records and workspace data will be retained. Tenant users will no longer have access.'
+            : code === 'restore' || code === 'reactivate'
+              ? 'Return this tenant to inactive? Activation is a separate step.'
+              : `Confirm ${code}? Status changes do not automatically change subscription charges.`,
+      })),
   }),
 });
 @Injectable({ providedIn: 'root' })
@@ -67,7 +88,7 @@ export function apiMessage(error: { status?: number }) {
         403: 'You do not have permission for this action.',
         404: 'Tenant not found or unavailable to your account.',
         409: 'Tenant changed. Refresh before trying again.',
-        503: 'This action awaits approved policy or backend integration.',
+        503: 'This action is temporarily unavailable. Try again or contact your platform administrator.',
       } as Record<number, string>
     )[error.status || 0] || 'The request failed. Check your connection and retry.'
   );

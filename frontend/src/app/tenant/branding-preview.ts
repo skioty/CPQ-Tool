@@ -8,7 +8,10 @@ import { ASSET_URL, FORM_OPTIONS, Tenant } from './tenant.types';
     aria-label="Tenant workspace branding preview"
     [style.font-family]="font()"
   >
-    <header [style.background-color]="colour(tenant()?.branding?.primary_colour)">
+    <header
+      [style.background-color]="colour(tenant()?.branding?.primary_colour)"
+      [style.color]="ink(tenant()?.branding?.primary_colour)"
+    >
       @if (asset('logo')) {
         <img [src]="asset('logo')" alt="Company logo preview" class="logo" />
       }
@@ -20,11 +23,14 @@ import { ASSET_URL, FORM_OPTIONS, Tenant } from './tenant.types';
       }
     </header>
     <div class="workspace">
-      <small>WORKSPACE PREVIEW</small>
-      <h3>Welcome to your workspace</h3>
-      <p>{{ tenant()?.description || 'Your company description will appear here.' }}</p>
-      <span class="sample" [style.background-color]="colour(tenant()?.branding?.secondary_colour)"
-        >Sample action</span
+      <small>YOUR WORKSPACE</small>
+      <h3>A workspace of your own</h3>
+      <p>{{ tenant()?.description || 'Your company, connected.' }}</p>
+      <span
+        class="sample"
+        [style.background-color]="colour(tenant()?.branding?.secondary_colour)"
+        [style.color]="ink(tenant()?.branding?.secondary_colour)"
+        >Explore workspace</span
       >
     </div>
   </section>`,
@@ -33,8 +39,8 @@ import { ASSET_URL, FORM_OPTIONS, Tenant } from './tenant.types';
       display: block;
     }
     .preview {
-      border: 1px solid #ccd5e0;
-      border-radius: 16px;
+      border: 1px solid #e4e8ef;
+      border-radius: 10px;
       overflow: hidden;
       background: #fff;
       color: #17263a;
@@ -44,9 +50,9 @@ import { ASSET_URL, FORM_OPTIONS, Tenant } from './tenant.types';
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 24px;
+      padding: 22px;
       min-height: 48px;
-      background: #e9edf4;
+      background: #f0f3f8;
       flex-wrap: wrap;
     }
     .logo {
@@ -55,7 +61,7 @@ import { ASSET_URL, FORM_OPTIONS, Tenant } from './tenant.types';
       object-fit: contain;
     }
     .workspace {
-      padding: 24px;
+      padding: 22px;
       overflow-wrap: anywhere;
     }
     small {
@@ -65,7 +71,7 @@ import { ASSET_URL, FORM_OPTIONS, Tenant } from './tenant.types';
       display: inline-block;
       padding: 10px 16px;
       border-radius: 8px;
-      background: #e9edf4;
+      background: #f0f3f8;
       color: #17263a;
     }
     p {
@@ -89,6 +95,14 @@ export class BrandingPreview {
   }
   colour(value: unknown) {
     return typeof value === 'string' && globalThis.CSS?.supports('color', value) ? value : null;
+  }
+  ink(value: unknown) {
+    if (typeof value !== 'string' || !/^#[0-9a-f]{6}$/i.test(value)) return '#17263a';
+    const channels = [1, 3, 5]
+      .map((i) => parseInt(value.slice(i, i + 2), 16) / 255)
+      .map((v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+    const light = channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+    return light > 0.179 ? '#000000' : '#ffffff';
   }
   font() {
     return (

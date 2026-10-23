@@ -1,3 +1,4 @@
+import { DecimalPipe } from '@angular/common';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -19,114 +20,209 @@ import {
   TenantDirectory,
   apiMessage,
 } from './tenant-directory';
+import { FORM_OPTIONS, ASSET_URL } from '../tenant/tenant.types';
 import { LifecycleDialog } from './lifecycle-dialog';
 
 @Component({
-  imports: [RouterLink, LifecycleDialog],
-  styleUrl: './directory.scss',
-  template: ` <a routerLink="/tenants">← Tenant list</a>
+  imports: [RouterLink, LifecycleDialog, DecimalPipe],
+  host: { class: 'directory-page' },
+  template: `<div class="breadcrumb">
+      <a routerLink="/tenants">Tenants</a><span>/</span><span>Company overview</span>
+    </div>
     @if (loading()) {
-      <p role="status">Loading tenant details…</p>
+      <div class="loading-state" role="status">
+        <span class="loading-dot"></span>
+        <h2>Loading tenant details…</h2>
+      </div>
     } @else if (error()) {
-      <p role="alert">{{ error() }}</p>
-      <button (click)="reload()">Retry</button>
+      <div class="state empty-state" role="alert">
+        <div class="state-symbol">!</div>
+        <h2>Tenant unavailable</h2>
+        <p>{{ error() }}</p>
+        <button (click)="reload()">Retry</button>
+      </div>
     } @else if (tenant(); as t) {
-      <div class="heading">
-        <h1>{{ t.company_name || 'Company name not set' }}</h1>
+      <div class="detail-hero">
+        <span class="company-avatar" aria-hidden="true">{{ initials(t.company_name) }}</span>
+        <div class="hero-copy">
+          <p class="eyebrow">COMPANY WORKSPACE</p>
+          <h1>{{ t.company_name || 'Unnamed company' }}</h1>
+          <div class="hero-meta">
+            <span class="badge" [attr.data-status]="t.lifecycle_status">{{
+              t.lifecycle_status || 'Not set'
+            }}</span
+            ><small>{{ industry(t.industry_id) }}</small>
+          </div>
+        </div>
         <div class="actions">
-          <a [routerLink]="['/tenants', t.id, 'edit']">Edit tenant</a
-          ><a [routerLink]="['/tenants', t.id, 'branding']">Saved branding preview</a>
+          <a class="button" [routerLink]="['/tenants', t.id, 'branding']">Branding preview</a
+          ><a class="button primary" [routerLink]="['/tenants', t.id, 'edit']"
+            >Edit tenant <span aria-hidden="true">↗</span></a
+          >
         </div>
       </div>
       @if (success()) {
-        <p role="status">{{ success() }}</p>
+        <p class="success" role="status">{{ success() }}</p>
       }
       <div class="tenant-grid">
         <section class="card">
-          <h2>Company</h2>
-          <p>{{ t.description || 'Description not set' }}</p>
+          <div class="card-heading">
+            <h2>Company information</h2>
+            <span class="section-kicker">OVERVIEW</span>
+          </div>
+          <p class="muted">{{ t.description || 'No company description added.' }}</p>
           <dl>
-            <dt>Display company name</dt>
+            <dt>Industry</dt>
+            <dd>{{ industry(t.industry_id) }}</dd>
+            <dt>Company name in branding</dt>
+            <dd>{{ t.company_name_display ? 'Visible' : 'Hidden' }}</dd>
+            <dt>Workspace setup</dt>
+            <dd>{{ t.provisioning_status === 'ready' ? 'Complete' : 'In progress' }}</dd>
+            <dt>Tenant status</dt>
             <dd>
-              {{
-                t.company_name_display === null ? 'Not set' : t.company_name_display ? 'Yes' : 'No'
-              }}
+              <span class="badge" [attr.data-status]="t.lifecycle_status">{{
+                t.lifecycle_status || 'Not set'
+              }}</span>
             </dd>
-            <dt>Industry reference</dt>
-            <dd>{{ t.industry_id || 'Not set' }}</dd>
-            <dt>Lifecycle</dt>
-            <dd>{{ t.lifecycle_status || 'Not assigned' }}</dd>
-            <dt>Provisioning</dt>
-            <dd>{{ t.provisioning_status }}</dd>
           </dl>
         </section>
         <section class="card">
-          <h2>Contacts</h2>
-          <ul>
+          <div class="card-heading">
+            <h2>Contacts</h2>
+            <span class="section-kicker">{{ t.contacts.length }} CONTACTS</span>
+          </div>
+          <ul class="contacts-list">
             @for (c of t.contacts; track c.id) {
-              <li>
-                <strong>{{ c.name || 'Name not set' }}</strong> {{ c.primary ? '— Primary' : '' }}
-                <p>{{ c.email || 'Email not set' }}</p>
+              <li class="contact-row">
+                <span class="contact-avatar" aria-hidden="true">{{ initials(c.name) }}</span>
+                <div>
+                  <strong>{{ c.name || 'Unnamed contact' }}</strong>
+                  <p>{{ c.email || 'No email provided' }}</p>
+                </div>
+                @if (c.primary) {
+                  <span class="badge" data-status="active">Primary</span>
+                }
               </li>
             }
           </ul>
-          <h3>Responsible CPQ Admin references</h3>
-          @for (id of t.responsible_admin_ids; track id) {
-            <p>{{ id }}</p>
-          } @empty {
-            <p>Not assigned</p>
-          }
-        </section>
-        <section class="card">
-          <h2>Branding</h2>
-          <dl>
-            @for (key of brandingKeys; track key) {
-              <dt>{{ key.replaceAll('_', ' ') }}</dt>
-              <dd>{{ t.branding[key] || 'Not set' }}</dd>
+          <div class="admin-owner">
+            <h3>Responsible SELISE CPQ Admin</h3>
+            @for (id of t.responsible_admin_ids; track id) {
+              <p>{{ admin(id) }}</p>
+            } @empty {
+              <p>Not assigned</p>
             }
-          </dl>
-          <p class="muted">
-            Authorized saved images are available in the branding preview.
-          </p>
+          </div>
         </section>
         <section class="card">
-          <h2>Subscription</h2>
+          <div class="card-heading">
+            <h2>Workspace branding</h2>
+            <a class="text-link" [routerLink]="['/tenants', t.id, 'branding']">Full preview ↗</a>
+          </div>
+          <div class="inline-preview">
+            <header [style.background-color]="colour(t.branding['primary_colour'])">
+              @if (assetUrl(t.branding['logo_attachment_id']); as logo) {
+                <img [src]="logo" alt="Company logo" />
+              }
+              @if (t.company_name_display) {
+                <strong>{{ t.company_name }}</strong>
+              } @else {
+                <strong>Workspace</strong>
+              }
+            </header>
+            <footer>Your company identity, across the workspace.</footer>
+          </div>
+          <div class="swatches">
+            <div
+              class="swatch"
+              [style.background-color]="colour(t.branding['primary_colour'])"
+              aria-hidden="true"
+            ></div>
+            <div>
+              <div class="swatch-label">Primary colour</div>
+              <strong>{{ t.branding['primary_colour'] || 'Default' }}</strong>
+            </div>
+            <div
+              class="swatch"
+              [style.background-color]="colour(t.branding['secondary_colour'])"
+              aria-hidden="true"
+            ></div>
+            <div>
+              <div class="swatch-label">Secondary colour</div>
+              <strong>{{ t.branding['secondary_colour'] || 'Default' }}</strong>
+            </div>
+          </div>
           <dl>
-            <dt>Currency</dt>
-            <dd>{{ t.subscription.currency || 'Not set' }}</dd>
-            <dt>Fee</dt>
-            <dd>{{ t.subscription.fee ?? 'Not set' }}</dd>
-            <dt>Billing interval</dt><dd>Monthly</dd>
-            <dt>Payment method</dt>
-            <dd>{{ t.subscription.payment_method || 'Not set' }}</dd>
-            <dt>Discount type</dt>
-            <dd>{{ t.subscription.discount.type || 'Not set' }}</dd>
-            <dt>Discount value</dt>
-            <dd>{{ t.subscription.discount.value ?? 'Not set' }}</dd>
-            <dt>Discount duration</dt>
-            <dd>{{ t.subscription.discount.duration || 'Not set' }}</dd>
+            <dt>Typography</dt>
+            <dd>{{ font(t.branding['typography']) }}</dd>
+            <dt>Company logo</dt>
+            <dd>{{ t.branding['logo_attachment_id'] ? 'Uploaded' : 'Default' }}</dd>
+            <dt>Favicon</dt>
+            <dd>{{ t.branding['favicon_attachment_id'] ? 'Uploaded' : 'Default' }}</dd>
           </dl>
-          <p class="muted">Monthly billing. Discount duration is measured in monthly cycles; no currency conversion or payment processing occurs.</p>
+        </section>
+        <section class="card">
+          <div class="card-heading">
+            <h2>Subscription</h2>
+            <span class="section-kicker">MONTHLY PLAN</span>
+          </div>
+          <div class="subscription-total">
+            {{ t.subscription.fee === null ? '—' : (t.subscription.fee | number: '1.2-2') }}
+            <span>{{ t.subscription.currency || '' }} / month</span>
+          </div>
+          <p class="muted">Subscription configuration</p>
+          <dl>
+            <dt>Billing currency</dt>
+            <dd>{{ t.subscription.currency || 'Not specified' }}</dd>
+            <dt>Payment method</dt>
+            <dd>{{ payment(t.subscription.payment_method) }}</dd>
+            @if (t.subscription.payment_method_description) {
+              <dt>Payment description</dt>
+              <dd>{{ t.subscription.payment_method_description }}</dd>
+            }
+            <dt>Subscription discount</dt>
+            <dd>
+              {{ t.subscription.discount.value || '0'
+              }}{{ t.subscription.discount.type === 'percentage' ? '%' : '' }}
+            </dd>
+            <dt>Discount duration</dt>
+            <dd>
+              {{
+                t.subscription.discount.duration
+                  ? t.subscription.discount.duration + ' monthly cycles'
+                  : 'Not applied'
+              }}
+            </dd>
+          </dl>
         </section>
       </div>
-      <section class="card">
-        <h2>Lifecycle actions</h2>
-        @if (actionError()) {
-          <p role="alert">{{ actionError() }}</p>
-        }
-        @for (action of policy.actions(t); track action.code) {
-          <button [disabled]="busy()" (click)="selected.set(action)">{{ action.label }}</button>
-        } @empty {
-          <p>
-            Actions unavailable: transition permissions and archive/deletion policy are not
-            approved.
-          </p>
-        }
+      <section class="card lifecycle-panel">
+        <div>
+          <p class="eyebrow">WORKSPACE ACCESS</p>
+          <h2>Tenant status</h2>
+          <p>Manage availability while keeping company records intact.</p>
+          @if (actionError()) {
+            <p role="alert">{{ actionError() }}</p>
+          }
+        </div>
+        <div class="actions">
+          @for (action of policy.actions(t); track action.code) {
+            <button
+              [attr.data-action]="action.code"
+              [disabled]="busy()"
+              (click)="selected.set(action)"
+            >
+              {{ action.label }}
+            </button>
+          } @empty {
+            <p class="muted">No actions available for your role and the current tenant status.</p>
+          }
+        </div>
       </section>
       @if (selected(); as action) {
         <app-lifecycle-dialog
           [action]="action"
-          [company]="t.company_name || t.id"
+          [company]="t.company_name || 'this tenant'"
           (cancelled)="selected.set(null)"
           (confirmed)="confirm()"
         />
@@ -135,6 +231,41 @@ import { LifecycleDialog } from './lifecycle-dialog';
 })
 export class TenantDetail {
   private api = inject(TenantDirectory);
+  private references = inject(FORM_OPTIONS);
+  private asset = inject(ASSET_URL);
+  initials(name: string | null) {
+    return (name || 'Company')
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase();
+  }
+  industry(id: string | null) {
+    return (
+      this.references.industries.find((v) => v.id === id)?.label ||
+      (id ? id.replaceAll('_', ' ').replaceAll('-', ' ') : 'Industry not specified')
+    );
+  }
+  admin(id: string) {
+    return this.references.admins.find((v) => v.id === id)?.label || 'Assigned administrator';
+  }
+  font(id: string | null) {
+    return this.references.typography.find((v) => v.id === id)?.label || 'System font';
+  }
+  payment(id: string | null) {
+    return (
+      this.references.paymentMethods.find((v) => v.id === id)?.label ||
+      (id ? id.replaceAll('_', ' ') : 'Not specified')
+    );
+  }
+  assetUrl(id: string | null | undefined) {
+    return id ? this.asset(id) : null;
+  }
+  colour(value: string | null | undefined) {
+    return /^#[0-9a-f]{6}$/i.test(value || '') ? value : '#17365d';
+  }
   readonly policy = inject(DIRECTORY_POLICY);
   readonly tenant = signal<DirectoryTenant | null>(null);
   readonly loading = signal(false);
@@ -207,7 +338,7 @@ export class TenantDetail {
       .subscribe({
         next: () => {
           this.busy.set(false);
-          this.success.set('Action completed; details refreshed.');
+          this.success.set('Tenant status updated.');
           this.reload();
         },
         error: (e) => {

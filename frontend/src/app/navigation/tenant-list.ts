@@ -1,3 +1,4 @@
+import { DecimalPipe } from '@angular/common';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -7,78 +8,169 @@ import { DIRECTORY_POLICY, TenantDirectory, TenantPage, apiMessage } from './ten
 import { Session } from './session';
 
 @Component({
-  imports: [FormsModule, RouterLink],
-  styleUrl: './directory.scss',
+  imports: [FormsModule, RouterLink, DecimalPipe],
+  host: { class: 'directory-page' },
   template: `<div class="heading">
       <div>
-        <p class="eyebrow">PLATFORM ADMINISTRATION</p>
+        <p class="eyebrow">YOUR WORKSPACE, ORGANIZED</p>
         <h1>Tenants</h1>
+        <p class="subheading">
+          Manage company workspaces, contacts and subscriptions in one place.
+        </p>
       </div>
       @if (session.actor()?.role === 'super_admin') {
-        <a class="button" routerLink="/tenants/new">Create tenant</a>
+        <a class="button primary" routerLink="/tenants/new"
+          ><span aria-hidden="true">＋</span> Create tenant</a
+        >
       }
     </div>
-    <p>Manage tenants available to your administrator account.</p>
-    <form class="filters" (ngSubmit)="search()">
-      <label>Search company name<input name="query" [(ngModel)]="query" type="search" /></label>
-      <label
-        >Status<select name="status" [(ngModel)]="status" [disabled]="!policy.statuses.length">
-          <option value="">All statuses</option>
-          @for (s of policy.statuses; track s.value) {
-            <option [value]="s.value">{{ s.label }}</option>
-          }
-        </select></label
-      >
-      <button>Search</button>
-    </form>
-    @if (!policy.statuses.length) {
-      <p class="muted">Status filters await an approved status catalogue.</p>
-    }
-    @if (loading()) {
-      <p role="status">Loading tenants…</p>
-    } @else if (error()) {
-      <div role="alert">
-        <p>{{ error() }}</p>
-        <button (click)="reload()">Retry</button><a routerLink="/login">Administrator login</a>
-      </div>
-    } @else if (result(); as r) {
-      <p role="status">{{ r.meta.total_count }} matching tenants</p>
-      @if (!r.data.length) {
-        <div class="card">
-          <h2>No tenants found</h2>
-          <p>Try another search, or confirm tenant assignments with your Super Admin.</p>
+    <section class="directory-panel" aria-label="Tenant directory">
+      <div class="panel-heading">
+        <div>
+          <h2>Tenant directory</h2>
+          <p>Companies available to your administrator account.</p>
         </div>
-      } @else {
-        <ul class="tenant-grid">
-          @for (t of r.data; track t.id) {
-            <li class="card">
-              <a [routerLink]="['/tenants', t.id]"
-                ><h2>{{ t.company_name || 'Company name not set' }}</h2></a
-              >
-              <p>{{ t.description || 'No description provided' }}</p>
-              <dl>
-                <dt>Lifecycle</dt>
-                <dd>{{ t.lifecycle_status || 'Not assigned' }}</dd>
-                <dt>Provisioning</dt>
-                <dd>{{ t.provisioning_status }}</dd>
-              </dl>
-            </li>
-          }
-        </ul>
+        <span class="panel-label">COMPANY WORKSPACES</span>
+      </div>
+      <form class="filters" (ngSubmit)="search()">
+        <label class="search-label"
+          >Search company name
+          <div class="search-input">
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <circle cx="10.5" cy="10.5" r="6.5" />
+              <path d="m16 16 4.5 4.5" /></svg
+            ><input
+              name="query"
+              [(ngModel)]="query"
+              type="search"
+              placeholder="Search by company name…"
+            /></div
+        ></label>
+        <label class="status-label"
+          >Status<select name="status" [(ngModel)]="status" [disabled]="!policy.statuses.length">
+            <option value="">All statuses</option>
+            @for (s of policy.statuses; track s.value) {
+              <option [value]="s.value">{{ s.label }}</option>
+            }
+          </select></label
+        >
+        <button class="filter-submit">Search</button>
+      </form>
+      @if (loading()) {
+        <div class="loading-state" role="status">
+          <span class="loading-dot"></span>
+          <h2>Loading your tenants</h2>
+          <p>Getting the latest company information.</p>
+        </div>
+      } @else if (error()) {
+        <div class="state empty-state" role="alert">
+          <div class="state-symbol">!</div>
+          <h2>We couldn’t load your tenants</h2>
+          <p>{{ error() }}</p>
+          <div class="actions">
+            <button (click)="reload()">Retry</button><a routerLink="/login">Administrator login</a>
+          </div>
+        </div>
+      } @else if (result(); as r) {
+        <div class="results-bar">
+          <p role="status">
+            <strong>{{ r.meta.total_count }}</strong> matching tenants
+          </p>
+          <span>Updated from your workspace</span>
+        </div>
+        @if (!r.data.length) {
+          <div class="empty-state">
+            <div class="state-symbol">⌕</div>
+            <h2>No tenants found</h2>
+            <p>Try another company name or status. Assigned companies will appear here.</p>
+            @if (session.actor()?.role === 'super_admin') {
+              <a class="button primary" routerLink="/tenants/new">Create your first tenant</a>
+            }
+          </div>
+        } @else {
+          <div class="row-head" aria-hidden="true">
+            <span>COMPANY</span><span>CONTACTS</span><span>SUBSCRIPTION</span><span>STATUS</span
+            ><span></span>
+          </div>
+          <ul class="tenant-rows">
+            @for (t of r.data; track t.id) {
+              <li class="tenant-row">
+                <div class="tenant-identity">
+                  <span class="company-avatar" aria-hidden="true">{{
+                    initials(t.company_name)
+                  }}</span>
+                  <div>
+                    <a [routerLink]="['/tenants', t.id]">{{
+                      t.company_name || 'Unnamed company'
+                    }}</a>
+                    <p>{{ t.description || 'Company workspace' }}</p>
+                  </div>
+                </div>
+                <div class="row-contacts">
+                  <span class="mobile-label">Contacts</span
+                  ><strong
+                    >{{ t.contacts.length }}
+                    {{ t.contacts.length === 1 ? 'contact' : 'contacts' }}</strong
+                  ><small>{{ primaryName(t.contacts) }}</small>
+                </div>
+                <div class="row-subscription">
+                  <span class="mobile-label">Subscription</span
+                  ><strong
+                    >{{
+                      t.subscription.fee === null ? '—' : (t.subscription.fee | number: '1.2-2')
+                    }}
+                    <span>{{ t.subscription.currency || '' }}</span></strong
+                  ><small>per month</small>
+                </div>
+                <div class="row-status">
+                  <span class="badge" [attr.data-status]="t.lifecycle_status">{{
+                    t.lifecycle_status || 'Not set'
+                  }}</span>
+                  @if (t.provisioning_status !== 'ready') {
+                    <small>Setup in progress</small>
+                  }
+                </div>
+                <a
+                  class="row-open"
+                  [routerLink]="['/tenants', t.id]"
+                  [attr.aria-label]="'View ' + t.company_name"
+                  ><span aria-hidden="true">↗</span></a
+                >
+              </li>
+            }
+          </ul>
+        }
+        <nav class="pagination" aria-label="Tenant pages">
+          <span
+            >Page <strong>{{ r.meta.page }}</strong> of {{ r.meta.total_pages || 1 }}</span
+          >
+          <div>
+            <button [disabled]="r.meta.page <= 1" (click)="page(r.meta.page - 1)">
+              <span aria-hidden="true">←</span> Previous</button
+            ><button [disabled]="r.meta.page >= r.meta.total_pages" (click)="page(r.meta.page + 1)">
+              Next <span aria-hidden="true">→</span>
+            </button>
+          </div>
+        </nav>
       }
-      <nav class="pagination" aria-label="Tenant pages">
-        <button [disabled]="r.meta.page <= 1" (click)="page(r.meta.page - 1)">Previous</button
-        ><span>Page {{ r.meta.page }} of {{ r.meta.total_pages || 1 }}</span
-        ><button [disabled]="r.meta.page >= r.meta.total_pages" (click)="page(r.meta.page + 1)">
-          Next
-        </button>
-      </nav>
-    }`,
+    </section>`,
 })
 export class TenantList {
   readonly session = inject(Session);
   readonly policy = inject(DIRECTORY_POLICY);
   private api = inject(TenantDirectory);
+  initials(name: string | null) {
+    return (name || 'Company')
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase();
+  }
+  primaryName(contacts: { name: string | null; primary: boolean }[]) {
+    return contacts.find((c) => c.primary)?.name || 'Primary contact';
+  }
   query = '';
   status = '';
   private activeQuery = '';

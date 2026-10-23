@@ -59,6 +59,6 @@ describe('proposed tenant HTTP adapter', () => {
     let message = '';
     api.load('one').subscribe({ error: (e) => (message = e.message) });
     http.expectOne('/api/v1/tenants/one').flush({ data: { id: 'one', company_name: 'Partial' } });
-    expect(message).toContain('incomplete tenant settings');
+    expect(message).toContain('Some tenant settings could not be loaded');
   });
 });

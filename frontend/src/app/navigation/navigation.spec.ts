@@ -188,10 +188,12 @@ describe('tenant directory', () => {
     fixture.detectChanges();
     const text = fixture.nativeElement.textContent;
     expect(text).toContain('Test contact');
-    expect(text).toContain('assigned-id');
-    expect(text).toContain('saved-reference');
+    expect(text).toContain('Assigned administrator');
+    expect(text).not.toContain('assigned-id');
+    expect(text).toContain('Uploaded');
+    expect(text).not.toContain('saved-reference');
     expect(text).toContain('0.00');
-    expect(text).toContain('Actions unavailable');
+    expect(text).toContain('No actions available');
     expect(fixture.nativeElement.querySelector('a[href="/tenants/tenant-one/edit"]')).toBeTruthy();
     expect(
       fixture.nativeElement.querySelector('a[href="/tenants/tenant-one/branding"]'),
@@ -237,7 +239,7 @@ describe('tenant directory', () => {
     expect(request.request.body).toEqual({ action: 'fixture-action' });
     request.flush({}, { status: 503, statusText: 'Unavailable' });
     expect(fixture.componentInstance.tenant()?.id).toBe(tenant.id);
-    expect(fixture.componentInstance.actionError()).toContain('approved policy');
+    expect(fixture.componentInstance.actionError()).toContain('temporarily unavailable');
   });
 });
 

@@ -24,7 +24,7 @@ export interface Field {
       <textarea
         [id]="field().key"
         [formControl]="control()"
-        [attr.aria-describedby]="field().key + '-help'"
+        [attr.aria-describedby]="field().help ? field().key + '-help' : null"
         rows="3"
       ></textarea>
     } @else if (field().kind === 'select') {
@@ -32,10 +32,10 @@ export interface Field {
         [id]="field().key"
         [formControl]="control()"
         [attr.disabled]="!choices().length ? '' : null"
-        [attr.aria-describedby]="field().key + '-help'"
+        [attr.aria-describedby]="field().help ? field().key + '-help' : null"
       >
         <option value="">
-          {{ choices().length ? 'Select an option' : 'Awaiting approved reference data' }}
+          {{ choices().length ? 'Select an option' : 'No options available' }}
         </option>
         @if (control().value && !known()) {
           <option [value]="control().value">Current saved value: {{ control().value }}</option>
@@ -48,12 +48,12 @@ export interface Field {
       <input
         [id]="field().key"
         [formControl]="control()"
-        [attr.aria-describedby]="field().key + '-help'"
+        [attr.aria-describedby]="field().help ? field().key + '-help' : null"
       />
     }
-    <small [id]="field().key + '-help'">{{
-      field().help || 'Requiredness follows the approved contract.'
-    }}</small>
+    @if (field().help) {
+      <small [id]="field().key + '-help'">{{ field().help }}</small>
+    }
     @if (control().touched && control().invalid) {
       <p class="error" role="alert">{{ field().label }} is required.</p>
     }
@@ -62,34 +62,38 @@ export interface Field {
     :host {
       display: grid;
       align-content: start;
-      gap: 7px;
+      gap: 8px;
       min-width: 0;
     }
     label {
-      font-weight: 600;
+      font-size: 12px;
+      color: #536175;
+      font-weight: 550;
     }
-    small {
-      color: #53627a;
-      line-height: 1.4;
+    label span {
+      color: #687487;
+      font-size: 10px;
+      font-weight: 400;
     }
     input,
-    textarea,
-    select {
-      box-sizing: border-box;
+    select,
+    textarea {
       width: 100%;
-      border: 1px solid #aebdd0;
-      border-radius: 8px;
-      padding: 11px;
-      font: inherit;
-      background: #fff;
-      color: #14243b;
+      font-size: 12px;
+      min-height: 44px;
     }
-    :is(input, textarea, select):focus-visible {
-      outline: 3px solid #7464cf;
-      outline-offset: 2px;
+    textarea {
+      resize: vertical;
+      min-height: 106px;
+    }
+    small {
+      color: #687487;
+      font-size: 10px;
+      line-height: 1.6;
     }
     .error {
-      color: #9e2037;
+      font-size: 11px;
+      color: #bd4e40;
       margin: 0;
     }
   `,
@@ -100,6 +104,6 @@ export class TenantField {
   readonly choices = input<Choice[]>([]);
   readonly required = input(false);
   known() {
-    return this.choices().some((x) => x.id === this.control().value);
+    return this.choices().some((option) => option.id === this.control().value);
   }
 }

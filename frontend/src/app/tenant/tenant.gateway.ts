@@ -28,11 +28,12 @@ export class TenantGateway {
         () => new Error('Reload tenant details before editing; a saved version is required.'),
       );
     const cleaned = structuredClone(value) as Tenant;
-    if (cleaned.description === '') (cleaned as Record<string,unknown>)['description'] = null;
+    if (cleaned.description === '') (cleaned as Record<string, unknown>)['description'] = null;
     if (cleaned.subscription) {
-      if (!cleaned.subscription.payment_method_description) (cleaned.subscription as Record<string,unknown>)['payment_method_description'] = null;
+      if (!cleaned.subscription.payment_method_description)
+        (cleaned.subscription as Record<string, unknown>)['payment_method_description'] = null;
       if (cleaned.subscription.discount?.value === '0' && !cleaned.subscription.discount.duration)
-        (cleaned.subscription.discount as Record<string,unknown>)['duration'] = null;
+        (cleaned.subscription.discount as Record<string, unknown>)['duration'] = null;
     }
     const body = { tenant: id ? this.preserveNulls(this.originals.get(id), cleaned) : cleaned };
     return (
@@ -130,9 +131,7 @@ export class TenantGateway {
       !['currency', 'fee', 'payment_method'].every((k) => typeof t.subscription[k] === 'string') ||
       !['type', 'value', 'duration'].every((k) => typeof t.subscription.discount[k] === 'string')
     ) {
-      throw new Error(
-        'The API returned incomplete tenant settings. Editing requires a complete detail response.',
-      );
+      throw new Error('Some tenant settings could not be loaded. Reload this page before editing.');
     }
     this.originals.set(t.id!, raw);
     return t;

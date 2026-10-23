@@ -38,7 +38,12 @@ import { Field, TenantField } from './tenant-field';
 import { BrandingPreview } from './branding-preview';
 
 export const FIELDS: Field[] = [
-  {key:'payment_method_description',path:'subscription.payment_method_description',label:'Payment method description (required for Other)',section:'Subscription'},
+  {
+    key: 'payment_method_description',
+    path: 'subscription.payment_method_description',
+    label: 'Payment description (required)',
+    section: 'Subscription',
+  },
   { key: 'company_name', path: 'company_name', label: 'Company name', section: 'Company' },
   {
     key: 'description',
@@ -101,7 +106,7 @@ export const FIELDS: Field[] = [
     path: 'branding.primary_colour',
     label: 'Primary colour',
     section: 'Branding',
-    help: 'Enter a colour value for the preview. Server colour rules remain authoritative.',
+    help: 'Six-digit colour code, for example #17365D.',
   },
   {
     key: 'secondary_colour',
@@ -127,7 +132,9 @@ export const FIELDS: Field[] = [
 export class TenantForm implements OnInit {
   readonly options = inject(FORM_OPTIONS);
   readonly session = inject(Session);
-  get commercialEditable() { return this.session.actor()?.role === 'super_admin'; }
+  get commercialEditable() {
+    return this.session.actor()?.role === 'super_admin';
+  }
   private readonly fb = inject(FormBuilder).nonNullable;
   private readonly gateway = inject(TenantGateway);
   private readonly upload = inject(ASSET_UPLOAD);
@@ -143,17 +150,45 @@ export class TenantForm implements OnInit {
   readonly previewVersion = signal(0);
   readonly files = signal<Partial<Record<AssetKind, File>>>({});
   readonly urls = signal<Partial<Record<AssetKind, string>>>({});
-  readonly sections = ['Company', 'Subscription', 'Branding'];
+  readonly sections = ['Company', 'Contacts', 'Branding', 'Subscription'];
+  sectionDescription(section: string) {
+    return (
+      (
+        {
+          Company: 'The essentials that identify this company.',
+          Branding: 'Create a workspace that feels like their own.',
+          Subscription: 'Manage billing preferences and subscription discounts.',
+        } as Record<string, string>
+      )[section] || ''
+    );
+  }
   readonly assetKinds = ['logo', 'favicon'] as const;
   readonly fields = FIELDS.map((field) =>
     field.key === 'discount_duration' && this.options.discountDurationLabel
       ? {
           ...field,
           label: this.options.discountDurationLabel,
-          help: 'Enter the duration in the units specified by the approved contract.',
+          help: 'Number of monthly billing cycles for this discount.',
         }
       : field,
-  );
+  ).sort((a, b) => {
+    const order = [
+      'company_name',
+      'description',
+      'industry_id',
+      'primary_colour',
+      'secondary_colour',
+      'typography',
+      'currency',
+      'fee',
+      'payment_method',
+      'payment_method_description',
+      'discount_type',
+      'discount_value',
+      'discount_duration',
+    ];
+    return order.indexOf(a.key) - order.indexOf(b.key);
+  });
   readonly form = this.fb.group({
     fields: this.fb.record(
       Object.fromEntries(
@@ -226,9 +261,13 @@ export class TenantForm implements OnInit {
       else {
         const draft = emptyTenant();
         if (this.options.contractApproved) {
-          Object.assign(draft.branding, {primary_colour:'#17365D',secondary_colour:'#2563EB',typography:'system'});
+          Object.assign(draft.branding, {
+            primary_colour: '#17365D',
+            secondary_colour: '#2563EB',
+            typography: 'system',
+          });
           draft.subscription.fee = '0';
-          draft.subscription.discount = {type:'percentage',value:'0',duration:''};
+          draft.subscription.discount = { type: 'percentage', value: '0', duration: '' };
         }
         this.patch(draft);
         this.status.set('ready');
@@ -386,10 +425,14 @@ export class TenantForm implements OnInit {
     this.cancelFile(kind);
     this.original.branding[`${kind}_attachment_id`] = null;
     this.form.markAsDirty();
-    this.previewVersion.update(v=>v+1);
+    this.previewVersion.update((v) => v + 1);
   }
   resetBranding() {
-    this.form.controls.fields.patchValue({primary_colour:'#17365D',secondary_colour:'#2563EB',typography:'system'});
+    this.form.controls.fields.patchValue({
+      primary_colour: '#17365D',
+      secondary_colour: '#2563EB',
+      typography: 'system',
+    });
     this.form.markAsDirty();
   }
   selectFile(kind: AssetKind, event: Event) {
@@ -453,26 +496,28 @@ export class TenantForm implements OnInit {
     if (!this.integrationReady) {
       this.fail(
         new Error(
-          'Saving is unavailable until the API contract and business rules are approved. Your draft is retained.',
+          'Saving is temporarily unavailable. Your details are retained. Contact your platform administrator.',
         ),
       );
       return;
     }
     if (this.options.assignment === 'one' && this.form.controls.admins.value.length > 1) {
-      this.fail(
-        new Error(
-          'The approved assignment contract allows at most one responsible administrator. Review the saved assignments.',
-        ),
-      );
+      this.fail(new Error('Choose exactly one responsible administrator for this company.'));
       return;
     }
-    if (this.options.requiredFields.includes('subscription.fee') && (!this.edit || this.commercialEditable)) {
+    if (
+      this.options.requiredFields.includes('subscription.fee') &&
+      (!this.edit || this.commercialEditable)
+    ) {
       const messages = commercialErrors(this.draft());
-      if (messages.length) { this.fail(new Error(messages.join(' '))); return; }
+      if (messages.length) {
+        this.fail(new Error(messages.join(' ')));
+        return;
+      }
     }
     if (Object.keys(this.files()).length && !this.upload) {
       this.fail(
-        new Error('File upload integration is not configured. Your selected files are retained.'),
+        new Error('Image uploads are temporarily unavailable. Your selected files are retained.'),
       );
       return;
     }
@@ -505,7 +550,7 @@ export class TenantForm implements OnInit {
               ...(c.id ? { id: c.id } : {}),
               name: c.name,
               email: c.email,
-        phone: c.phone,
+              phone: c.phone,
               primary: c.primary,
             })),
             branding: {
@@ -546,6 +591,22 @@ export class TenantForm implements OnInit {
         error: (e) => this.fail(e),
       });
   }
+  private fieldLabel(path: string) {
+    const contact = /^contacts\.(\d+)\.(name|email|phone|primary)$/.exec(path);
+    if (contact) return `Contact ${Number(contact[1]) + 1} ${contact[2]}`;
+    return (
+      FIELDS.find((field) => field.path === path)?.label ||
+      (
+        {
+          contacts: 'Contacts',
+          responsible_admin_ids: 'Responsible CPQ Admin',
+          'branding.logo_attachment_id': 'Company logo',
+          'branding.favicon_attachment_id': 'Favicon',
+        } as Record<string, string>
+      )[path] ||
+      path.replaceAll('_', ' ').replaceAll('.', ' ')
+    );
+  }
   private fail(error: unknown) {
     let messages: string[];
     if (error instanceof HttpErrorResponse) {
@@ -555,7 +616,7 @@ export class TenantForm implements OnInit {
           ? Object.entries(fields).flatMap(([key, value]) =>
               (Array.isArray(value) ? value : [value])
                 .filter((v) => typeof v === 'string')
-                .map((v) => `${key}: ${v}`),
+                .map((v) => `${this.fieldLabel(key)}: ${v}`),
             )
           : [];
       messages.unshift(
@@ -563,11 +624,12 @@ export class TenantForm implements OnInit {
           {
             401: 'Administrator login is required.',
             403: 'You do not have access to this tenant.',
-            404: 'Tenant API or tenant unavailable.',
+            404: 'This tenant could not be found or is unavailable to your account.',
             409: 'This tenant changed or cannot be updated. Reload before retrying.',
-            0: 'Cannot reach the API. Your draft is retained.',
+            0: 'We couldn’t connect. Your entered details are retained.',
           } as Record<number, string>
-        )[error.status] || 'The API could not save or load this tenant. Your draft is retained.',
+        )[error.status] ||
+          'We couldn’t save or load this tenant. Your entered details are retained.',
       );
     } else
       messages = [

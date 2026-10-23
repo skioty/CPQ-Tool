@@ -11,9 +11,12 @@ import { EMPTY, Subject, catchError, distinctUntilChanged, map, startWith, switc
   selector: 'app-saved-branding',
   imports: [RouterLink, BrandingPreview],
   template: `
-    <p>WORKSPACE BRANDING</p>
-    <h1>Saved branding preview</h1>
-    <p>This view loads saved settings from the API. Unsaved form edits are not shown.</p>
+    <div class="breadcrumb">
+      <a routerLink="/tenants">Tenants</a><span>/</span><span>Workspace branding</span>
+    </div>
+    <p class="eyebrow">COMPANY IDENTITY</p>
+    <h1>Branding preview</h1>
+    <p class="subheading">A closer look at your company’s saved workspace identity.</p>
     @if (loading()) {
       <p role="status">Loading saved branding…</p>
     }
@@ -24,11 +27,15 @@ import { EMPTY, Subject, catchError, distinctUntilChanged, map, startWith, switc
       </div>
     }
     @if (tenant(); as t) {
-      <app-branding-preview [tenant]="t" />
+      <div class="preview-frame">
+        <div class="browser-bar">
+          <span></span><span></span><span></span>
+          <div>{{ t.company_name || 'Company workspace' }}</div>
+        </div>
+        <app-branding-preview [tenant]="t" />
+      </div>
       @if (t.branding.logo_attachment_id || t.branding.favicon_attachment_id) {
-        <p>
-          Saved asset references are retained; displaying them uses the approved asset URL adapter.
-        </p>
+        <p>Your saved company images are shown above.</p>
       }
       <p><a [routerLink]="['/tenants', t.id, 'edit']">Edit branding settings</a></p>
     }
@@ -36,18 +43,59 @@ import { EMPTY, Subject, catchError, distinctUntilChanged, map, startWith, switc
   styles: `
     :host {
       display: block;
-      max-width: 900px;
+      max-width: 920px;
       margin: auto;
     }
-    p {
-      line-height: 1.6;
+    .preview-frame {
+      margin-top: 30px;
+      padding: 0 24px 24px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: white;
+      box-shadow: 0 8px 40px #17233a06;
     }
-    button {
-      padding: 12px;
-      font: inherit;
+    .browser-bar {
+      height: 60px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .browser-bar > span {
+      height: 7px;
+      width: 7px;
+      border-radius: 50%;
+      background: #e5e9ef;
+    }
+    .browser-bar > span:first-child {
+      background: #eac8c1;
+    }
+    .browser-bar > div {
+      margin: auto;
+      font-size: 10px;
+      color: #9ba4b2;
+      background: #f6f7f9;
+      padding: 6px 30px;
+      border-radius: 5px;
+    }
+    .preview-frame + p {
+      color: var(--muted);
+      font-size: 11px;
+      margin-top: 18px;
     }
     a {
-      color: #58418d;
+      font-size: 12px;
+      text-decoration: none;
+    }
+    button {
+      font: inherit;
+    }
+    @media (max-width: 520px) {
+      .preview-frame {
+        padding: 0 14px 14px;
+      }
+      .browser-bar > div {
+        padding-inline: 12px;
+      }
     }
   `,
 })
@@ -82,7 +130,7 @@ export class SavedBranding {
                   this.error.set(
                     error instanceof HttpErrorResponse && error.status === 403
                       ? 'You do not have access to this tenant.'
-                      : 'Saved branding could not be loaded. Check your API connection and administrator access, then retry.',
+                      : 'We couldn’t load this branding. Check your connection and sign-in access, then retry.',
                   );
                   return EMPTY;
                 }),
