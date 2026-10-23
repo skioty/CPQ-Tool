@@ -211,10 +211,8 @@ class TenantManagementTest < ActionDispatch::IntegrationTest
     assert_empty @adapter.provisioned
   end
 
-  test "lifecycle is gated and no delete route is supplied" do
+  test "no delete route or destructive model operation is supplied" do
     data = create_tenant
-    post "/api/v1/tenants/#{data['id']}/lifecycle", params: { action: "suspend" }, as: :json
-    assert_response :service_unavailable
     tenant = TenantManagement::Tenant.find(data["id"])
     assert_nil tenant.lifecycle_status
     assert_equal 1, tenant.audit_events.count

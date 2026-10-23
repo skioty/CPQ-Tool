@@ -64,9 +64,8 @@ export const sessionHeaders: HttpInterceptorFn = (request, next) => {
   const unsafe = !['GET', 'HEAD', 'OPTIONS'].includes(request.method);
   const token = session.token();
   const revision = session.revision;
-  return next(
-    local && unsafe && token ? request.clone({ setHeaders: { 'X-CSRF-Token': token } }) : request,
-  ).pipe(
+  const send = (value: string | null) => next(local && unsafe && value ? request.clone({setHeaders: {'X-CSRF-Token': value}}) : request);
+  return (local && unsafe && !token ? session.csrf().pipe(switchMap(r=>send(r.csrf_token))) : send(token)).pipe(
     catchError((error) => {
       if (
         local &&

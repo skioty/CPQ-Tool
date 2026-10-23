@@ -156,7 +156,7 @@ describe('tenant directory', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('No tenants found');
     await fixture.whenStable();
-    expect(fixture.nativeElement.querySelector('select').disabled).toBe(true);
+    expect(fixture.nativeElement.querySelector('select').disabled).toBe(false);
   });
   it('shows denied/connection failures and retries without stale tenant rows', () => {
     const fixture = TestBed.createComponent(TenantList);

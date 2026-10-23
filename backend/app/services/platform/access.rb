@@ -8,9 +8,6 @@ module Platform
 
     def authorize!(actor, action, tenant = nil)
       verified!(actor)
-      if action == :lifecycle
-        raise TenantManagement::Error.new("policy_unavailable", "Lifecycle transitions and permissions await approval", status: 503)
-      end
       return true if actor.super_admin? && %i[list read create update].include?(action)
       return true if action == :list
       if %i[read update].include?(action) && tenant && scope(actor).exists?(id: tenant.id)

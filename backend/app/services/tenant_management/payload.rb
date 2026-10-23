@@ -2,9 +2,9 @@ module TenantManagement
   class Payload
     SCALARS = %w[company_name company_name_display description industry_id].freeze
     BRANDING = %w[primary_colour secondary_colour typography logo_attachment_id favicon_attachment_id].freeze
-    SUBSCRIPTION = %w[currency fee payment_method discount].freeze
+    SUBSCRIPTION = %w[currency fee payment_method payment_method_description discount].freeze
     DISCOUNT = %w[type value duration].freeze
-    CONTACT = %w[id name email primary].freeze
+    CONTACT = %w[id name email phone primary].freeze
 
     def self.parse(value)
       new.parse(value)

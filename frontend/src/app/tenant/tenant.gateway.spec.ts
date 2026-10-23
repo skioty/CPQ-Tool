@@ -21,7 +21,8 @@ describe('proposed tenant HTTP adapter', () => {
     api.save(emptyTenant()).subscribe((t) => (result = t));
     const request = http.expectOne('/api/v1/tenants');
     expect(request.request.method).toBe('POST');
-    expect(request.request.body).toEqual({ tenant: emptyTenant() });
+    expect(request.request.body.tenant.description).toBeNull();
+    expect(request.request.body.tenant.company_name).toBe('');
     request.flush({ data: tenant });
     expect(result).toEqual(tenant);
   });

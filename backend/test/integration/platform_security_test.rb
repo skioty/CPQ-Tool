@@ -174,14 +174,14 @@ class PlatformSecurityTest < ActionDispatch::IntegrationTest
     assert_equal 3, values.count { |row| row == [200, ["Second"], "public"] }, values.inspect
   end
 
-  test "inactive suspended archived and unknown workspace rules remain closed" do
+  test "inactive suspended archived and unknown workspace statuses deny workspace access" do
     record = fixture_tenant("Status")
     Rails.application.config.x.tenant_management.workspace_access = @previous_policy
     login
     [nil, "inactive", "suspended", "archived", "unknown"].each do |status|
       record.update!(lifecycle_status: status)
       get "/api/v1/tenants/#{record.id}/isolation-probe"
-      assert_response :service_unavailable
+      assert_response :conflict
       assert_equal "public", Apartment::Tenant.current
     end
   end
@@ -265,7 +265,7 @@ class PlatformSecurityTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "stale CSRF is rejected and real default business rules stay closed" do
+  test "stale CSRF is rejected and real business rules reject incomplete input" do
     get "/api/v1/session/csrf"
     stale = response.parsed_body["csrf_token"]
     token = login
@@ -275,8 +275,8 @@ class PlatformSecurityTest < ActionDispatch::IntegrationTest
       assert_response :unprocessable_entity
       assert_equal "invalid_csrf", response.parsed_body.dig("error", "code")
       post "/api/v1/tenants", params: { tenant: { contacts: [{ primary: true }] } }, headers: { "X-CSRF-Token" => token }, as: :json
-      assert_response :service_unavailable
-      assert_equal "integration_unavailable", response.parsed_body.dig("error", "code")
+      assert_response :unprocessable_entity
+      assert_equal "validation_failed", response.parsed_body.dig("error", "code")
     end
   end
 

@@ -27,7 +27,14 @@ export class TenantGateway {
       return throwError(
         () => new Error('Reload tenant details before editing; a saved version is required.'),
       );
-    const body = { tenant: id ? this.preserveNulls(this.originals.get(id), value) : value };
+    const cleaned = structuredClone(value) as Tenant;
+    if (cleaned.description === '') (cleaned as Record<string,unknown>)['description'] = null;
+    if (cleaned.subscription) {
+      if (!cleaned.subscription.payment_method_description) (cleaned.subscription as Record<string,unknown>)['payment_method_description'] = null;
+      if (cleaned.subscription.discount?.value === '0' && !cleaned.subscription.discount.duration)
+        (cleaned.subscription.discount as Record<string,unknown>)['duration'] = null;
+    }
+    const body = { tenant: id ? this.preserveNulls(this.originals.get(id), cleaned) : cleaned };
     return (
       id
         ? this.http.patch<{ data: Tenant }>(this.path(id), body, {

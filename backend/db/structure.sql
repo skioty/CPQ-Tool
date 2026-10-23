@@ -11,6 +11,20 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
+-- Name: public; Type: SCHEMA; Schema: -; Owner: -
+--
+
+CREATE SCHEMA IF NOT EXISTS public;
+
+
+--
+-- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON SCHEMA public IS 'standard public schema';
+
+
+--
 -- Name: check_platform_primary_contact(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -99,7 +113,24 @@ CREATE TABLE public.platform_administrators (
     enabled boolean DEFAULT true NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT platform_administrator_role CHECK (((role)::text = ANY ((ARRAY['super_admin'::character varying, 'admin'::character varying])::text[])))
+    CONSTRAINT platform_administrator_role CHECK (((role)::text = ANY (ARRAY[('super_admin'::character varying)::text, ('admin'::character varying)::text])))
+);
+
+
+--
+-- Name: platform_brand_assets; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.platform_brand_assets (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    tenant_id uuid,
+    owner_id character varying NOT NULL,
+    kind character varying NOT NULL,
+    content_type character varying NOT NULL,
+    content bytea NOT NULL,
+    storage_key character varying NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
 );
 
 
@@ -113,6 +144,21 @@ CREATE TABLE public.platform_provisioning_failures (
     request_id character varying NOT NULL,
     error_code character varying NOT NULL,
     created_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: platform_reference_options; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.platform_reference_options (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    kind character varying NOT NULL,
+    code character varying NOT NULL,
+    label character varying NOT NULL,
+    enabled boolean DEFAULT true NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
 );
 
 
@@ -172,7 +218,8 @@ CREATE TABLE public.platform_tenant_contacts (
     email character varying,
     "primary" boolean DEFAULT false NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    phone character varying
 );
 
 
@@ -190,7 +237,9 @@ CREATE TABLE public.platform_tenant_subscriptions (
     discount_value numeric,
     discount_duration character varying,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    payment_method_description text,
+    first_invoiced_at timestamp(6) without time zone
 );
 
 
@@ -249,11 +298,27 @@ ALTER TABLE ONLY public.platform_administrators
 
 
 --
+-- Name: platform_brand_assets platform_brand_assets_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.platform_brand_assets
+    ADD CONSTRAINT platform_brand_assets_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: platform_provisioning_failures platform_provisioning_failures_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.platform_provisioning_failures
     ADD CONSTRAINT platform_provisioning_failures_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: platform_reference_options platform_reference_options_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.platform_reference_options
+    ADD CONSTRAINT platform_reference_options_pkey PRIMARY KEY (id);
 
 
 --
@@ -310,6 +375,13 @@ ALTER TABLE ONLY public.platform_tenants
 
 ALTER TABLE ONLY public.schema_migrations
     ADD CONSTRAINT schema_migrations_pkey PRIMARY KEY (version);
+
+
+--
+-- Name: index_platform_reference_options_on_kind_and_code; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_platform_reference_options_on_kind_and_code ON public.platform_reference_options USING btree (kind, code);
 
 
 --
@@ -444,11 +516,20 @@ ALTER TABLE ONLY public.platform_tenant_subscriptions
 
 
 --
+-- Name: platform_brand_assets fk_rails_bdb742c00c; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.platform_brand_assets
+    ADD CONSTRAINT fk_rails_bdb742c00c FOREIGN KEY (tenant_id) REFERENCES public.platform_tenants(id);
+
+
+--
 -- PostgreSQL database dump complete
 --
 
-SET search_path TO "$user", public;
+SET search_path TO "public";
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261023000100'),
 ('20261022000200'),
 ('20261022000100');

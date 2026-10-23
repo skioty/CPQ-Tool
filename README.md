@@ -4,13 +4,9 @@ Four-student final-year SELISE project: a reusable multi-tenant CPQ SaaS adaptab
 
 ## Current status
 
-This Member 4 integration branch combines existing Member 1 forms and Member 2/3 backend increments. It adds real API list/search/pagination/details, login/logout/CSRF, links to forms/saved preview, a gated lifecycle dialog, and acceptance/release preparation. [Member 4 handoff](docs/member4-integration.md), [acceptance tracker](docs/acceptance.md) and [demo plan](docs/demo-release.md) separate evidence from blockers. Lifecycle, status catalogue, business form saving and uploads remain unavailable pending decisions. No feature branch is merged to main by this task.
+This approved-rules branch builds on the combined Member 1–4 increment. It implements tenant create/edit validation, one responsible CPQ Admin, monthly subscription settings, reference-list management, branding upload/removal and the approved lifecycle matrix. Read and write access remains enforced by Rails. Contacts never become user accounts automatically. See [approved-rule handoff](docs/approved-rules.md) for verification, setup and limits; older member handoffs record historical implementation states.
 
-Member 3 adds real Devise cookie authentication/CSRF, backend role/assignment access, atomic Apartment schema provisioning, tenant-only migrations and isolation tests. User approved this session approach and a test-only isolation probe. Unknown business/lifecycle/upload policies remain closed; frontend integration is described above; production readiness is not claimed. See [Member 3 handoff](docs/member3-auth-tenancy.md) for controlled runtime account setup, session endpoints, migration commands and limits. This branch depends on setup #16 and Member 2 #18. The original Member 1 preview checkout remains unchanged.
-
-The inherited Member 2 increment adds tenant persistence and CRUD handlers. Member 3 now supplies auth/access/provisioning; business validation remains gated. Lifecycle/archive/uploads remain unavailable. See [backend handoff](docs/member2-backend.md). Member 1 work remains on its separate branch/PR #17; setup PR #16 is still a dependency. Do not apply the proposed public migration to development before Member 3 review. Backend SQL schema tasks require PostgreSQL 17 client tools (installed by Docker/CI); rebuild backend images after this change.
-
-The original foundation provides official Angular/Rails scaffolds, PostgreSQL local environment, CI and collaboration documentation. The increment above adds backend persistence and handlers; Member 3 now adds real Devise authorization and Apartment provisioning; lifecycle and uploads remain unavailable. Installed dependencies do not prove authentication or tenant isolation. See [setup verification](docs/verification.md) for original foundation evidence and [backend handoff](docs/member2-backend.md) for this increment.
+Default `main` remains unchanged pending reviewed PRs. This is a development prototype, not a production release.
 
 ## Stack and layout
 
@@ -31,7 +27,7 @@ Git and Docker Desktop/Engine with Compose v2 and Linux containers are the share
 
 ## Local setup (PowerShell, macOS or Linux)
 
-Until reviewed PRs are merged, `main` remains bootstrap-only: after cloning, run `git fetch origin` and `git switch feat/tenant-navigation` to inspect this combined increment. Existing worktrees should preserve their own branches. No release is published.
+Until reviewed PRs are merged, `main` remains bootstrap-only: after cloning, run `git fetch origin` and `git switch feat/approved-tenant-rules` to inspect this combined increment. Existing worktrees should preserve their own branches. No release is published.
 
 The selected/locked foundation versions are Angular core 21.2.25 (CLI 21.2.28, TypeScript 5.9.3), Rails 8.1.4, Devise 5.0.4, ros-apartment 3.4.4 and PostgreSQL 17.11. Runtime verification and planned integrations are distinguished in the verification document.
 
@@ -45,9 +41,9 @@ docker compose up -d --wait backend frontend
 docker compose ps
 ```
 
-Open [Angular](http://localhost:4200) and [Rails health](http://localhost:3000/up). The latter proves boot only, not DB readiness or isolation. Open `/login` for administrator authentication, then `/tenants` for authorized list/details. Angular uses the Compose proxy and session/CSRF integration. Tenant writes remain gated pending approved product validation. Services bind host ports to loopback and PostgreSQL is internal to Compose. Change port variables in `.env` if occupied. Run `docker compose logs backend frontend` for diagnostics.
+Open [Angular](http://localhost:4200) and [Rails health](http://localhost:3000/up). The latter proves boot only, not DB readiness or isolation. Open `/login` for administrator authentication, then `/tenants` for authorized list/details. Angular uses the Compose proxy and session/CSRF integration. Create/edit use approved server validation. Configure SELISE-approved industries before creating tenants. Services bind host ports to loopback and PostgreSQL is internal to Compose. Change port variables in `.env` if occupied. Run `docker compose logs backend frontend` for diagnostics.
 
-Database preparation uses the real Rails `db:prepare` task; a proposed domain migration exists, pending Member 3 review before development application; no demo seed accounts exist. Do not use `db:reset` as startup. PostgreSQL data persists in a named volume; `docker compose down` keeps it. Changing the password after database initialization requires coordinating the database role password; environment variables do not reinitialize an existing volume. Avoid `down -v` unless intentionally discarding local data.
+Database preparation uses the real Rails `db:prepare` task. Apply the new forward migration after Member 2/3 review, then run `docker compose run --rm backend bundle exec rails db:seed` to populate approved currencies/payment methods. Super Admin configures SELISE industry options at `/reference-options`. No account passwords are seeded; use the controlled provisioning task in the Member 3 handoff. Do not use `db:reset` as startup. PostgreSQL data persists in a named volume; `docker compose down` keeps it. Changing the password after database initialization requires coordinating the database role password; environment variables do not reinitialize an existing volume. Avoid `down -v` unless intentionally discarding local data.
 
 Source mounts support local edits. Rebuild frontend after dependency/config changes and backend after Gemfile changes. This setup is a development environment, not a production container or deployment.
 

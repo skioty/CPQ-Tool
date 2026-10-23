@@ -4,11 +4,11 @@
 
 The one-week semester prototype manages tenants for a reusable multi-tenant CPQ SaaS. Remaining CPQ modules are next-semester work. Angular, Rails REST, PostgreSQL schemas, Apartment, Devise and a modular monolith are agreed. Figma is the design tool; Scrum-style work uses one short sprint.
 
-Create/edit captures primary and secondary theme colours, typography, logo, favicon, company name display, description, multiple contacts with exactly one primary contact, responsible SELISE CPQ Admin, industry, currency, subscription fee, payment method, discount and discount duration. Requiredness beyond the primary-contact invariant is unresolved.
+Create/edit captures primary and secondary theme colours, typography, logo, favicon, company name display, description, multiple contacts with exactly one primary contact, responsible SELISE CPQ Admin, industry, currency, subscription fee, payment method, discount and discount duration. Requiredness and business semantics are now approved in the final table in [decisions](decisions.md). Historical planning below is superseded by that table.
 
-Lifecycle actions: create, view/edit, activate/deactivate, suspend/reactivate, and delete or archive subject to policy. Supporting views: tenant list, search/status filters, details, forms, confirmation dialogs and branding preview. Inactive and suspended must remain distinct pending approved behavior. Deletion is not assumed to mean archive.
+Lifecycle actions: create, view/edit, activate/deactivate, suspend/reactivate, and delete or archive subject to policy. Supporting views: tenant list, search/status filters, details, forms, confirmation dialogs and branding preview. Inactive, suspended and archived block tenant-user access; authorized platform staff retain management access. Archive and restore retain records and schema; permanent deletion is unavailable.
 
-Minimum access: Devise administrator login/logout, controlled development/demo provisioning, CPQ Super Admin access to all implemented platform actions, CPQ Admin access restricted to assigned tenants, server-side enforcement and no public self-signup. Contacts are not active Tenant Admin accounts. Account invitation is an open workflow.
+Minimum access: Devise administrator login/logout, controlled development/demo provisioning, CPQ Super Admin access to all implemented platform actions, CPQ Admin access restricted to assigned tenants, server-side enforcement and no public self-signup. Contacts are not active Tenant Admin accounts. Account access requires explicit invitation and role assignment; implementing onboarding remains out of scope.
 
 ## Proposed acceptance criteria (review before implementation)
 

@@ -3,6 +3,7 @@ import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/route
 import { HttpErrorResponse } from '@angular/common/http';
 import { Observable, Subject, of, throwError } from 'rxjs';
 import { vi } from 'vitest';
+import { Session } from '../navigation/session';
 import { TenantForm } from './tenant-form';
 import { TenantGateway } from './tenant.gateway';
 import { ASSET_UPLOAD, FORM_OPTIONS, FormOptions, Tenant, emptyTenant } from './tenant.types';
@@ -66,6 +67,7 @@ async function setup(
     imports: [TenantForm],
     providers: [
       provideRouter([]),
+      {provide: Session, useValue: {actor: () => ({role: 'super_admin'})}},
       { provide: TenantGateway, useValue: gateway },
       { provide: FORM_OPTIONS, useValue: options },
       { provide: ASSET_UPLOAD, useValue: upload },

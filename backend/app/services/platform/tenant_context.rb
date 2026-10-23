@@ -8,10 +8,10 @@ module Platform
         unless tenant.provisioning_status == "ready"
           raise TenantManagement::Error.new("tenant_unavailable", "Tenant provisioning is not ready", status: 409)
         end
-        # No inactive/suspended/archived behavior has been approved. Fail closed.
+        # Approved tenant-user workspace policy: only active tenants; management APIs remain accessible to authorized platform staff.
         approved = Rails.application.config.x.tenant_management.workspace_access.call(tenant)
         unless approved == true
-          raise TenantManagement::Error.new("policy_unavailable", "Tenant workspace access policy awaits approval", status: 503)
+          raise TenantManagement::Error.new("tenant_unavailable", "Tenant workspace requires active status", status: 409)
         end
         Apartment::Tenant.switch(tenant.schema_key) do
           unless TenantMigrator.current?

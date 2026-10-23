@@ -16,6 +16,8 @@ module TenantManagement
           currency: subscription&.currency,
           fee: subscription&.fee&.to_s("F"),
           payment_method: subscription&.payment_method,
+          payment_method_description: subscription&.payment_method_description,
+          billing_interval: "monthly",
           discount: {
             type: subscription&.discount_type,
             value: subscription&.discount_value&.to_s("F"),

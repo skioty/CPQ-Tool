@@ -5,6 +5,7 @@ export interface Contact {
   id?: string;
   name: string;
   email: string;
+  phone?: string;
   primary: boolean;
   [key: string]: unknown;
 }
@@ -29,6 +30,7 @@ export interface Tenant {
     currency: string;
     fee: string;
     payment_method: string;
+    payment_method_description?: string;
     discount: { type: string; value: string; duration: string; [key: string]: unknown };
     [key: string]: unknown;
   };
@@ -73,7 +75,7 @@ export interface Asset {
 }
 export type AssetKind = 'logo' | 'favicon';
 export const ASSET_UPLOAD = new InjectionToken<
-  ((kind: AssetKind, file: File) => Observable<Asset>) | null
+  ((kind: AssetKind, file: File, tenantId?: string) => Observable<Asset>) | null
 >('TENANT_ASSET_UPLOAD', { providedIn: 'root', factory: () => null });
 export const ASSET_URL = new InjectionToken<(id: string) => string | null>('TENANT_ASSET_URL', {
   providedIn: 'root',

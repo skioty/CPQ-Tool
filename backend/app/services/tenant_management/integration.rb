@@ -15,6 +15,7 @@ module TenantManagement
     def validate_business!(_actor, _attributes, _tenant) = unavailable!
     def validate_assignments!(_actor, _ids, _tenant) = unavailable!
     def validate_assets!(_actor, _ids, _tenant) = unavailable!
+    def permitted_actions(_actor, _tenant) = []
     def initial_lifecycle! = unavailable!
     def filter_status!(_status) = unavailable!
     def provision!(_tenant) = unavailable!

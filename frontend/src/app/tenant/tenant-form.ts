@@ -31,11 +31,14 @@ import {
   Tenant,
   emptyTenant,
 } from './tenant.types';
+import { commercialErrors } from './approved-validation';
+import { Session } from '../navigation/session';
 import { TenantGateway } from './tenant.gateway';
 import { Field, TenantField } from './tenant-field';
 import { BrandingPreview } from './branding-preview';
 
 export const FIELDS: Field[] = [
+  {key:'payment_method_description',path:'subscription.payment_method_description',label:'Payment method description (required for Other)',section:'Subscription'},
   { key: 'company_name', path: 'company_name', label: 'Company name', section: 'Company' },
   {
     key: 'description',
@@ -63,7 +66,7 @@ export const FIELDS: Field[] = [
     path: 'subscription.fee',
     label: 'Subscription fee',
     section: 'Subscription',
-    help: 'Billing interval and currency precision await agreement. Value remains text; no conversion is applied.',
+    help: 'Monthly subscription fee. Zero is allowed; use at most two decimal places.',
   },
   {
     key: 'payment_method',
@@ -84,14 +87,14 @@ export const FIELDS: Field[] = [
     path: 'subscription.discount.value',
     label: 'Discount value',
     section: 'Subscription',
-    help: 'No percentage, amount or range is assumed.',
+    help: 'Percentage from 0 to 100, up to two decimal places.',
   },
   {
     key: 'discount_duration',
     path: 'subscription.discount.duration',
     label: 'Discount duration',
     section: 'Subscription',
-    help: 'Units and expiry behavior await agreement.',
+    help: 'Positive whole monthly billing cycles beginning with the first applicable cycle.',
   },
   {
     key: 'primary_colour',
@@ -123,6 +126,8 @@ export const FIELDS: Field[] = [
 })
 export class TenantForm implements OnInit {
   readonly options = inject(FORM_OPTIONS);
+  readonly session = inject(Session);
+  get commercialEditable() { return this.session.actor()?.role === 'super_admin'; }
   private readonly fb = inject(FormBuilder).nonNullable;
   private readonly gateway = inject(TenantGateway);
   private readonly upload = inject(ASSET_UPLOAD);
@@ -219,7 +224,13 @@ export class TenantForm implements OnInit {
       this.saved.set(null);
       if (this.id) this.load();
       else {
-        this.patch(emptyTenant());
+        const draft = emptyTenant();
+        if (this.options.contractApproved) {
+          Object.assign(draft.branding, {primary_colour:'#17365D',secondary_colour:'#2563EB',typography:'system'});
+          draft.subscription.fee = '0';
+          draft.subscription.discount = {type:'percentage',value:'0',duration:''};
+        }
+        this.patch(draft);
         this.status.set('ready');
       }
     });
@@ -231,6 +242,7 @@ export class TenantForm implements OnInit {
         value.name,
         this.options.requiredFields.includes('contacts.name') ? [Validators.required] : [],
       ),
+      phone: value.phone || '',
       email: this.fb.control(value.email, [
         Validators.email,
         ...(this.options.requiredFields.includes('contacts.email') ? [Validators.required] : []),
@@ -316,6 +328,7 @@ export class TenantForm implements OnInit {
       currency: t.subscription.currency,
       fee: t.subscription.fee,
       payment_method: t.subscription.payment_method,
+      payment_method_description: t.subscription.payment_method_description || '',
       discount_type: t.subscription.discount.type,
       discount_value: t.subscription.discount.value,
       discount_duration: t.subscription.discount.duration,
@@ -345,6 +358,7 @@ export class TenantForm implements OnInit {
         ...(c.id ? { id: c.id } : {}),
         name: c.name,
         email: c.email,
+        phone: c.phone,
         primary: c.primary,
       })),
       branding: {
@@ -358,6 +372,7 @@ export class TenantForm implements OnInit {
         currency: f['currency'],
         fee: f['fee'],
         payment_method: f['payment_method'],
+        payment_method_description: f['payment_method_description'],
         discount: {
           ...base.subscription.discount,
           type: f['discount_type'],
@@ -366,6 +381,16 @@ export class TenantForm implements OnInit {
         },
       },
     };
+  }
+  removeAsset(kind: AssetKind) {
+    this.cancelFile(kind);
+    this.original.branding[`${kind}_attachment_id`] = null;
+    this.form.markAsDirty();
+    this.previewVersion.update(v=>v+1);
+  }
+  resetBranding() {
+    this.form.controls.fields.patchValue({primary_colour:'#17365D',secondary_colour:'#2563EB',typography:'system'});
+    this.form.markAsDirty();
   }
   selectFile(kind: AssetKind, event: Event) {
     const input = event.target as HTMLInputElement,
@@ -441,6 +466,10 @@ export class TenantForm implements OnInit {
       );
       return;
     }
+    if (this.options.requiredFields.includes('subscription.fee') && (!this.edit || this.commercialEditable)) {
+      const messages = commercialErrors(this.draft());
+      if (messages.length) { this.fail(new Error(messages.join(' '))); return; }
+    }
     if (Object.keys(this.files()).length && !this.upload) {
       this.fail(
         new Error('File upload integration is not configured. Your selected files are retained.'),
@@ -453,7 +482,7 @@ export class TenantForm implements OnInit {
     from(entries)
       .pipe(
         concatMap(([kind, file]) =>
-          this.upload!(kind, file).pipe(
+          this.upload!(kind, file, this.id).pipe(
             tap((asset) => {
               if (!asset.id)
                 throw new Error('Upload returned no authorized attachment identifier.');
@@ -476,6 +505,7 @@ export class TenantForm implements OnInit {
               ...(c.id ? { id: c.id } : {}),
               name: c.name,
               email: c.email,
+        phone: c.phone,
               primary: c.primary,
             })),
             branding: {
@@ -489,6 +519,7 @@ export class TenantForm implements OnInit {
               currency: t.subscription.currency,
               fee: t.subscription.fee,
               payment_method: t.subscription.payment_method,
+              payment_method_description: t.subscription.payment_method_description || '',
               discount: {
                 type: t.subscription.discount.type,
                 value: t.subscription.discount.value,
@@ -496,6 +527,10 @@ export class TenantForm implements OnInit {
               },
             },
           };
+          if (this.edit && !this.commercialEditable) {
+            delete (payload as Partial<Tenant>).subscription;
+            delete (payload as Partial<Tenant>).responsible_admin_ids;
+          }
           return this.gateway.save(payload, this.id);
         }),
         takeUntilDestroyed(this.destroy),

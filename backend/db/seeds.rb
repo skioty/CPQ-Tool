@@ -7,3 +7,6 @@
 #   ["Action", "Comedy", "Drama", "Horror"].each do |genre_name|
 #     MovieGenre.find_or_create_by!(name: genre_name)
 #   end
+
+# Idempotent platform defaults; industry values must be supplied by SELISE.
+TenantManagement::ReferenceOption.seed_defaults!

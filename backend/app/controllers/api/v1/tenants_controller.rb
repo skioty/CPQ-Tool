@@ -40,7 +40,7 @@ module Api
         count = tenants.count
         tenants = tenants.order(:created_at, :id).offset((page - 1) * per_page).limit(per_page)
         response.set_header("Cache-Control", "no-store")
-        render json: { data: tenants.map { |tenant| TenantManagement::Serializer.detail(tenant) },
+        render json: { data: tenants.map { |tenant| TenantManagement::Serializer.detail(tenant).merge(permitted_actions: @integration.permitted_actions(@actor, tenant)) },
           meta: { page: page, per_page: per_page, total_count: count, total_pages: (count.to_f / per_page).ceil } }
       end
 
@@ -66,8 +66,9 @@ module Api
       end
 
       def lifecycle
-        find_authorized(:lifecycle)
-        raise TenantManagement::Error.new("policy_unavailable", "Lifecycle transitions and permissions await approval", status: 503)
+        tenant = find_authorized(:read)
+        tenant = TenantManagement::Lifecycle.apply!(actor: @actor, tenant: tenant, action: request.request_parameters["action"].to_s, request_id: request.request_id)
+        render_tenant(tenant)
       end
 
       private
@@ -117,7 +118,7 @@ module Api
       def render_tenant(tenant, status: 200)
         response.set_header("ETag", %Q("#{tenant.lock_version}"))
         response.set_header("Cache-Control", "no-store")
-        render json: { data: TenantManagement::Serializer.detail(tenant) }, status: status
+        render json: { data: TenantManagement::Serializer.detail(tenant).merge(permitted_actions: @integration.permitted_actions(@actor, tenant)) }, status: status
       end
 
       def integer_param(key, default, max: nil)

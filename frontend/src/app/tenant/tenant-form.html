@@ -41,6 +41,9 @@
     }
   </section>
 }
+@if (integrationReady && !options.industries.length) {
+  <aside class="notice" role="status">No enabled industries loaded. A Super Admin must configure SELISE-approved industries in <a routerLink="/reference-options">Reference options</a>. If the API is unavailable, sign in and retry this page.</aside>
+}
 <div class="layout">
   <form
     (ngSubmit)="submit()"
@@ -54,6 +57,7 @@
     >
       @for (section of sections; track section) {
         <section class="card" [attr.aria-label]="section">
+          <fieldset [disabled]="edit && section === 'Subscription' && !commercialEditable">
           <h2>{{ section }}</h2>
           <div class="field-grid">
             @for (field of fields; track field.key) {
@@ -77,7 +81,7 @@
               id="admins"
               [multiple]="options.assignment === 'many'"
               (change)="selectedAdmins($event)"
-              [attr.disabled]="options.assignment === null || !options.admins.length ? '' : null"
+              [attr.disabled]="options.assignment === null || !options.admins.length || (edit && !commercialEditable) ? '' : null"
               aria-describedby="admin-help"
             >
               @if (options.assignment !== 'many') {
@@ -95,8 +99,7 @@
                 <option [value]="id" selected>Current saved assignment: {{ id }}</option>
               }</select
             ><small id="admin-help"
-              >Assignment cardinality and approved administrators must be supplied before editing
-              assignments.</small
+              >Exactly one responsible CPQ Admin. Only Super Admin can reassign responsibility.</small
             >
           }
           @if (section === 'Subscription') {
@@ -105,10 +108,12 @@
             </p>
           }
           @if (section === 'Branding') {
+            <button type="button" (click)="resetBranding()">Reset to default</button>
             <div class="asset-grid">
               @for (kind of assetKinds; track kind) {
                 <div class="asset">
                   <label [for]="kind">{{ kind === 'logo' ? 'Company logo' : 'Favicon' }}</label>
+                  <button type="button" (click)="removeAsset(kind)">Remove {{kind}}</button>
                   <input
                     type="file"
                     [id]="kind"
@@ -138,11 +143,11 @@
               saved()?.branding?.logo_attachment_id || saved()?.branding?.favicon_attachment_id
             ) {
               <p class="muted">
-                Saved asset references are preserved unless a replacement upload succeeds. Saved
-                asset display needs the approved asset URL adapter.
+                Saved asset references are preserved unless a replacement upload succeeds. Authorized saved assets are shown in the preview.
               </p>
             }
           }
+          </fieldset>
         </section>
       }
       <section class="card" aria-labelledby="contacts-heading">
@@ -185,6 +190,7 @@
                   }
                 </div>
               </div>
+              <label [for]="'contact-phone-' + i">Phone (optional)</label><input [id]="'contact-phone-' + i" formControlName="phone" type="tel" />
               <div class="contact-actions">
                 <label class="check"
                   ><input

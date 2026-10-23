@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 
 export interface DirectoryTenant {
   id: string;
+  permitted_actions?: string[];
   company_name: string | null;
   company_name_display: boolean | null;
   description: string | null;
@@ -34,7 +35,13 @@ export const DIRECTORY_POLICY = new InjectionToken<{
   actions: (tenant: DirectoryTenant) => LifecycleAction[];
 }>('DIRECTORY_POLICY', {
   providedIn: 'root',
-  factory: () => ({ statuses: [], actions: () => [] }),
+  factory: () => ({
+    statuses: ['inactive','active','suspended','archived'].map(value=>({value,label:value[0].toUpperCase()+value.slice(1)})),
+    actions: tenant => (tenant.permitted_actions || []).map(code=>({code,
+      label: ({activate:'Activate',deactivate:'Deactivate',suspend:'Suspend',reactivate:'Return to inactive',archive:'Archive',restore:'Restore to inactive'} as Record<string,string>)[code] || code,
+      confirmation: code === 'archive' ? 'Archive this tenant? Records and the tenant schema are retained. Tenant-user access is blocked.' : code === 'restore' || code === 'reactivate' ? 'Return this tenant to inactive? Activation is a separate step.' : `Confirm ${code}? Status changes do not automatically change subscription charges.`
+    }))
+  }),
 });
 @Injectable({ providedIn: 'root' })
 export class TenantDirectory {

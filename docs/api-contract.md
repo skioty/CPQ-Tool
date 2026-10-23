@@ -1,5 +1,19 @@
 # API contract
 
+## Approved-rule increment (current)
+
+This section supersedes the historical gated/proposed sections below. The complete approved policy is in [decisions](decisions.md).
+
+- Tenant POST/PATCH now enforce required company/industry/currency/contact/assignment/subscription rules. Create defaults to inactive, ready only after atomic provisioning. Exactly one enabled CPQ Admin is required. Super Admin alone may create, reassign and change commercial fields. Assigned CPQ Admin can update company/contact/branding fields.
+- PATCH retains ETag/If-Match concurrency protection. Omitted keys preserve; explicit null clears optional values. New optional `contacts[].phone` and `subscription.payment_method_description`; payment method Other requires description. Subscription fee and percentage values are decimal strings with two decimal places maximum. Discount duration is a string containing positive whole monthly cycles when applied. `billing_interval: "monthly"` is response-only.
+- Currency changes are rejected when the trusted subscription `first_invoiced_at` marker is set. There is no invoice creation or payment processing endpoint; future billing must set this marker atomically when issuing the first invoice.
+- Detail/list responses include `permitted_actions` from the server. POST `/api/v1/tenants/:id/lifecycle` accepts `{ "action": "activate|deactivate|suspend|reactivate|archive|restore" }` (one action string). It locks/rechecks status and permissions, audits success and returns full detail/ETag. `reactivate` and `restore` return inactive. Invalid transition is 409; forbidden role 403. No DELETE tenant route exists.
+- GET `/api/v1/reference_options` returns `{data:[{id,kind,code,label,enabled}],admins:[{id,label}],typography:[{id,label,fontFamily}]}`. Enabled options only, unless Super Admin requests `include_disabled=true`. POST accepts `{option:{kind,code,label}}`; PATCH `/:id` accepts `{option:{label,enabled}}`. Mutations require Super Admin. Codes are immutable; disable instead of delete. Industry values must be supplied by SELISE. `db:seed` idempotently inserts approved currency/payment options.
+- POST `/api/v1/brand_assets` is multipart with `file`, `kind` (`logo`/`favicon`) and optional `tenant_id` for existing tenants. New-tenant staging requires Super Admin; existing-tenant upload requires assignment/update access. Returns `{id,url}`. GET `/:id` enforces tenant read access (staged asset: uploader only), serves validated image content with nosniff/no-store. Client-supplied filenames/MIME do not establish validity.
+- Staged assets bind to tenant/kind under lock inside successful tenant persistence. Failed validation rolls back binding and retains prior branding. Unreferenced/staged bytes are retained; cleanup requires an explicit reviewed retention operation. Archive never deletes assets or schemas.
+
+
+
 The Member 1 typed adapter and draft form are now included on the integration branch. [Form handoff](member1-forms.md) still records missing product/reference/upload decisions; inclusion does not approve those contracts.
 
 ## Member 4 frontend integration

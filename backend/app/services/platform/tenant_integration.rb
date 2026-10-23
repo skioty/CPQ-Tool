@@ -21,6 +21,33 @@ module Platform
       true
     end
 
+    def validate_business!(actor, attributes, tenant)
+      unless tenant.persisted?
+        attributes["branding"] = TenantManagement::BusinessRules::DEFAULT_BRANDING.merge((attributes["branding"] || {}).transform_values { |v| v.presence })
+        TenantManagement::BusinessRules::DEFAULT_BRANDING.each { |k,v| attributes["branding"][k] ||= v }
+        attributes["subscription"] ||= {}
+        attributes["subscription"]["discount"] = { "type" => "percentage", "value" => "0", "duration" => nil }.merge(attributes["subscription"]["discount"] || {})
+      end
+      TenantManagement::BusinessRules.validate!(actor, attributes, tenant)
+    end
+    def permitted_actions(actor, tenant) = TenantManagement::Lifecycle.actions(actor, tenant)
+    def initial_lifecycle! = "inactive"
+    def filter_status!(status)
+      raise TenantManagement::Error.new("invalid_filter", "Unknown status", status: 400) unless %w[inactive active suspended archived].include?(status)
+      true
+    end
+    def validate_assets!(actor, ids, tenant)
+      ids.each do |key, id|
+        next if id.nil?
+        asset = TenantManagement::BrandAsset.lock.find_by(id: id, kind: key.delete_suffix("_attachment_id"))
+        unless asset && (asset.tenant_id == tenant.id || (asset.tenant_id.nil? && asset.owner_id == actor.id))
+          raise TenantManagement::Error.new("validation_failed", "Invalid branding asset", fields: { "branding.#{key}" => ["Asset must belong to this tenant and kind"] })
+        end
+        asset.update!(tenant_id: tenant.id, storage_key: "#{tenant.id}/#{asset.id}") if asset.tenant_id.nil?
+      end
+      true
+    end
+
     def provision!(tenant) = SchemaProvisioner.provision!(tenant)
     def compensate!(receipt) = SchemaProvisioner.compensate!(receipt)
     def record_provisioning_failure!(tenant_id, code)
