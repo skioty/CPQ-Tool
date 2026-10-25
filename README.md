@@ -69,4 +69,4 @@ Start with [contributing](CONTRIBUTING.md), [requirements](docs/requirements.md)
 
 ## Guided onboarding extension
 
-See [account onboarding](docs/account-onboarding.md) for guided setup, staff management, explicit Tenant Admin invitations, SMTP configuration and test evidence. This local increment is on feat/guided-tenant-onboarding; live SMTP verification is pending.
+See [account onboarding](docs/account-onboarding.md) for guided setup, staff management, explicit Tenant Admin invitations, manual link sharing and test evidence. The current local branch is `feat/manual-invitations-ui`; SMTP has been replaced by copyable links, with no email configuration required.

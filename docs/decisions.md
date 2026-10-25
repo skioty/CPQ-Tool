@@ -80,3 +80,7 @@ Technical choices for this increment: default colours `#17365D` and `#2563EB`; s
 ## Approved account onboarding extension
 
 Confirmed by user: Super Admin manages CPQ Admin staff through single-use activation email; no permanent deletion, self-deactivation or UI Super Admin provisioning. Super Admin and assigned CPQ Admin explicitly invite Tenant Admins with 72-hour single-use links and resend/revoke controls. Tenant access requires Active status. Primary contacts remain contacts. SMTP delivery was selected; provider configuration is still pending. This supersedes earlier statements that invitations are outside scope. Owners: Member 3 backend access, Members 1/4 UI, Member 2 review. See [implementation and limits](account-onboarding.md).
+
+## Manual invitation delivery — confirmed by user
+
+The user explicitly dropped SMTP and selected the previously offered alternative: copyable links for private manual sharing. This supersedes the SMTP choice above. Expiry (72 hours), single-use consumption, role checks, replacement/revocation and Active-only workspace access remain unchanged. No email provider is needed. Raw tokens appear only once in authenticated issuance responses, not persisted/history. Owner: Member 3 access backend, Members 1/4 UI, Member 2 review. See account-onboarding.md.

@@ -1,18 +1,22 @@
-import { Component, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { InvitationLink } from './invitation-link';
+import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { DatePipe } from '@angular/common';
 import { LifecycleDialog } from '../navigation/lifecycle-dialog';
 import { StaffAccount, accessError } from './access-api';
 @Component({
-  imports: [FormsModule, DatePipe, LifecycleDialog],
+  imports: [FormsModule, DatePipe, LifecycleDialog, InvitationLink],
   host: { class: 'directory-page' },
   template: `
     <div class="heading">
       <div>
         <p class="eyebrow">PLATFORM ACCESS</p>
         <h1>Administrators</h1>
-        <p class="subheading">Manage SELISE CPQ Admin accounts and their activation invitations.</p>
+        <p class="subheading">
+          Manage your platform team, account status and private activation links.
+        </p>
       </div>
     </div>
     @if (error()) {
@@ -24,18 +28,35 @@ import { StaffAccount, accessError } from './access-api';
     @if (loading()) {
       <p role="status">Loading administrator accounts…</p>
     }
-    @if (!loading() && !error() && !mailReady()) {
-      <p class="notice" role="status">
-        SMTP email delivery is not configured. Account activation invitations cannot be sent yet.
-        Configure email delivery before creating accounts.
-      </p>
+    @if (issuedToken()) {
+      <app-invitation-link
+        [token]="issuedToken()"
+        [email]="issuedEmail()"
+        (dismissed)="issuedToken.set('')"
+      />
+    }
+    @if (!loading() && !error()) {
+      <div class="access-stats" aria-label="Administrator summary">
+        <div>
+          <span>Platform team</span><strong>{{ accounts().length }}</strong
+          ><small>Administrator accounts</small>
+        </div>
+        <div>
+          <span>Ready to work</span><strong>{{ enabledCount() }}</strong
+          ><small>Enabled accounts</small>
+        </div>
+        <div>
+          <span>Getting started</span><strong>{{ pendingCount() }}</strong
+          ><small>Awaiting activation</small>
+        </div>
+      </div>
     }
     <div class="access-layout">
       <section class="card">
         <h2>Invite a CPQ Admin</h2>
         <p class="muted">
-          The recipient sets their own password using a single-use activation link. Super Admin
-          accounts use controlled provisioning.
+          Create a private activation link for a new team member. They choose their own password;
+          you control platform access.
         </p>
         <form #staff="ngForm" (ngSubmit)="create()">
           <label for="staff-name">Name (optional)</label
@@ -55,11 +76,8 @@ import { StaffAccount, accessError } from './access-api';
             required
             [disabled]="busy()"
             autocomplete="email"
-          /><button
-            class="primary"
-            [disabled]="busy() || loading() || !mailReady() || staff.invalid"
-          >
-            {{ busy() ? 'Working…' : 'Create and email invitation' }}
+          /><button class="primary" [disabled]="busy() || loading() || staff.invalid">
+            {{ busy() ? 'Working…' : 'Create invitation link' }}
           </button>
         </form>
       </section>
@@ -75,9 +93,16 @@ import { StaffAccount, accessError } from './access-api';
           @for (a of accounts(); track a.id) {
             <li>
               <div class="staff-title">
-                <div>
-                  <strong>{{ a.name || a.email }}</strong>
-                  <p>{{ a.email }}</p>
+                <div class="staff-identity">
+                  <span class="staff-avatar" aria-hidden="true">{{
+                    (a.name || a.email).slice(0, 2).toUpperCase()
+                  }}</span>
+                  <div>
+                    <strong>{{ a.name || a.email }}</strong>
+                    @if (a.name) {
+                      <p>{{ a.email }}</p>
+                    }
+                  </div>
                 </div>
                 <span class="badge" [attr.data-status]="a.enabled ? 'active' : 'inactive'">{{
                   a.activated ? (a.enabled ? 'Enabled' : 'Disabled') : 'Awaiting activation'
@@ -88,26 +113,29 @@ import { StaffAccount, accessError } from './access-api';
                 {{ a.assigned_tenants }} assigned tenants
               </p>
               @if (a.role === 'admin') {
-                <label [for]="'name-' + a.id">Display name</label>
-                <div class="row-actions">
-                  <input [id]="'name-' + a.id" [(ngModel)]="a.name" [disabled]="busy()" /><button
-                    (click)="save(a)"
-                    [disabled]="busy()"
-                  >
-                    Save name
-                  </button>
-                  @if (a.activated) {
-                    <button
-                      (click)="a.enabled ? selected.set(a) : enable(a)"
-                      [disabled]="busy() || (a.enabled && a.assigned_tenants > 0)"
+                <details class="account-editor">
+                  <summary>Manage account</summary>
+                  <label [for]="'name-' + a.id">Display name</label>
+                  <div class="row-actions">
+                    <input [id]="'name-' + a.id" [(ngModel)]="a.name" [disabled]="busy()" /><button
+                      (click)="save(a)"
+                      [disabled]="busy()"
                     >
-                      {{ a.enabled ? 'Disable account' : 'Enable account' }}
+                      Save name
                     </button>
-                  }
-                </div>
+                    @if (a.activated) {
+                      <button
+                        (click)="a.enabled ? selected.set(a) : enable(a)"
+                        [disabled]="busy() || (a.enabled && a.assigned_tenants > 0)"
+                      >
+                        {{ a.enabled ? 'Disable account' : 'Enable account' }}
+                      </button>
+                    }
+                  </div>
+                </details>
                 @if (!a.activated && !a.invitation) {
-                  <button [disabled]="busy() || !mailReady()" (click)="sendActivation(a)">
-                    Send activation email
+                  <button [disabled]="busy()" (click)="sendActivation(a)">
+                    Generate activation link
                   </button>
                 }
                 @if (!a.activated && a.invitation) {
@@ -116,8 +144,8 @@ import { StaffAccount, accessError } from './access-api';
                     {{ a.invitation.expires_at | date: 'medium' }}
                   </p>
                   <div class="row-actions">
-                    <button [disabled]="busy() || !mailReady()" (click)="resend(a.invitation.id)">
-                      Resend activation
+                    <button [disabled]="busy()" (click)="resend(a.invitation.id)">
+                      Replace activation link
                     </button>
                     @if (a.invitation.state !== 'revoked') {
                       <button [disabled]="busy()" (click)="revoke(a.invitation.id)">
@@ -131,7 +159,9 @@ import { StaffAccount, accessError } from './access-api';
               }
             </li>
           } @empty {
-            <li>No accounts to display.</li>
+            @if (!loading() && !error()) {
+              <li class="access-empty">No accounts to display.</li>
+            }
           }
         </ul>
       </section>
@@ -149,10 +179,12 @@ import { StaffAccount, accessError } from './access-api';
 })
 export class AdministratorManager {
   private http = inject(HttpClient);
+  private readonly destroy = inject(DestroyRef);
   readonly accounts = signal<StaffAccount[]>([]);
   readonly loading = signal(true);
   readonly busy = signal(false);
-  readonly mailReady = signal(false);
+  readonly issuedToken = signal('');
+  readonly issuedEmail = signal('');
   readonly error = signal('');
   readonly message = signal('');
   readonly selected = signal<StaffAccount | null>(null);
@@ -165,16 +197,18 @@ export class AdministratorManager {
       'This account will lose platform access. All assigned tenants must be reassigned first. Records are retained.',
   };
   constructor() {
+    this.destroy.onDestroy(() => this.issuedToken.set(''));
     this.load();
   }
   load() {
     this.loading.set(true);
     this.http
-      .get<{ data: StaffAccount[]; email_delivery_configured: boolean }>('/api/v1/administrators')
+      .get<{ data: StaffAccount[]; invitation_delivery: string }>('/api/v1/administrators')
+      .pipe(takeUntilDestroyed(this.destroy))
       .subscribe({
         next: (r) => {
           this.accounts.set(r.data);
-          this.mailReady.set(r.email_delivery_configured);
+
           this.loading.set(false);
         },
         error: (e) => {
@@ -188,30 +222,43 @@ export class AdministratorManager {
     this.busy.set(true);
     this.error.set('');
     this.message.set('');
-    this.http.request(method, url, { body }).subscribe({
-      next: () => {
-        this.busy.set(false);
-        this.message.set(success);
-        if (clear) {
-          this.name = '';
-          this.email = '';
-        }
-        this.load();
-      },
-      error: (e) => {
-        this.busy.set(false);
-        this.error.set(accessError(e));
-        this.load();
-      },
-    });
+    this.issuedToken.set('');
+    this.http
+      .request(method, url, { body })
+      .pipe(takeUntilDestroyed(this.destroy))
+      .subscribe({
+        next: (result: any) => {
+          this.busy.set(false);
+          this.message.set(success);
+          if (result?.invitation_token) {
+            this.issuedToken.set(result.invitation_token);
+            this.issuedEmail.set(result.data?.email || result.invitation?.email || this.email);
+          }
+          if (clear) {
+            this.name = '';
+            this.email = '';
+          }
+          this.load();
+        },
+        error: (e) => {
+          this.busy.set(false);
+          this.error.set(accessError(e));
+          this.load();
+        },
+      });
+  }
+  enabledCount() {
+    return this.accounts().filter((a) => a.enabled).length;
+  }
+  pendingCount() {
+    return this.accounts().filter((a) => !a.activated).length;
   }
   create() {
-    if (!this.mailReady()) return;
     this.run(
       'POST',
       '/api/v1/administrators',
       { administrator: { name: this.name, email: this.email } },
-      'Activation email sent. The account remains disabled until accepted.',
+      'Activation link created. The account remains disabled until accepted.',
       true,
     );
   }
@@ -243,14 +290,14 @@ export class AdministratorManager {
       );
   }
   sendActivation(a: StaffAccount) {
-    this.run('POST', '/api/v1/administrators/' + a.id + '/invite', {}, 'Activation email sent.');
+    this.run('POST', '/api/v1/administrators/' + a.id + '/invite', {}, 'Activation link created.');
   }
   resend(id: string) {
     this.run(
       'POST',
       '/api/v1/invitations/' + id + '/resend',
       {},
-      'Fresh activation email sent. Previous links are no longer valid.',
+      'Replacement activation link created. Previous links are no longer valid.',
     );
   }
   revoke(id: string) {

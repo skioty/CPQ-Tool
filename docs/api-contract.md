@@ -117,13 +117,13 @@ Same-origin cookie sessions and CSRF apply to all writes, including invitation p
 | Method/path | Access and payload/result |
 | --- | --- |
 | GET `/api/v1/tenants/:id/setup_review` | Authorized platform staff; `{data:{tenant_id,company_name,lifecycle_status,complete,can_activate,checks:[{key,label,complete,errors}]}}` |
-| GET `/api/v1/administrators` | Super Admin; `{data:[{id,name,email,role,enabled,activated,assigned_tenants,invitation}],email_delivery_configured}` |
-| POST `/api/v1/administrators` | Super Admin; `{administrator:{email,name?}}`; 201 `{id,invitation}` after SMTP send; no password input |
+| GET `/api/v1/administrators` | Super Admin; `{data:[{id,name,email,role,enabled,activated,assigned_tenants,invitation}],invitation_delivery}` |
+| POST `/api/v1/administrators` | Super Admin; `{administrator:{email,name?}}`; 201 `{id,invitation,invitation_token}` with a one-time `invitation_token`; no password input |
 | PATCH `/api/v1/administrators/:id` | Super Admin; `{administrator:{name?,enabled?}}`; 204. Email/role cannot be changed here. Pending accounts cannot be enabled without activation; assigned staff cannot be disabled |
-| POST `/api/v1/administrators/:id/invite` | Super Admin; recover pending staff activation, `{data:invitation}` |
-| GET `/api/v1/tenants/:tenant_id/invitations` | Super Admin or assigned CPQ Admin; `{data:[invitation],members:[{id,email,role,enabled}],email_delivery_configured}`; latest 100 invitations |
-| POST same tenant invitations path | Same access; `{email}`; 201 `{data:invitation}` after SMTP send |
-| POST `/api/v1/invitations/:id/resend` | Appropriate staff/tenant permission; rotates token and returns `{data:invitation}` |
+| POST `/api/v1/administrators/:id/invite` | Super Admin; recover pending staff activation, `{data:invitation,invitation_token}` |
+| GET `/api/v1/tenants/:tenant_id/invitations` | Super Admin or assigned CPQ Admin; `{data:[invitation],members:[{id,email,role,enabled}],invitation_delivery}`; latest 100 invitations |
+| POST same tenant invitations path | Same access; `{email}`; 201 `{data:invitation,invitation_token}` with a one-time `invitation_token` |
+| POST `/api/v1/invitations/:id/resend` | Appropriate staff/tenant permission; rotates token and returns `{data:invitation,invitation_token}` |
 | POST `/api/v1/invitations/:id/revoke` | Same permission; 204; only unused invitations, not accepted account access |
 | POST `/api/v1/invitation_preview` | Token holder with CSRF; `{token}`; `{data:{email,kind,expires_at,company_name,existing_account}}` |
 | POST `/api/v1/invitation_acceptance` | `{token,password,password_confirmation?}`; confirmation required for new accounts; existing tenant users authenticate current password; `{data:{kind,accepted:true}}` |
@@ -132,4 +132,4 @@ Same-origin cookie sessions and CSRF apply to all writes, including invitation p
 | GET `/api/v1/my_workspaces/:id` | Own enabled membership, Active/ready/current schema; `{data:{id,company_name,description,company_name_display,role,branding}}` |
 | GET `/api/v1/my_workspaces/:id/assets/:asset_id` | Same access plus asset ownership; binary content, private/no-store and nosniff |
 
-Invitation summaries contain `{id,kind,email,expires_at,state,delivery_status}`; never token or digest. Errors use `{error:{code,message,fields}}`: 401 unauthenticated/invalid credentials, 403 forbidden, 404 inaccessible record, 409 conflicting state, 410 unusable invitation, 422 validation, 503 mail_unavailable/mail_failed. Mail failure retains a pending account/failed invitation; refresh and resend rather than creating duplicate accounts. Acceptance is transactional and single-use under concurrent requests. See [account onboarding](account-onboarding.md) for SMTP boundaries and verification limits.
+Invitation summaries contain `{id,kind,email,expires_at,state,delivery_status}`; never token or digest. Errors use `{error:{code,message,fields}}`: 401 unauthenticated/invalid credentials, 403 forbidden, 404 inaccessible record, 409 conflicting state, 410 unusable invitation, 422 validation. Delivery is `manual_link`; no SMTP request is made. Raw tokens appear only on create/replace and are absent from history. A lost response requires replacing the link, not creating another account. Acceptance is transactional and single-use under concurrent requests. See [account onboarding](account-onboarding.md) for private sharing, transaction boundaries and verification limits.

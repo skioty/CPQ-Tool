@@ -1,19 +1,7 @@
 require "digest"
 module Platform
   class Invitations
-    def self.configured?
-      return true if Rails.env.test?
-      return false unless %w[SMTP_ADDRESS SMTP_FROM APP_PUBLIC_URL].all? { |key| ENV[key].present? }
-      uri = URI.parse(ENV["APP_PUBLIC_URL"])
-      uri.host.present? && uri.userinfo.nil? && ["", "/"].include?(uri.path) && uri.query.nil? && uri.fragment.nil? && (uri.scheme == "https" || (Rails.env.development? && uri.scheme == "http" && %w[localhost 127.0.0.1].include?(uri.host)))
-    rescue URI::InvalidURIError
-      false
-    end
-    def self.ready!
-      raise TenantManagement::Error.new("mail_unavailable", "SMTP delivery is not configured. Ask the platform administrator to configure email delivery.", status: 503) unless configured?
-    end
     def self.issue!(actor:, kind:, email:, tenant: nil, administrator: nil)
-      ready!
       normalized = email.to_s.strip.downcase
       raise TenantManagement::Error.new("validation_failed", "Enter a valid email address", fields: {email: ["Enter a valid email address"]}) unless normalized.match?(URI::MailTo::EMAIL_REGEXP)
       if tenant
@@ -32,20 +20,16 @@ module Platform
         scope = Invitation.where(kind: kind, email: normalized, tenant_id: tenant&.id, administrator_id: administrator&.id, accepted_at: nil, revoked_at: nil)
         scope.update_all(revoked_at: Time.current)
         record = Invitation.create!(kind: kind, email: normalized, tenant_id: tenant&.id, administrator_id: administrator&.id,
-          invited_by_id: actor.id, token_digest: Digest::SHA256.hexdigest(token), expires_at: 72.hours.from_now)
+          invited_by_id: actor.id, token_digest: Digest::SHA256.hexdigest(token), expires_at: 72.hours.from_now,
+          delivery_status: "sent")
         if tenant
           tenant.audit_events.create!(actor_id: actor.id, action: "tenant_user_invited", request_id: SecureRandom.uuid,
             changed_fields: [], created_at: Time.current)
         end
       end
-      begin
-        InvitationMailer.invitation(record, token).deliver_now
-        record.update!(delivery_status: "sent")
-      rescue StandardError => error
-        record.update!(delivery_status: "failed")
-        Rails.logger.warn("Invitation delivery failed id=#{record.id} error_class=#{error.class.name}")
-        raise TenantManagement::Error.new("mail_failed", "Email could not be sent. The invitation is marked failed; use Resend to create a fresh link.", status: 503)
-      end
+      # Keep the existing database enum for compatibility: 'sent' means issued.
+      # Only the issuing administrator receives this token, once. No mail or stored raw link.
+      record.issued_token = token
       record
     end
     def self.find_token!(token)

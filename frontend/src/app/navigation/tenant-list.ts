@@ -10,9 +10,9 @@ import { Session } from './session';
 @Component({
   imports: [FormsModule, RouterLink, DecimalPipe],
   host: { class: 'directory-page' },
-  template: `<div class="heading">
+  template: `<div class="heading portfolio-heading">
       <div>
-        <p class="eyebrow">YOUR WORKSPACE, ORGANIZED</p>
+        <p class="eyebrow">TENANT OPERATIONS</p>
         <h1>Tenants</h1>
         <p class="subheading">
           Manage company workspaces, contacts and subscriptions in one place.
@@ -22,6 +22,23 @@ import { Session } from './session';
         <a class="button primary" routerLink="/tenants/new"
           ><span aria-hidden="true">＋</span> Create tenant</a
         >
+      }
+    </div>
+    <div class="portfolio-context">
+      <div class="portfolio-context-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <path d="M4 21V5l8-3v19M12 8h8v13M2 21h20M7 7h2M7 11h2M7 15h2M15 12h2M15 16h2" />
+        </svg>
+      </div>
+      <div>
+        <h2>{{ hasFilters() ? 'Your filtered portfolio' : 'Your company workspaces' }}</h2>
+        <p>Open a company to review its setup, manage access or update its details.</p>
+      </div>
+      @if (result(); as page) {
+        <div class="portfolio-total">
+          <strong>{{ page.meta.total_count }}</strong
+          ><span>{{ hasFilters() ? 'matching tenants' : 'accessible tenants' }}</span>
+        </div>
       }
     </div>
     <section class="directory-panel" aria-label="Tenant directory" [attr.aria-busy]="loading()">

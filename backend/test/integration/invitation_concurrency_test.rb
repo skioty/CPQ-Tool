@@ -6,7 +6,7 @@ class InvitationConcurrencyTest < ActiveSupport::TestCase
     owner=Platform::Administrator.create!(email:"super-#{SecureRandom.hex(8)}@example.invalid",password:password,role:"super_admin")
     account=Platform::Administrator.create!(email:"pending-#{SecureRandom.hex(8)}@example.invalid",password:SecureRandom.base64(24),role:"admin",enabled:false)
     record=Platform::Invitations.issue!(actor:owner,kind:"staff",email:account.email,administrator:account)
-    raw=ActionMailer::Base.deliveries.last.body.decoded.match(/#token=([A-Za-z0-9_-]+)/)[1]
+    raw=record.issued_token
     ready=Queue.new;start=Queue.new;results=Queue.new
     workers=2.times.map do
       Thread.new do

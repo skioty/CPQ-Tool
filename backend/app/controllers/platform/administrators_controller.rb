@@ -7,18 +7,17 @@ module Platform
           activated: account.activated_at.present?, assigned_tenants: TenantManagement::Assignment.where(administrator_id: account.id.to_s).count,
           invitation: Invitation.where(administrator_id: account.id).order(created_at: :desc).first&.summary }
       end
-      render json: {data: accounts, email_delivery_configured: Invitations.configured?}
+      render json: {data: accounts, invitation_delivery: "manual_link"}
     end
     def create
-      Invitations.ready!
       attributes = params.require(:administrator).permit(:email, :name)
       account = nil
       Administrator.transaction do
         account = Administrator.create!(attributes.merge(role: "admin", enabled: false, password: SecureRandom.base64(32)))
         account_event!("staff_account_created", account)
+        @invitation = Invitations.issue!(actor: @actor, kind: "staff", email: account.email, administrator: account)
       end
-      invitation = Invitations.issue!(actor: @actor, kind: "staff", email: account.email, administrator: account)
-      render json: {id: account.id, invitation: invitation.summary}, status: 201
+      render json: {id: account.id, invitation: @invitation.summary, invitation_token: @invitation.issued_token}, status: 201
     end
     def invite
       account = Administrator.find(params[:id])
@@ -26,7 +25,7 @@ module Platform
         raise TenantManagement::Error.new("conflict", "Only pending CPQ Admin accounts can receive activation invitations", status: 409)
       end
       record = Invitations.issue!(actor: @actor, kind: "staff", email: account.email, administrator: account)
-      render json: {data: record.summary}
+      render json: {data: record.summary, invitation_token: record.issued_token}
     end
     def update
       account = Administrator.find(params[:id])

@@ -3,12 +3,12 @@ module Platform
     def index
       tenant = tenant!
       members = TenantAccess::Membership.includes(:user).where(tenant_id: tenant.id).map { |member| {id: member.id, email: member.user.email, role: member.role, enabled: member.enabled && member.user.enabled} }
-      render json: {data: Invitation.where(tenant_id: tenant.id).order(created_at: :desc).limit(100).map(&:summary), members: members, email_delivery_configured: Invitations.configured?}
+      render json: {data: Invitation.where(tenant_id: tenant.id).order(created_at: :desc).limit(100).map(&:summary), members: members, invitation_delivery: "manual_link"}
     end
     def create
       tenant = tenant!
       record = Invitations.issue!(actor: @actor, kind: "tenant", email: params.require(:email), tenant: tenant)
-      render json: {data: record.summary}, status: 201
+      render json: {data: record.summary, invitation_token: record.issued_token}, status: 201
     end
     def resend
       record = authorized_invitation!
@@ -21,7 +21,7 @@ module Platform
       end
       fresh = Invitations.issue!(actor: @actor, kind: record.kind, email: record.email,
         tenant: record.tenant_id && TenantManagement::Tenant.find(record.tenant_id), administrator: account)
-      render json: {data: fresh.summary}
+      render json: {data: fresh.summary, invitation_token: fresh.issued_token}
     end
     def revoke
       record = authorized_invitation!

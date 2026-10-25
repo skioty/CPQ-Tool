@@ -26,4 +26,4 @@ Use isolated test databases/schemas and synthetic fixtures. Never use production
 
 ## Account onboarding evidence
 
-The new local increment passed 64 Rails tests (514 assertions) and 71 Angular tests, including existing suites. Account invitation, permission, CSRF, concurrent acceptance and membership schema checks use synthetic test data and test mail delivery. Live SMTP/inbox verification remains pending. See [account onboarding](account-onboarding.md).
+The new local increment passed 64 Rails tests (524 assertions) and 73 Angular tests, including existing suites. Account invitation, permission, CSRF, concurrent acceptance and membership schema checks use synthetic test data with private manual links. No mail is sent. Tests cover one-time link exposure, history confidentiality, replacement/revocation, clipboard success/fallback and navigation cleanup. See [account onboarding](account-onboarding.md).

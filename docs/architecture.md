@@ -28,4 +28,4 @@ Session transport is now user-approved: a same-origin cookie session with CSRF p
 
 ## Account onboarding extension
 
-Platform staff and Tenant Admins use separate Devise scopes. Public shared invitation and membership records authorize access before Apartment switches to a trusted registry schema. Both entry paths share readiness, Active-status and migration checks and connection restoration. Tokens are hashed, single-use and consumed under row locks. See [account onboarding](account-onboarding.md) for transaction and SMTP boundaries.
+Platform staff and Tenant Admins use separate Devise scopes. Public shared invitation and membership records authorize access before Apartment switches to a trusted registry schema. Both entry paths share readiness, Active-status and migration checks and connection restoration. Tokens are hashed, single-use and consumed under row locks. See [account onboarding](account-onboarding.md) for transaction and manual link issuance boundaries.

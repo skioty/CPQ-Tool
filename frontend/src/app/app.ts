@@ -31,6 +31,17 @@ export class App {
       this.router.url.startsWith(path),
     );
   }
+  get pageLabel() {
+    const path = this.router.url;
+    if (path.startsWith('/administrators')) return 'Administrator management';
+    if (path.startsWith('/reference-options')) return 'Reference configuration';
+    if (path.includes('/setup')) return 'Tenant setup';
+    if (path.includes('/access')) return 'Tenant access';
+    if (path.includes('/branding')) return 'Branding preview';
+    if (path.includes('/edit')) return 'Edit tenant';
+    if (path.startsWith('/tenants/new')) return 'Create tenant';
+    return path === '/tenants' ? 'Tenant directory' : 'Company workspace';
+  }
   readonly message = signal('');
   readonly menuOpen = signal(false);
   private readonly main = viewChild<ElementRef<HTMLElement>>('mainContent');
@@ -52,12 +63,10 @@ export class App {
     });
   }
   tenantLogout() {
-    this.tenantSession
-      .logout()
-      .subscribe({
-        next: () => globalThis.location.assign('/tenant-login'),
-        error: () => this.message.set('Logout failed. Please retry.'),
-      });
+    this.tenantSession.logout().subscribe({
+      next: () => globalThis.location.assign('/tenant-login'),
+      error: () => this.message.set('Logout failed. Please retry.'),
+    });
   }
   logout() {
     this.session.logout().subscribe({

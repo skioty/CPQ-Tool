@@ -1,6 +1,8 @@
 module Platform
   class Invitation < ApplicationRecord
     self.table_name = "public.platform_invitations"
+    # Returned only by the authenticated issuance response; never persisted or included in history.
+    attr_accessor :issued_token
     def state
       return "revoked" if revoked_at
       return "accepted" if accepted_at

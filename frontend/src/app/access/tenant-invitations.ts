@@ -1,3 +1,4 @@
+import { InvitationLink } from './invitation-link';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
@@ -7,7 +8,7 @@ import { Subscription } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Invitation, accessError } from './access-api';
 @Component({
-  imports: [FormsModule, DatePipe, RouterLink],
+  imports: [FormsModule, DatePipe, RouterLink, InvitationLink],
   host: { class: 'directory-page' },
   template: `
     <nav class="breadcrumb" aria-label="Breadcrumb">
@@ -20,8 +21,8 @@ import { Invitation, accessError } from './access-api';
         <p class="eyebrow">EXPLICIT ACCOUNT ACCESS</p>
         <h1>Tenant invitations</h1>
         <p class="subheading">
-          Invite Tenant Admins explicitly. A company contact is never automatically granted account
-          access.
+          Give the right people access to this workspace. Contacts remain separate from user
+          accounts.
         </p>
       </div>
       <a class="button" [routerLink]="['/tenants', id, 'setup']">Review setup</a>
@@ -35,14 +36,16 @@ import { Invitation, accessError } from './access-api';
     @if (loading()) {
       <p role="status">Loading tenant access…</p>
     }
-    @if (!loading() && !error() && !mailReady()) {
-      <p class="notice" role="status">
-        SMTP delivery is not configured. Invitations cannot be sent until email delivery is
-        configured.
-      </p>
+    @if (issuedToken()) {
+      <app-invitation-link
+        [token]="issuedToken()"
+        [email]="issuedEmail()"
+        (dismissed)="issuedToken.set('')"
+      />
     }
     <div class="access-layout">
       <section class="card">
+        <p class="eyebrow">NEW WORKSPACE MEMBER</p>
         <h2>Invite a Tenant Admin</h2>
         <p class="muted">
           Single-use links expire after 72 hours. Workspace access requires an Active tenant.
@@ -59,11 +62,8 @@ import { Invitation, accessError } from './access-api';
             [(ngModel)]="email"
             [disabled]="busy()"
             autocomplete="email"
-          /><button
-            class="primary"
-            [disabled]="busy() || loading() || !mailReady() || invite.invalid"
-          >
-            {{ busy() ? 'Working…' : 'Send invitation email' }}
+          /><button class="primary" [disabled]="busy() || loading() || invite.invalid">
+            {{ busy() ? 'Working…' : 'Generate invitation link' }}
           </button>
         </form>
       </section>
@@ -79,7 +79,13 @@ import { Invitation, accessError } from './access-api';
               </p>
             </li>
           } @empty {
-            <li>No tenant accounts have accepted an invitation.</li>
+            @if (!loading() && !error()) {
+              <li class="access-empty">
+                <span class="empty-access-icon" aria-hidden="true">＋</span
+                ><strong>No tenant accounts have accepted an invitation.</strong>
+                <p>Create a private link to give a Tenant Admin access to this workspace.</p>
+              </li>
+            }
           }
         </ul>
       </section>
@@ -89,8 +95,8 @@ import { Invitation, accessError } from './access-api';
         <div>
           <h2>Recent invitations</h2>
           <p>
-            Latest 100 invitations. Resending replaces unused links. Revoking an accepted invitation
-            does not remove account access.
+            Latest 100 invitations. Replacing a link invalidates the previous one. Accepted
+            invitations cannot be revoked; account access is separate.
           </p>
         </div>
         <button (click)="load()" [disabled]="busy()">Refresh</button>
@@ -105,9 +111,7 @@ import { Invitation, accessError } from './access-api';
             <p>Expires {{ inv.expires_at | date: 'medium' }}</p>
             @if (inv.state !== 'accepted') {
               <div class="row-actions">
-                <button (click)="resend(inv.id)" [disabled]="busy() || !mailReady()">
-                  Resend email
-                </button>
+                <button (click)="resend(inv.id)" [disabled]="busy()">Replace link</button>
                 @if (inv.state !== 'revoked') {
                   <button (click)="revoke(inv.id)" [disabled]="busy()">Revoke invitation</button>
                 }
@@ -115,7 +119,11 @@ import { Invitation, accessError } from './access-api';
             }
           </li>
         } @empty {
-          <li>No invitations have been sent.</li>
+          @if (!loading() && !error()) {
+            <li class="access-empty">
+              No invitations yet. Your invitation history will appear here.
+            </li>
+          }
         }
       </ul>
     </section>
@@ -133,12 +141,17 @@ export class TenantInvitations {
   readonly members = signal<{ id: string; email: string; enabled: boolean }[]>([]);
   readonly loading = signal(true);
   readonly busy = signal(false);
-  readonly mailReady = signal(false);
+  readonly issuedToken = signal('');
+  readonly issuedEmail = signal('');
   readonly error = signal('');
   readonly message = signal('');
   constructor() {
-    this.destroy.onDestroy(() => this.request?.unsubscribe());
+    this.destroy.onDestroy(() => {
+      this.request?.unsubscribe();
+      this.issuedToken.set('');
+    });
     this.route.paramMap.pipe(takeUntilDestroyed(inject(DestroyRef))).subscribe((p) => {
+      this.issuedToken.set('');
       this.id = p.get('id') || '';
       this.invitations.set([]);
       this.members.set([]);
@@ -148,20 +161,20 @@ export class TenantInvitations {
   load() {
     const id = this.id;
     this.request?.unsubscribe();
-    this.mailReady.set(false);
+
     this.loading.set(true);
     this.request = this.http
       .get<{
         data: Invitation[];
         members: { id: string; email: string; enabled: boolean }[];
-        email_delivery_configured: boolean;
+        invitation_delivery: string;
       }>('/api/v1/tenants/' + encodeURIComponent(id) + '/invitations')
       .subscribe({
         next: (r) => {
           if (id !== this.id) return;
           this.invitations.set(r.data);
           this.members.set(r.members);
-          this.mailReady.set(r.email_delivery_configured);
+
           this.loading.set(false);
         },
         error: (e) => {
@@ -176,36 +189,43 @@ export class TenantInvitations {
     this.busy.set(true);
     this.error.set('');
     this.message.set('');
+    this.issuedToken.set('');
     const id = this.id;
-    this.http.post(url, body).subscribe({
-      next: () => {
-        this.busy.set(false);
-        if (id !== this.id) return;
-        this.message.set(message);
-        this.email = '';
-        this.load();
-      },
-      error: (e) => {
-        this.busy.set(false);
-        if (id !== this.id) return;
-        this.error.set(accessError(e));
-        this.load();
-      },
-    });
+    this.http
+      .post(url, body)
+      .pipe(takeUntilDestroyed(this.destroy))
+      .subscribe({
+        next: (result: any) => {
+          this.busy.set(false);
+          if (id !== this.id) return;
+          this.message.set(message);
+          if (result?.invitation_token) {
+            this.issuedToken.set(result.invitation_token);
+            this.issuedEmail.set(result.data?.email || result.invitation?.email || this.email);
+          }
+          this.email = '';
+          this.load();
+        },
+        error: (e) => {
+          this.busy.set(false);
+          if (id !== this.id) return;
+          this.error.set(accessError(e));
+          this.load();
+        },
+      });
   }
   send() {
-    if (this.mailReady())
-      this.run(
-        '/api/v1/tenants/' + this.id + '/invitations',
-        { email: this.email },
-        'Invitation email sent. No account access is granted until the recipient accepts.',
-      );
+    this.run(
+      '/api/v1/tenants/' + this.id + '/invitations',
+      { email: this.email },
+      'Invitation link created. No account access is granted until the recipient accepts.',
+    );
   }
   resend(id: string) {
     this.run(
       '/api/v1/invitations/' + id + '/resend',
       {},
-      'Fresh invitation email sent. Previous links are no longer valid.',
+      'Replacement invitation link created. Previous links are no longer valid.',
     );
   }
   revoke(id: string) {

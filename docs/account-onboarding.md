@@ -1,50 +1,51 @@
 # Guided setup and explicit account access
 
-This local increment extends the earlier contact-only scope with the user's approved invitation policies. Contacts remain contacts unless someone explicitly invites their email address. No public registration or automatic account creation from contact changes exists.
+## Current delivery policy
 
-## Implemented behaviour
+The user replaced SMTP email delivery with **private, copyable invitation links**. No SMTP service, mail credentials or email sending is required. This supersedes the earlier email-delivery decision.
 
-- `/tenants/:id/setup` reviews persisted company, contacts, assignment, subscription, branding and provisioning checks using existing backend validation. Activation is offered only when both readiness and backend permissions allow it. Edit links return to the relevant form section.
-- `/administrators` is restricted to Super Admins. They create CPQ Admins through activation email, edit display names, and enable/disable activated accounts. Email is immutable after creation. Super Admin provisioning stays outside this UI. Self-deactivation, Super Admin modification and permanent deletion are blocked. Reassign a staff member's tenants before disabling that member.
-- `/tenants/:id/access` lets Super Admins and assigned CPQ Admins explicitly invite Tenant Admins, inspect memberships, and resend or revoke unused invitations. The activity history records tenant invitation actions. The invitation list returns the latest 100 records; it is not a complete audit export.
-- Links expire after 72 hours, are single use, and are stored only as SHA-256 digests. Resend rotates the token. Acceptance is locked transactionally, including concurrent requests.
-- New users set a 12–128 character password with confirmation. An existing tenant account must authenticate with its current password to accept another membership; an invitation cannot reset that password.
-- `/tenant-login` and `/workspaces` use a separate Devise identity scope. Tenant users receive only enabled memberships and can open their own Active, ready, migration-current workspace. Shared membership authorization happens before switching to the trusted registry schema identifier. Connection context resets after errors and success.
-- Tenant workspaces show saved branding and company information. Future CPQ modules, tenant-side user administration, password recovery, SSO and custom role management are not implemented by this increment.
+Super Admins create CPQ Admin staff accounts and receive a single-use activation link. Super Admins and assigned CPQ Admins create explicit Tenant Admin invitations. Share each link privately with its intended recipient. Contacts never gain access automatically.
 
-## Email configuration
+Links expire after 72 hours. A replacement invalidates previous unused links. Unused invitations can be revoked. An accepted invitation cannot be revoked to remove account access. Only the token digest is persisted; the raw token is returned once to the authenticated issuing administrator, in a no-store response. History endpoints never return raw tokens. The UI keeps the link in component memory only, provides Copy/Dismiss, and clears it on navigation or another operation. Clipboard failure offers manual selection rather than claiming it copied.
 
-Delivery uses SMTP, not a publicly displayed activation link. Put these settings directly in the ignored `.env` file:
+For this local application, links start with `http://localhost:14207` and work on this computer. Other people cannot open your laptop's localhost from their laptops. A shared HTTPS deployment is a separate task. Never post links in GitHub, screenshots, logs or public messages. Losing a link requires generating a replacement.
 
-| Setting | Meaning |
-| --- | --- |
-| `SMTP_ADDRESS` | Provider's SMTP hostname |
-| `SMTP_PORT` | Provider's port, normally 587 with STARTTLS or 465 with TLS |
-| `SMTP_FROM` | Provider-approved sender address |
-| `SMTP_DOMAIN` | Provider's HELO domain when required |
-| `SMTP_USERNAME`, `SMTP_PASSWORD` | Provider credentials; never commit or paste into issue reports |
-| `SMTP_AUTHENTICATION` | Provider-supported mechanism; defaults to `plain` |
-| `SMTP_TLS_MODE` | `starttls` or `tls`, according to provider |
-| `APP_PUBLIC_URL` | Browser origin, currently `http://localhost:14207` for this isolated local application |
+## Implemented screens and account policies
 
-Restart the backend after configuration: `docker compose -p cpq-integration up -d --wait --no-build backend`. Localhost email links open only on this laptop; other recipients need an appropriately hosted HTTPS origin. No hosting or mail-provider account is created here.
+- `/tenants/:id/setup` reviews saved company, contacts, assignment, subscription, branding and provisioning checks using existing backend validation. Activation requires both readiness and backend permission. Edit links open the relevant form section.
+- `/administrators` is restricted to Super Admins. They create CPQ Admin activation links, edit display names and enable/disable activated accounts. Email is immutable after creation. Super Admin provisioning stays outside this UI. Self-deactivation, Super Admin modification and permanent deletion are blocked. Reassign all tenants before disabling their responsible staff member.
+- `/tenants/:id/access` lists explicit memberships and the latest 100 invitations, with create/replace/revoke controls. A contact email is not invited without this separate explicit action.
+- `/invitations/accept#token=...` clears the fragment before API validation. New accounts set a matching 12–128 character password. Existing tenant users authenticate with their current password; invitations cannot reset it. Acceptance consumes the token and updates account/membership records in one transaction with row locking.
+- `/tenant-login` and `/workspaces` use a separate Devise scope. Enabled tenant users can open only their own enabled memberships in Active, ready, migration-current workspaces. Authorized staff retain the existing lifecycle and management policies.
+- Tenant workspaces show saved branding and company information. Future CPQ modules, tenant-side user administration, password recovery, SSO and custom permissions remain outside this increment.
 
-Sending is blocked when required settings are absent. SMTP failures return an explicit delivery error and retain a failed invitation/pending account for recovery; resend retries with a new token. SMTP acceptance does not prove inbox delivery. Do not retry automatically after an ambiguous transport failure. Tokens in email URLs use the browser fragment and are cleared from the address bar before API validation; mailer debug-body logging is disabled.
+## Persistence and compatibility
 
-## Persistence and transaction boundaries
+Migration `20261025000100_add_explicit_account_invitations` introduced public account, membership, invitation and account-event records. Existing staff passwords and enabled flags were preserved. No new migration or database reset is required to switch delivery modes. The existing `delivery_status = sent` value now means successfully issued; it does not claim email delivery. Historical pending/failed invitations remain unusable until replaced.
 
-The forward migration `20261025000100_add_explicit_account_invitations` adds shared public account, membership, invitation and account-event records. Existing staff passwords and enabled flags are preserved; existing staff receive an activation timestamp. These shared models are excluded from Apartment schema cloning. The existing schema strategy and tenant business migrations remain intact.
+Staff creation and invitation issuance now commit atomically. Invitation acceptance creates/enables membership and consumes the token transactionally. It does not provision a schema. Shared models remain excluded from Apartment cloning; membership authorization precedes trusted schema switching, and connection context resets after success and errors. Archiving retains membership and blocks workspace access through the existing lifecycle gate.
 
-Invitation issuance commits its database transaction before synchronous SMTP delivery. Failed delivery is recorded separately and does not report success. Acceptance creates/enables the membership and consumes the token in one database transaction. It does not provision a schema; workspace access uses the existing readiness/migration checks. Archiving retains memberships and prevents workspace access through the existing lifecycle gate.
+## Local operation
 
-Apply migrations only to the intended local database with `docker compose -p cpq-integration run --rm backend bundle exec rails db:prepare`. Do not use reset/drop tasks. Start with `docker compose -p cpq-integration up -d --wait --no-build db backend frontend`; stop without discarding data with `docker compose -p cpq-integration stop`.
+From the integration folder:
 
-## Verification record
+```sh
+docker compose -p cpq-integration up -d --wait --no-build db backend frontend
+docker compose -p cpq-integration stop
+```
 
-On this increment: Rails **64 tests, 514 assertions, no failures/errors/skips**; Angular **71 tests, no failures**. Coverage includes permissions, explicit invitation acceptance, expiry/reuse, SMTP failure recovery, concurrent single-use acceptance, two-schema access, CSRF, authoritative setup gating and UI request cancellation. Automated mail tests use ActionMailer test delivery, not live SMTP. Existing tenant and isolation suites remain included.
+The stop command preserves data. Existing ignored environment files and demo credentials remain local. SMTP variables are no longer forwarded or included in `.env.example`. No outbound email is sent.
 
-Live SMTP delivery and inbox/link testing remain blocked by missing provider configuration. Team review and stakeholder acceptance remain outstanding. No GitHub push, merge, release or deployment is part of this local increment.
+Build/tests:
 
-Production build passes (455.33 kB initial assets). Angular reports non-failing component-style budget warnings for the tenant form and application shell; budgets were not weakened.
+```sh
+docker compose -p cpq-integration run --rm frontend npm run build
+docker compose -p cpq-integration run --rm frontend npm test -- --watch=false
+docker compose -p cpq-integration --profile test run --rm -e PARALLEL_WORKERS=1 backend-test
+```
 
-Browser verification against the running Rails/PostgreSQL backend covered existing Super Admin login, both preserved tenants, staff listing/assignment restrictions, the six saved setup checks, activation confirmation and Escape dismissal, and tenant invitation SMTP-unavailable states. The setup and invitation layouts were inspected at desktop and 375px mobile width; the setup page had no horizontal overflow. No tenant status or existing password was changed. New-account email acceptance was verified automatically with test delivery, not through a real inbox.
+See the API contract for response shapes and the UI experience document for final verification evidence. Team review and stakeholder acceptance remain outstanding. Nothing is pushed, merged, released or deployed by this local task.
+
+## Executed verification for manual links
+
+Rails: 64 tests / 524 assertions / no failures, errors or skips. Angular: 73 tests passed. Production build passed (~460.92 kB initial assets); two existing shell/form style advisories remain. Automated tests use real PostgreSQL, including schema access and concurrent single-use consumption. No mail provider, mock transport or outgoing message is involved. Browser UI checks and their limits are recorded in ui-experience.md. Team review and a recipient walkthrough remain next steps.

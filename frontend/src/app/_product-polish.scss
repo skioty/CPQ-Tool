@@ -1,0 +1,269 @@
+// Shared product presentation, compiled once. Tenant-defined preview colours remain authoritative.
+.workspace {
+  .sidebar {
+    background: linear-gradient(170deg, #172b43, #132237);
+    border-right: 1px solid #26384e;
+  }
+  .workspace-label {
+    background: #ffffff04;
+    border-color: #ffffff1c;
+    border-radius: 10px;
+  }
+  .topbar {
+    min-height: 76px;
+  }
+  .brand-symbol {
+    box-shadow: 0 3px 8px #0002;
+  }
+  .topbar-location strong {
+    font-size: 13px;
+  }
+  .sidebar nav a {
+    border-radius: 8px;
+  }
+  .sidebar nav a.active {
+    background: #ffffff14;
+  }
+}
+.directory-page {
+  .heading {
+    align-items: flex-end;
+    margin-block: 4px 30px;
+  }
+  .heading .subheading {
+    max-width: 640px;
+    line-height: 1.7;
+  }
+  .eyebrow {
+    color: #68788d;
+    letter-spacing: 1.5px;
+    font-size: 10px;
+  }
+  .directory-panel {
+    overflow: clip;
+  }
+  .panel-heading {
+    padding-block: 24px;
+  }
+  .panel-heading h2 {
+    font-size: 17px;
+    letter-spacing: -0.4px;
+  }
+  .panel-heading p {
+    font-size: 13px;
+    max-width: 580px;
+  }
+  .filters {
+    background: #fbfcfe;
+    padding-top: 20px;
+    border-top: 1px solid #e9edf3;
+  }
+  .filters label {
+    color: #45566d;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .row-head {
+    letter-spacing: 0.8px;
+    font-size: 10px;
+    background: #f8fafd;
+  }
+  .tenant-row {
+    min-height: 100px;
+  }
+  .tenant-row:hover {
+    background: #f7f9fc;
+  }
+  .tenant-identity a {
+    font-size: 14px;
+  }
+  .tenant-identity p {
+    max-width: 460px;
+  }
+  .row-open {
+    background: #fff;
+    border-color: #dbe3ed;
+  }
+  .card {
+    box-shadow: var(--shadow);
+  }
+  .breadcrumb {
+    margin-bottom: 24px;
+    font-size: 12px;
+  }
+  .tenant-grid > .card h2 {
+    font-size: 17px;
+  }
+}
+.portfolio-context {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 24px 28px;
+  margin-bottom: 24px;
+  background: linear-gradient(110deg, #fff, #f9fbff);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  h2 {
+    font-size: 16px;
+    margin: 0 0 4px;
+  }
+  p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--muted);
+    max-width: 520px;
+  }
+}
+.portfolio-context-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: #edf2f9;
+  color: #3c587c;
+  flex-shrink: 0;
+  svg {
+    width: 25px;
+    height: 25px;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+}
+.portfolio-total {
+  margin-left: auto;
+  padding-left: 26px;
+  border-left: 1px solid var(--line);
+  min-width: 140px;
+  strong {
+    display: block;
+    font-size: 30px;
+    line-height: 1.2;
+    font-weight: 650;
+    letter-spacing: -1px;
+  }
+  span {
+    color: var(--muted);
+    font-size: 12px;
+  }
+}
+.access-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 26px;
+  > div {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    box-shadow: var(--shadow);
+  }
+  span {
+    display: block;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  strong {
+    display: block;
+    font-size: 30px;
+    font-weight: 650;
+    letter-spacing: -1px;
+    margin: 4px 0;
+    line-height: 1.25;
+  }
+  small {
+    font-size: 12px;
+    color: var(--muted);
+  }
+}
+app-tenant-form {
+  .page-heading {
+    margin-top: 4px;
+    margin-bottom: 30px;
+  }
+  .form-navigation {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 6px 18px;
+    gap: 24px;
+  }
+  .form-navigation a {
+    border-radius: 6px;
+    padding-inline: 4px;
+  }
+  .form-navigation span {
+    background: #edf2f9;
+    color: #49627f;
+  }
+  .card:target {
+    border-color: #c59b91;
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  .section-title {
+    padding-bottom: 20px;
+    border-bottom: 1px solid #edf0f5;
+  }
+  .preview-column {
+    box-shadow: var(--shadow);
+  }
+}
+@media (max-width: 760px) {
+  .workspace .topbar {
+    min-height: 64px;
+  }
+  .directory-page .heading {
+    align-items: flex-start;
+    margin-bottom: 24px;
+  }
+  .portfolio-context {
+    padding: 20px;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .portfolio-context > div:nth-child(2) {
+    flex: 1;
+    min-width: 170px;
+  }
+  .portfolio-total {
+    margin-left: 0;
+    padding: 14px 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    width: 100%;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .portfolio-total strong {
+    font-size: 24px;
+  }
+  .access-stats {
+    gap: 10px;
+  }
+  .access-stats > div {
+    padding: 14px;
+  }
+  .access-stats strong {
+    font-size: 26px;
+  }
+  .access-stats small {
+    display: none;
+  }
+  app-tenant-form .form-navigation {
+    gap: 8px 16px;
+    padding-inline: 12px;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .directory-page .tenant-row,
+  .workspace nav a {
+    transition: background 0.18s ease;
+  }
+}

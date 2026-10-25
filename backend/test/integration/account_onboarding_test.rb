@@ -30,7 +30,7 @@ class AccountOnboardingTest < ActionDispatch::IntegrationTest
     @csrf = response.parsed_body["csrf_token"]
   end
   def token
-    ActionMailer::Base.deliveries.last.body.decoded.match(/#token=([A-Za-z0-9_-]+)/)[1]
+    response.parsed_body.fetch("invitation_token")
   end
   def invite(email = "invite-#{SecureRandom.hex(8)}@example.invalid")
     post "/api/v1/tenants/#{@tenant.id}/invitations", params: {email: email}, as: :json
@@ -72,7 +72,7 @@ class AccountOnboardingTest < ActionDispatch::IntegrationTest
     assert_response :no_content
     assert @other.reload.enabled?
   end
-  test "staff activation sends email stores only a digest and consumes the link once" do
+  test "staff activation returns a manual token stores only a digest and consumes the link once" do
     email = "staff-#{SecureRandom.hex(8)}@example.invalid"
     post "/api/v1/administrators", params: {administrator:{email:email,name:"Invited staff"}}, as: :json
     assert_response :created
@@ -82,7 +82,8 @@ class AccountOnboardingTest < ActionDispatch::IntegrationTest
     record=Platform::Invitation.find(response.parsed_body.dig("invitation","id"))
     assert_equal Digest::SHA256.hexdigest(raw), record.token_digest
     assert_not_equal raw, record.token_digest
-    assert_equal [email], ActionMailer::Base.deliveries.last.to
+    assert_empty ActionMailer::Base.deliveries
+    assert_equal "no-store", response.headers["Cache-Control"]
     assert_in_delta 72.hours, record.expires_at-Time.current, 30
     accept(raw, "short")
     assert_response :unprocessable_entity
@@ -144,21 +145,24 @@ class AccountOnboardingTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert user.reload.valid_password?(@password)
   end
-  test "delivery failure is visible and missing SMTP cannot report success" do
-    delivery=Object.new
-    def delivery.deliver_now; raise IOError,"Synthetic delivery failure";end
-    Platform::InvitationMailer.stub(:invitation,delivery) do
-      post "/api/v1/tenants/#{@tenant.id}/invitations",params:{email:"failed@example.invalid"},as: :json
-      assert_response :service_unavailable
-    end
-    assert_equal "failed",Platform::Invitation.last.delivery_status
-    assert_equal 0,TenantAccess::User.count
-    Platform::Invitations.stub(:configured?,false) do
-      assert_no_difference "Platform::Invitation.count" do
-        post "/api/v1/tenants/#{@tenant.id}/invitations",params:{email:"blocked@example.invalid"},as: :json
-        assert_response :service_unavailable
-      end
-    end
+  test "manual issuance needs no SMTP and history never exposes the token" do
+    id, raw = invite
+    assert_empty ActionMailer::Base.deliveries
+    record = Platform::Invitation.find(id)
+    assert_equal Digest::SHA256.hexdigest(raw), record.token_digest
+    assert_nil record.issued_token
+    get "/api/v1/tenants/#{@tenant.id}/invitations"
+    assert_response :success
+    assert_equal "manual_link", response.parsed_body["invitation_delivery"]
+    assert_not response.body.include?(raw)
+    assert_nil response.parsed_body["invitation_token"]
+    login(@other)
+    post "/api/v1/invitations/#{id}/resend", as: :json
+    assert_response :not_found
+    assert_nil response.parsed_body["invitation_token"]
+    login(@super)
+    accept(raw)
+    assert_response :success
   end
   test "tenant sign in is separate and inactive suspended and archived workspaces are denied" do
     _,raw=invite

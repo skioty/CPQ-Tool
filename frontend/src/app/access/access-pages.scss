@@ -4,6 +4,65 @@
   gap: 24px;
   align-items: start;
 }
+.access-layout > .card:first-child {
+  border-top: 3px solid var(--nav);
+}
+.staff-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.staff-avatar {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  flex-shrink: 0;
+  background: #edf2f9;
+  color: #405b7b;
+  font-size: 12px;
+  font-weight: 700;
+}
+.staff-identity p {
+  margin: 2px 0 0;
+}
+.account-editor {
+  margin-top: 16px;
+  border-top: 1px solid #edf0f5;
+  padding-top: 12px;
+}
+.account-editor summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: list-item;
+  align-content: center;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--accent);
+}
+.access-empty {
+  text-align: center;
+  padding-block: 32px !important;
+  color: var(--muted);
+}
+.access-empty strong {
+  font-size: 13px;
+  color: var(--ink);
+  display: block;
+}
+.empty-access-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #edf2f9;
+  color: #405b7b;
+  font-size: 22px;
+  margin: 0 auto 16px;
+}
 form {
   display: grid;
   gap: 8px;

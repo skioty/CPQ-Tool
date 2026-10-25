@@ -27,4 +27,4 @@ See [decisions](decisions.md) for unresolved rules and [test plan](test-plan.md)
 
 ## Approved onboarding scope extension
 
-Guided persisted setup review, Super Admin staff management, and explicit Tenant Admin email invitations are now implemented locally under the approved policies in [account onboarding](account-onboarding.md). Earlier invitation exclusions are historical. Tenant-side user administration and password recovery remain outside this increment. Contacts never grant access automatically. Live SMTP delivery remains unverified.
+Guided persisted setup review, Super Admin staff management, and explicit Tenant Admin link invitations are now implemented locally under the approved policies in [account onboarding](account-onboarding.md). Earlier invitation exclusions are historical. Tenant-side user administration and password recovery remain outside this increment. Contacts never grant access automatically. SMTP delivery was superseded by manually shared links; no email service is required.

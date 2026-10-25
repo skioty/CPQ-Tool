@@ -5,6 +5,7 @@ import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/route
 import { BehaviorSubject, of } from 'rxjs';
 import { signal } from '@angular/core';
 import { vi } from 'vitest';
+import { InvitationLink } from './invitation-link';
 import { SetupGuide } from './setup-guide';
 import { AdministratorManager } from './administrator-manager';
 import { TenantInvitations } from './tenant-invitations';
@@ -47,6 +48,7 @@ describe('account management and guided setup', () => {
   afterEach(() => {
     http.verify();
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
   it('uses authoritative setup checks and never offers activation without permission', () => {
     const f = TestBed.createComponent(SetupGuide);
@@ -77,19 +79,76 @@ describe('account management and guided setup', () => {
       .flush({ data: { ...ready, can_activate: false, lifecycle_status: 'active' } });
     expect(f.componentInstance.message()).toContain('activated');
   });
-  it('blocks sending staff activation when SMTP is unavailable', () => {
+  it('creates a one-time staff link without email configuration and dismisses it', () => {
     const f = TestBed.createComponent(AdministratorManager);
     f.detectChanges();
-    http.expectOne('/api/v1/administrators').flush({ data: [], email_delivery_configured: false });
-    f.detectChanges();
-    expect(f.nativeElement.textContent).toContain('SMTP email delivery is not configured');
+    http
+      .expectOne('/api/v1/administrators')
+      .flush({ data: [], invitation_delivery: 'manual_link' });
+    f.componentInstance.email = 'staff@example.invalid';
     f.componentInstance.create();
-    http.expectNone((r) => r.method === 'POST');
+    http
+      .expectOne('/api/v1/administrators')
+      .flush({
+        invitation_token: 'synthetic-secret-token',
+        invitation: { email: 'staff@example.invalid' },
+      });
+    http
+      .expectOne('/api/v1/administrators')
+      .flush({ data: [], invitation_delivery: 'manual_link' });
+    f.detectChanges();
+    expect(f.nativeElement.querySelector('#issued-invitation-link').value).toContain(
+      '#token=synthetic-secret-token',
+    );
+    expect(f.nativeElement.textContent).toContain('No email is sent');
+    f.nativeElement.querySelector('[aria-label="Dismiss invitation link"]').click();
+    f.detectChanges();
+    expect(f.nativeElement.querySelector('#issued-invitation-link')).toBeNull();
+    expect(f.componentInstance.issuedToken()).toBe('');
   });
-  it('sends no staff password and preserves delivery failure without claiming success', () => {
+  it('copies only the newly issued link and reports clipboard failure honestly', async () => {
+    const copy = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('navigator', { clipboard: { writeText: copy } });
+    const f = TestBed.createComponent(InvitationLink);
+    f.componentRef.setInput('token', 'synthetic-copy-token');
+    f.componentRef.setInput('email', 'recipient@example.invalid');
+    f.detectChanges();
+    await f.componentInstance.copy();
+    expect(copy).toHaveBeenCalledWith(
+      location.origin + '/invitations/accept#token=synthetic-copy-token',
+    );
+    expect(f.componentInstance.copied()).toBe(true);
+    copy.mockRejectedValueOnce(new Error('Clipboard denied'));
+    await f.componentInstance.copy();
+    expect(f.componentInstance.note()).toContain('use Ctrl+C');
+    expect(f.componentInstance.copying()).toBe(false);
+  });
+  it('replaces a tenant invitation link and clears it when navigating to another tenant', () => {
+    const f = TestBed.createComponent(TenantInvitations);
+    f.detectChanges();
+    http
+      .expectOne('/api/v1/tenants/one/invitations')
+      .flush({ data: [], members: [], invitation_delivery: 'manual_link' });
+    f.componentInstance.resend('old');
+    http
+      .expectOne('/api/v1/invitations/old/resend')
+      .flush({ invitation_token: 'fresh-secret', data: { email: 'recipient@example.invalid' } });
+    http
+      .expectOne('/api/v1/tenants/one/invitations')
+      .flush({ data: [], members: [], invitation_delivery: 'manual_link' });
+    expect(f.componentInstance.issuedToken()).toBe('fresh-secret');
+    params.next(convertToParamMap({ id: 'two' }));
+    expect(f.componentInstance.issuedToken()).toBe('');
+    http
+      .expectOne('/api/v1/tenants/two/invitations')
+      .flush({ data: [], members: [], invitation_delivery: 'manual_link' });
+  });
+  it('sends no staff password and preserves API failure without claiming success', () => {
     const f = TestBed.createComponent(AdministratorManager);
     f.detectChanges();
-    http.expectOne('/api/v1/administrators').flush({ data: [], email_delivery_configured: true });
+    http
+      .expectOne('/api/v1/administrators')
+      .flush({ data: [], invitation_delivery: 'manual_link' });
     f.componentInstance.email = 'staff@example.invalid';
     f.componentInstance.name = 'Synthetic staff';
     f.componentInstance.create();
@@ -99,12 +158,14 @@ describe('account management and guided setup', () => {
       administrator: { email: 'staff@example.invalid', name: 'Synthetic staff' },
     });
     r.flush(
-      { error: { message: 'Email could not be sent' } },
+      { error: { message: 'Invitation could not be created' } },
       { status: 503, statusText: 'Unavailable' },
     );
-    http.expectOne('/api/v1/administrators').flush({ data: [], email_delivery_configured: true });
+    http
+      .expectOne('/api/v1/administrators')
+      .flush({ data: [], invitation_delivery: 'manual_link' });
     expect(f.componentInstance.message()).toBe('');
-    expect(f.componentInstance.error()).toContain('could not be sent');
+    expect(f.componentInstance.error()).toContain('could not be created');
     expect(f.componentInstance.email).toBe('staff@example.invalid');
   });
   it('loads explicit memberships and sends tenant invitations only after an explicit action', () => {
@@ -112,7 +173,7 @@ describe('account management and guided setup', () => {
     f.detectChanges();
     http
       .expectOne('/api/v1/tenants/one/invitations')
-      .flush({ data: [], members: [], email_delivery_configured: true });
+      .flush({ data: [], members: [], invitation_delivery: 'manual_link' });
     f.detectChanges();
     expect(f.nativeElement.textContent).toContain('No tenant accounts have accepted');
     http.expectNone((r) => r.method === 'POST');
@@ -124,7 +185,7 @@ describe('account management and guided setup', () => {
     r.flush({});
     http
       .expectOne('/api/v1/tenants/one/invitations')
-      .flush({ data: [], members: [], email_delivery_configured: true });
+      .flush({ data: [], members: [], invitation_delivery: 'manual_link' });
     expect(f.componentInstance.message()).toContain('No account access');
   });
   it('clears the fragment from browser history and uses an existing account password without resetting it', () => {
