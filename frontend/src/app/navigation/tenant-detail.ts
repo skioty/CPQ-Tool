@@ -1,3 +1,4 @@
+import { TenantActivity } from './tenant-activity';
 import { brandingInk } from '../tenant/branding-colour';
 import { DecimalPipe } from '@angular/common';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
@@ -25,7 +26,7 @@ import { FORM_OPTIONS, ASSET_URL } from '../tenant/tenant.types';
 import { LifecycleDialog } from './lifecycle-dialog';
 
 @Component({
-  imports: [RouterLink, LifecycleDialog, DecimalPipe],
+  imports: [RouterLink, LifecycleDialog, DecimalPipe, TenantActivity],
   host: { class: 'directory-page' },
   template: `<div class="breadcrumb">
       <a routerLink="/tenants">Tenants</a><span>/</span><span>Company overview</span>
@@ -101,6 +102,9 @@ import { LifecycleDialog } from './lifecycle-dialog';
                 <div>
                   <strong>{{ c.name || 'Unnamed contact' }}</strong>
                   <p>{{ c.email || 'No email provided' }}</p>
+                  @if (c.phone) {
+                    <p>{{ c.phone }}</p>
+                  }
                 </div>
                 @if (c.primary) {
                   <span class="badge" data-status="active">Primary</span>
@@ -229,6 +233,27 @@ import { LifecycleDialog } from './lifecycle-dialog';
           }
         </div>
       </section>
+      <section class="card activity-panel" aria-labelledby="activity-heading">
+        <div class="card-heading">
+          <div>
+            <h2 id="activity-heading">Tenant activity</h2>
+            <p class="muted">Recorded changes and lifecycle actions for this company.</p>
+          </div>
+          <button
+            type="button"
+            [attr.aria-expanded]="activityOpen()"
+            aria-controls="tenant-activity"
+            (click)="activityOpen.set(!activityOpen())"
+          >
+            {{ activityOpen() ? 'Hide activity' : 'View activity' }}
+          </button>
+        </div>
+        <div id="tenant-activity" [hidden]="!activityOpen()">
+          @if (activityOpen()) {
+            <app-tenant-activity [tenantId]="t.id" />
+          }
+        </div>
+      </section>
       @if (selected(); as action) {
         <app-lifecycle-dialog
           [action]="action"
@@ -285,6 +310,7 @@ export class TenantDetail {
   readonly success = signal('');
   readonly selected = signal<LifecycleAction | null>(null);
   readonly actionError = signal('');
+  readonly activityOpen = signal(false);
   private actionCancel = new Subject<void>();
   readonly brandingKeys = [
     'primary_colour',
@@ -302,6 +328,7 @@ export class TenantDetail {
         distinctUntilChanged(),
         tap(() => {
           this.actionCancel.next();
+          this.activityOpen.set(false);
           this.busy.set(false);
           this.success.set('');
           this.actionError.set('');

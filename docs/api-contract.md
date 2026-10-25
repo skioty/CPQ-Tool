@@ -99,3 +99,13 @@ The display flag, identifiers, reference lists, assignment cardinality and disco
 Proposed detail response: `{"data":{"id":"tenant-id","company_name":"Example company","lifecycle_status":"approved-state","provisioning_status":"approved-state"}}` plus authorized settings/contacts. Never expose credentials, raw internal errors or schema identifiers. List responses use `{"data":[],"meta":{"page":1,"total_pages":1}}` (pagination style to review).
 
 Proposed error envelope: `{"error":{"code":"validation_failed","message":"Review the highlighted fields","fields":{"contacts":["Exactly one primary contact is required"]}}}` with 422. Plan 401 for unauthenticated, 403/404 for denied access, 409 for approved conflict cases, and sanitized 5xx errors with a correlation identifier. Resolve async provisioning/retry contract jointly between Members 2 and 3.
+
+## Tenant activity (implemented local application increment)
+
+`GET /api/v1/tenants/:id/activity?page=1&per_page=20` requires the same administrator authentication, assigned-tenant scope and read authorization as tenant details. Out-of-scope/malformed tenant IDs return 404; anonymous requests return 401. `page` is a positive integer; `per_page` is 1–100, default 20; invalid values return 400. Response is no-store. Events are ordered by created_at descending, then ID descending, and pagination is applied server-side.
+
+```json
+{"data":[{"id":"event UUID","action":"updated","occurred_at":"ISO-8601 timestamp","changed_fields":["branding"]}],"meta":{"page":1,"per_page":20,"total_count":1,"total_pages":1}}
+```
+
+The example illustrates the shape, not a seeded event. `changed_fields` contains allowlisted top-level names only. No actor identity, correlation/request ID, values, schemas or arbitrary metadata are returned. Existing audit recording is unchanged. There is no write/delete history endpoint. Angular loads the timeline on demand with loading, empty, retry and pagination states. This is a read-only addition to the implemented tenant-management scope.

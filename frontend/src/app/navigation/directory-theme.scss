@@ -758,3 +758,27 @@
     font-size: 12px;
   }
 }
+
+.directory-page {
+  .pagination {
+    flex-wrap: wrap;
+  }
+  .page-size {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+  }
+  .page-size select {
+    width: 80px;
+  }
+  .activity-panel {
+    margin-top: 24px;
+  }
+  .activity-panel .card-heading {
+    margin-bottom: 12px;
+  }
+  .activity-panel .card-heading p {
+    margin: 8px 0 0;
+  }
+}

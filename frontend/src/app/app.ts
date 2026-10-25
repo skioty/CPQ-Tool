@@ -4,6 +4,7 @@ import {
   Injector,
   afterNextRender,
   inject,
+  effect,
   signal,
   viewChild,
 } from '@angular/core';
@@ -28,6 +29,9 @@ export class App {
   private readonly main = viewChild<ElementRef<HTMLElement>>('mainContent');
   private readonly injector = inject(Injector);
   constructor() {
+    effect(() => {
+      if (this.session.actor()) this.message.set('');
+    });
     this.router.events.pipe(takeUntilDestroyed()).subscribe((event) => {
       if (event instanceof NavigationEnd && !event.urlAfterRedirects.includes('#')) {
         afterNextRender(() => this.main()?.nativeElement.focus({ preventScroll: true }), {

@@ -38,6 +38,33 @@ class ApprovedTenantRulesTest < ActionDispatch::IntegrationTest
     patch "/api/v1/tenants/#{id}", params: {tenant: changes}, headers: {"If-Match" => etag}, as: :json
     assert_response status
   end
+  test "activity is tenant authorized paginated ordered and contains no private audit data" do
+    data = create_tenant
+    transition(data["id"], "activate")
+    get "/api/v1/tenants/#{data['id']}/activity", params: { page: 1, per_page: 1 }
+    assert_response :success
+    body = response.parsed_body
+    assert_equal 2, body.dig("meta", "total_count")
+    assert_equal "activate", body.fetch("data").first.fetch("action")
+    assert_equal %w[action changed_fields id occurred_at], body.fetch("data").first.keys.sort
+    assert_equal "no-store", response.headers["Cache-Control"]
+    get "/api/v1/tenants/#{data['id']}/activity", params: { page: 2, per_page: 1 }
+    assert_equal "created", response.parsed_body.fetch("data").first.fetch("action")
+    get "/api/v1/tenants/#{data['id']}/activity", params: { per_page: 101 }
+    assert_response :bad_request
+    login(@admin)
+    get "/api/v1/tenants/#{data['id']}/activity"
+    assert_response :success
+    login(@other)
+    get "/api/v1/tenants/#{data['id']}/activity"
+    assert_response :not_found
+    get "/api/v1/tenants/not-a-uuid/activity"
+    assert_response :not_found
+    delete "/api/v1/session"
+    get "/api/v1/tenants/#{data['id']}/activity"
+    assert_response :unauthorized
+  end
+
   test "real creation defaults persistence required values decimal and exactly one assignment" do
     data = create_tenant
     assert_equal "inactive", data["lifecycle_status"]

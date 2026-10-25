@@ -1,4 +1,4 @@
-import { Injectable, InjectionToken, inject } from '@angular/core';
+import { Injectable, InjectionToken, inject, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 
 export interface DirectoryTenant {
@@ -11,7 +11,13 @@ export interface DirectoryTenant {
   lifecycle_status: string | null;
   provisioning_status: string;
   responsible_admin_ids: string[];
-  contacts: { id: string; name: string | null; email: string | null; primary: boolean }[];
+  contacts: {
+    id: string;
+    name: string | null;
+    email: string | null;
+    phone?: string | null;
+    primary: boolean;
+  }[];
   branding: Record<string, string | null>;
   subscription: {
     currency: string | null;
@@ -78,8 +84,9 @@ export const DIRECTORY_POLICY = new InjectionToken<{
 @Injectable({ providedIn: 'root' })
 export class TenantDirectory {
   private http = inject(HttpClient);
-  list(query: string, status: string, page: number) {
-    let params = new HttpParams().set('page', page).set('per_page', 20);
+  readonly view = signal({ query: '', status: '', page: 1, perPage: 20 });
+  list(query: string, status: string, page: number, perPage = 20) {
+    let params = new HttpParams().set('page', page).set('per_page', perPage);
     if (query) params = params.set('q', query);
     if (status) params = params.set('status', status);
     return this.http.get<TenantPage>('/api/v1/tenants', { params });

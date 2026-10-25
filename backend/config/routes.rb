@@ -20,6 +20,7 @@ Rails.application.routes.draw do
       resources :brand_assets, only: [:create, :show]
       resources :tenants, only: [:index, :show, :create, :update] do
         post :lifecycle, on: :member
+        get :activity, on: :member
       end
     end
   end

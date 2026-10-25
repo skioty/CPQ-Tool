@@ -3,7 +3,7 @@ import { App } from './app';
 import { provideRouter } from '@angular/router';
 import { Session } from './navigation/session';
 import { signal } from '@angular/core';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 
 describe('App', () => {
   beforeEach(async () => {
@@ -41,6 +41,19 @@ describe('App', () => {
       .dispatchEvent(new MouseEvent('click', { bubbles: true }));
     fixture.detectChanges();
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
+  });
+  it('clears a stale connection notice after successful authentication', async () => {
+    const actor = signal<{ id: string; role: string } | null>(null);
+    TestBed.overrideProvider(Session, {
+      useValue: { actor, refresh: () => throwError(() => new Error('offline')) },
+    });
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    expect(fixture.componentInstance.message()).toContain('Session could not be checked');
+    actor.set({ id: 'test', role: 'super_admin' });
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(fixture.componentInstance.message()).toBe('');
   });
   it('should create the app', () => {
     const fixture = TestBed.createComponent(App);

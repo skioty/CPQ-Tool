@@ -157,6 +157,14 @@ import { Session } from './session';
           </ul>
         }
         <nav class="pagination" aria-label="Tenant pages">
+          <label class="page-size"
+            >Rows per page
+            <select aria-label="Rows per page" [ngModel]="perPage" (ngModelChange)="resize($event)">
+              <option [ngValue]="20">20</option>
+              <option [ngValue]="50">50</option>
+              <option [ngValue]="100">100</option>
+            </select>
+          </label>
           <span
             >Page <strong>{{ r.meta.page }}</strong> of {{ r.meta.total_pages || 1 }}</span
           >
@@ -187,11 +195,12 @@ export class TenantList {
   primaryName(contacts: { name: string | null; primary: boolean }[]) {
     return contacts.find((c) => c.primary)?.name || 'Primary contact';
   }
-  query = '';
-  status = '';
-  private activeQuery = '';
-  private activeStatus = '';
-  private currentPage = 1;
+  query = this.api.view().query;
+  status = this.api.view().status;
+  perPage = this.api.view().perPage;
+  private activeQuery = this.query;
+  private activeStatus = this.status;
+  private currentPage = this.api.view().page;
   readonly loading = signal(false);
   readonly error = signal('');
   readonly result = signal<TenantPage | null>(null);
@@ -206,7 +215,7 @@ export class TenantList {
           this.result.set(null);
         }),
         switchMap(() =>
-          this.api.list(this.activeQuery, this.activeStatus, this.currentPage).pipe(
+          this.api.list(this.activeQuery, this.activeStatus, this.currentPage, this.perPage).pipe(
             catchError((e) => {
               this.error.set(apiMessage(e));
               return of(null);
@@ -238,7 +247,19 @@ export class TenantList {
     this.currentPage = page;
     this.reload();
   }
+  resize(size: number) {
+    if (![20, 50, 100].includes(size)) return;
+    this.perPage = size;
+    this.currentPage = 1;
+    this.reload();
+  }
   reload() {
+    this.api.view.set({
+      query: this.activeQuery,
+      status: this.activeStatus,
+      page: this.currentPage,
+      perPage: this.perPage,
+    });
     this.changes.next();
   }
 }
