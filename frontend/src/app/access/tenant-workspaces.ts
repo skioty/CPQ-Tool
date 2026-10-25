@@ -1,0 +1,223 @@
+import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { ActivatedRoute, RouterLink, Router } from '@angular/router';
+import { catchError, EMPTY, switchMap, Subscription } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { TenantSession, accessError } from './access-api';
+import { brandingInk } from '../tenant/branding-colour';
+interface Workspace {
+  id: string;
+  company_name: string;
+  description: string | null;
+  company_name_display: boolean;
+  role: string;
+  branding: {
+    primary_colour: string;
+    secondary_colour: string;
+    typography: string;
+    logo_attachment_id: string | null;
+  };
+}
+@Component({
+  imports: [RouterLink],
+  host: { class: 'workspace-page' },
+  template: `<p class="eyebrow">TENANT ADMINISTRATION</p>
+    <h1>{{ workspace()?.company_name || 'Your workspaces' }}</h1>
+    @if (error()) {
+      <p class="error-summary" role="alert">{{ error() }}</p>
+      <button (click)="load()">Retry workspace</button>
+    }
+    @if (loading()) {
+      <p role="status">Loading your workspace access…</p>
+    }
+    @if (workspace(); as w) {
+      <a routerLink="/workspaces" class="back-link">← All workspaces</a>
+      <section
+        class="tenant-workspace"
+        [style.font-family]="
+          w.branding.typography === 'serif' ? 'Georgia, serif' : 'system-ui, sans-serif'
+        "
+      >
+        <header
+          [style.background-color]="colour(w.branding.primary_colour)"
+          [style.color]="ink(w.branding.primary_colour)"
+        >
+          @if (w.branding.logo_attachment_id) {
+            <img [src]="asset(w.id, w.branding.logo_attachment_id)" alt="Company logo" />
+          }
+          @if (w.company_name_display) {
+            <strong>{{ w.company_name }}</strong>
+          } @else {
+            <strong>Company workspace</strong>
+          }
+        </header>
+        <div>
+          <span class="badge" data-status="active">Active workspace</span>
+          <h2>Welcome to your company workspace</h2>
+          <p>{{ w.description || 'Your company workspace is ready.' }}</p>
+          <p>Signed in as Tenant Admin.</p>
+          <p class="muted">
+            Product, pricing and quotation modules are not available in this tenant-management
+            increment. Platform subscription and lifecycle settings are managed by SELISE.
+          </p>
+        </div>
+      </section>
+    } @else if (!loading() && !error()) {
+      <p class="subheading">
+        Only companies with an explicit membership appear here. Open an Active workspace to
+        continue.
+      </p>
+      <ul class="workspaces">
+        @for (w of workspaces(); track w.id) {
+          <li>
+            <div>
+              <h2>{{ w.company_name }}</h2>
+              <span class="badge" [attr.data-status]="w.status">{{ w.status }}</span>
+            </div>
+            @if (w.status === 'active') {
+              <a class="button primary" [routerLink]="['/workspaces', w.id]">Open workspace</a>
+            } @else {
+              <p class="muted">Access is unavailable until SELISE activates this tenant.</p>
+            }
+          </li>
+        } @empty {
+          <li>No tenant memberships are available. Ask your administrator for an invitation.</li>
+        }
+      </ul>
+    }`,
+  styles: `
+    :host {
+      display: block;
+      width: 100%;
+      max-width: 1100px;
+    }
+    .workspaces {
+      list-style: none;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 24px;
+      padding: 0;
+      margin: 24px 0;
+    }
+    .workspaces li,
+    .tenant-workspace {
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .workspaces li {
+      padding: 24px;
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    .workspaces li > div {
+      min-width: 0;
+    }
+    .workspaces h2 {
+      overflow-wrap: anywhere;
+    }
+    .back-link {
+      display: inline-block;
+      margin: 12px 0 24px;
+    }
+    .tenant-workspace header {
+      padding: 24px;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      overflow-wrap: anywhere;
+    }
+    .tenant-workspace header img {
+      max-width: 120px;
+      max-height: 64px;
+      object-fit: contain;
+    }
+    .tenant-workspace > div {
+      padding: 32px;
+    }
+    .tenant-workspace h2 {
+      font-size: 24px;
+      margin: 20px 0;
+    }
+    .muted {
+      font-size: 13px;
+      color: var(--muted);
+    }
+    @media (max-width: 700px) {
+      .workspaces {
+        grid-template-columns: 1fr;
+      }
+      .tenant-workspace > div {
+        padding: 24px;
+      }
+    }
+  `,
+})
+export class TenantWorkspaces {
+  private session = inject(TenantSession);
+  private http = inject(HttpClient);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private request?: Subscription;
+  private readonly destroy = inject(DestroyRef);
+  private id: string | null = null;
+  readonly workspace = signal<Workspace | null>(null);
+  readonly workspaces = signal<{ id: string; company_name: string; status: string }[]>([]);
+  readonly error = signal('');
+  readonly loading = signal(true);
+  readonly ink = brandingInk;
+  constructor() {
+    this.destroy.onDestroy(() => this.request?.unsubscribe());
+    this.route.paramMap.pipe(takeUntilDestroyed(inject(DestroyRef))).subscribe((p) => {
+      this.id = p.get('id');
+      this.load();
+    });
+  }
+  load() {
+    this.request?.unsubscribe();
+    this.loading.set(true);
+    this.error.set('');
+    this.workspace.set(null);
+    this.workspaces.set([]);
+    const id = this.id;
+    this.request = this.session
+      .refresh()
+      .pipe(
+        switchMap((actor) => {
+          if (!actor) {
+            void this.router.navigateByUrl('/tenant-login');
+            return EMPTY;
+          }
+          return this.http.get<{ data: any }>(
+            id ? '/api/v1/my_workspaces/' + encodeURIComponent(id) : '/api/v1/my_workspaces',
+          );
+        }),
+        catchError((e) => {
+          if (id === this.id) {
+            this.error.set(accessError(e));
+            this.loading.set(false);
+          }
+          return EMPTY;
+        }),
+      )
+      .subscribe((r) => {
+        if (id !== this.id) return;
+        if (id) this.workspace.set(r.data);
+        else this.workspaces.set(r.data);
+        this.loading.set(false);
+      });
+  }
+  colour(value: string) {
+    return /^#[0-9a-f]{6}$/i.test(value) ? value : '#17365D';
+  }
+  asset(id: string, asset: string) {
+    return (
+      '/api/v1/my_workspaces/' + encodeURIComponent(id) + '/assets/' + encodeURIComponent(asset)
+    );
+  }
+}

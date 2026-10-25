@@ -1,3 +1,4 @@
+import { TenantSession } from './access/access-api';
 import {
   Component,
   ElementRef,
@@ -20,9 +21,15 @@ import { Session } from './navigation/session';
 })
 export class App {
   readonly session = inject(Session);
+  readonly tenantSession = inject(TenantSession);
   readonly router = inject(Router);
   get isLogin() {
-    return this.router.url.startsWith('/login');
+    return this.router.url.startsWith('/login') || this.isTenantArea;
+  }
+  get isTenantArea() {
+    return ['/tenant-login', '/workspaces', '/invitations/accept'].some((path) =>
+      this.router.url.startsWith(path),
+    );
   }
   readonly message = signal('');
   readonly menuOpen = signal(false);
@@ -43,6 +50,14 @@ export class App {
       error: () =>
         this.message.set('Session could not be checked. Use administrator login to retry.'),
     });
+  }
+  tenantLogout() {
+    this.tenantSession
+      .logout()
+      .subscribe({
+        next: () => globalThis.location.assign('/tenant-login'),
+        error: () => this.message.set('Logout failed. Please retry.'),
+      });
   }
   logout() {
     this.session.logout().subscribe({

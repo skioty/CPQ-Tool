@@ -22,6 +22,15 @@ services:
       dockerfile: infra/backend.Dockerfile
     environment: &backend_environment
       RAILS_ENV: development
+      SMTP_ADDRESS: ${SMTP_ADDRESS:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_FROM: ${SMTP_FROM:-}
+      SMTP_DOMAIN: ${SMTP_DOMAIN:-}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_AUTHENTICATION: ${SMTP_AUTHENTICATION:-plain}
+      SMTP_TLS_MODE: ${SMTP_TLS_MODE:-starttls}
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL:-}
       DATABASE_HOST: db
       DATABASE_USER: ${POSTGRES_USER:-cpq}
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD:?Set a local POSTGRES_PASSWORD in .env}

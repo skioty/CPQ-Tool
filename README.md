@@ -66,3 +66,7 @@ For optional native frontend checks: use Node `.nvmrc`, `cd frontend`, `npm ci`,
 ## Collaboration and planning
 
 Start with [contributing](CONTRIBUTING.md), [requirements](docs/requirements.md), [architecture](docs/architecture.md), [database design](docs/database-design.md), [API contract](docs/api-contract.md), [decisions](docs/decisions.md), [seven-day sprint](docs/sprint-plan.md), [test plan](docs/test-plan.md), and [GitHub setup/board limitation](docs/github-setup.md). The [backlog](docs/backlog.json) records owner/reviewer roles without invented identities. Use short task branches and reviewed PRs to `main`; the setup PR must be reviewed by another member.
+
+## Guided onboarding extension
+
+See [account onboarding](docs/account-onboarding.md) for guided setup, staff management, explicit Tenant Admin invitations, SMTP configuration and test evidence. This local increment is on feat/guided-tenant-onboarding; live SMTP verification is pending.

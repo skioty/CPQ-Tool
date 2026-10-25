@@ -9,7 +9,10 @@
     <p>Bring company details, people and workspace identity together.</p>
   </div>
   @if (saved()?.id) {
-    <a [routerLink]="['/tenants', saved()?.id, 'branding']">Preview workspace</a>
+    <div class="save-buttons">
+      <a class="button" [routerLink]="['/tenants', saved()?.id, 'setup']">Review setup</a
+      ><a class="button" [routerLink]="['/tenants', saved()?.id, 'branding']">Preview workspace</a>
+    </div>
   }
 </div>
 @if (!integrationReady) {

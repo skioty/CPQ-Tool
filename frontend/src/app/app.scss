@@ -363,3 +363,15 @@ nav svg {
 .content-shell main:focus {
   outline: none;
 }
+
+.tenant-account-label {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+  min-width: 0;
+  max-width: 260px;
+}
+@media (max-width: 600px) {
+  .tenant-account-label {
+    display: none;
+  }
+}

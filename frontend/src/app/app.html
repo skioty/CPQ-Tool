@@ -58,6 +58,12 @@
           >
           <p class="nav-caption settings-caption">CONFIGURATION</p>
           <a
+            routerLink="/administrators"
+            [class.active]="router.url.startsWith('/administrators')"
+            [attr.aria-current]="router.url.startsWith('/administrators') ? 'page' : null"
+            >Administrators</a
+          >
+          <a
             routerLink="/reference-options"
             [class.active]="router.url.startsWith('/reference-options')"
             [attr.aria-current]="router.url.startsWith('/reference-options') ? 'page' : null"
@@ -80,14 +86,23 @@
   <div class="content-shell">
     <header class="topbar">
       @if (isLogin) {
-        <a routerLink="/" class="login-wordmark">SELISE <strong>CPQ</strong></a>
+        <a [routerLink]="isTenantArea ? '/workspaces' : '/'" class="login-wordmark"
+          >SELISE <strong>CPQ</strong></a
+        >
       } @else {
         <div class="topbar-location">
           <span>Workspace</span><span class="divider">/</span><strong>Tenant management</strong>
         </div>
       }
       <div class="account">
-        @if (session.actor()) {
+        @if (isTenantArea) {
+          @if (tenantSession.actor()) {
+            <span class="tenant-account-label">{{ tenantSession.actor()?.email }}</span
+            ><button (click)="tenantLogout()">Log out of workspace</button>
+          } @else {
+            <a class="button" routerLink="/tenant-login">Tenant sign in</a>
+          }
+        } @else if (session.actor()) {
           <div class="account-description">
             <strong>{{
               session.actor()?.role === 'super_admin' ? 'Super Administrator' : 'CPQ Administrator'

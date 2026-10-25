@@ -65,6 +65,12 @@ module Api
         }
       end
 
+      def setup_review
+        tenant = find_authorized(:read)
+        response.set_header("Cache-Control", "no-store")
+        render json: { data: TenantManagement::SetupReview.call(@actor, tenant) }
+      end
+
       def create
         attributes = tenant_payload
         tenant = writer.create(attributes)

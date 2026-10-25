@@ -1,11 +1,11 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Session } from './session';
 import { finalize } from 'rxjs';
 
 @Component({
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink],
   template: `<div class="login-layout">
     <section class="login-story" aria-label="SELISE CPQ workspace">
       <div class="story-top">SELISE <span>CPQ</span></div>
@@ -53,6 +53,7 @@ import { finalize } from 'rxjs';
           </button>
         </form>
         <p class="access-note">Need access? Contact your platform administrator.</p>
+        <p><a routerLink="/tenant-login">Tenant workspace sign-in</a></p>
         <div class="login-divider"></div>
         <p class="login-bottom">Your administration workspace.<br /><strong>SELISE CPQ</strong></p>
       </div>

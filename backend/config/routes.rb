@@ -1,5 +1,24 @@
 Rails.application.routes.draw do
   devise_for :administrators, class_name: "Platform::Administrator", skip: :all
+  devise_for :tenant_users, class_name: "TenantAccess::User", skip: :all
+  devise_scope :tenant_user do
+    get "api/v1/tenant_session", to: "tenant_access/sessions#show"
+    post "api/v1/tenant_session", to: "tenant_access/sessions#create"
+    delete "api/v1/tenant_session", to: "tenant_access/sessions#destroy"
+  end
+  get "api/v1/my_workspaces", to: "tenant_access/workspaces#index"
+  get "api/v1/my_workspaces/:id", to: "tenant_access/workspaces#show"
+  get "api/v1/my_workspaces/:id/assets/:asset_id", to: "tenant_access/workspaces#asset"
+  get "api/v1/administrators", to: "platform/administrators#index"
+  post "api/v1/administrators", to: "platform/administrators#create"
+  post "api/v1/administrators/:id/invite", to: "platform/administrators#invite"
+  patch "api/v1/administrators/:id", to: "platform/administrators#update"
+  get "api/v1/tenants/:tenant_id/invitations", to: "platform/invitations#index"
+  post "api/v1/tenants/:tenant_id/invitations", to: "platform/invitations#create"
+  post "api/v1/invitations/:id/resend", to: "platform/invitations#resend"
+  post "api/v1/invitations/:id/revoke", to: "platform/invitations#revoke"
+  post "api/v1/invitation_preview", to: "platform/invitation_acceptances#preview"
+  post "api/v1/invitation_acceptance", to: "platform/invitation_acceptances#create"
   devise_scope :administrator do
     get "api/v1/session/csrf", to: "platform/sessions#csrf"
     get "api/v1/session", to: "platform/sessions#show"
@@ -21,6 +40,7 @@ Rails.application.routes.draw do
       resources :tenants, only: [:index, :show, :create, :update] do
         post :lifecycle, on: :member
         get :activity, on: :member
+        get :setup_review, on: :member
       end
     end
   end

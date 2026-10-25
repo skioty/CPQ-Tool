@@ -109,3 +109,27 @@ Proposed error envelope: `{"error":{"code":"validation_failed","message":"Review
 ```
 
 The example illustrates the shape, not a seeded event. `changed_fields` contains allowlisted top-level names only. No actor identity, correlation/request ID, values, schemas or arbitrary metadata are returned. Existing audit recording is unchanged. There is no write/delete history endpoint. Angular loads the timeline on demand with loading, empty, retry and pagination states. This is a read-only addition to the implemented tenant-management scope.
+
+## Implemented account onboarding API extension
+
+Same-origin cookie sessions and CSRF apply to all writes, including invitation preview/acceptance. Fetch the existing `/api/v1/session/csrf` first; return its token in `X-CSRF-Token`. No public registration endpoint exists. The following are implemented, not future contracts.
+
+| Method/path | Access and payload/result |
+| --- | --- |
+| GET `/api/v1/tenants/:id/setup_review` | Authorized platform staff; `{data:{tenant_id,company_name,lifecycle_status,complete,can_activate,checks:[{key,label,complete,errors}]}}` |
+| GET `/api/v1/administrators` | Super Admin; `{data:[{id,name,email,role,enabled,activated,assigned_tenants,invitation}],email_delivery_configured}` |
+| POST `/api/v1/administrators` | Super Admin; `{administrator:{email,name?}}`; 201 `{id,invitation}` after SMTP send; no password input |
+| PATCH `/api/v1/administrators/:id` | Super Admin; `{administrator:{name?,enabled?}}`; 204. Email/role cannot be changed here. Pending accounts cannot be enabled without activation; assigned staff cannot be disabled |
+| POST `/api/v1/administrators/:id/invite` | Super Admin; recover pending staff activation, `{data:invitation}` |
+| GET `/api/v1/tenants/:tenant_id/invitations` | Super Admin or assigned CPQ Admin; `{data:[invitation],members:[{id,email,role,enabled}],email_delivery_configured}`; latest 100 invitations |
+| POST same tenant invitations path | Same access; `{email}`; 201 `{data:invitation}` after SMTP send |
+| POST `/api/v1/invitations/:id/resend` | Appropriate staff/tenant permission; rotates token and returns `{data:invitation}` |
+| POST `/api/v1/invitations/:id/revoke` | Same permission; 204; only unused invitations, not accepted account access |
+| POST `/api/v1/invitation_preview` | Token holder with CSRF; `{token}`; `{data:{email,kind,expires_at,company_name,existing_account}}` |
+| POST `/api/v1/invitation_acceptance` | `{token,password,password_confirmation?}`; confirmation required for new accounts; existing tenant users authenticate current password; `{data:{kind,accepted:true}}` |
+| GET/POST/DELETE `/api/v1/tenant_session` | Separate Tenant Admin session; POST `{tenant_user:{email,password}}`; `{data:{id,email},csrf_token}`. GET returns identity, DELETE 204 |
+| GET `/api/v1/my_workspaces` | Enabled signed-in tenant user; `{data:[{id,company_name,status}]}` for own enabled memberships |
+| GET `/api/v1/my_workspaces/:id` | Own enabled membership, Active/ready/current schema; `{data:{id,company_name,description,company_name_display,role,branding}}` |
+| GET `/api/v1/my_workspaces/:id/assets/:asset_id` | Same access plus asset ownership; binary content, private/no-store and nosniff |
+
+Invitation summaries contain `{id,kind,email,expires_at,state,delivery_status}`; never token or digest. Errors use `{error:{code,message,fields}}`: 401 unauthenticated/invalid credentials, 403 forbidden, 404 inaccessible record, 409 conflicting state, 410 unusable invitation, 422 validation, 503 mail_unavailable/mail_failed. Mail failure retains a pending account/failed invitation; refresh and resend rather than creating duplicate accounts. Acceptance is transactional and single-use under concurrent requests. See [account onboarding](account-onboarding.md) for SMTP boundaries and verification limits.

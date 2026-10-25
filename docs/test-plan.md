@@ -23,3 +23,7 @@ Actual checks run and their outcomes belong in [verification](verification.md). 
 | Fresh setup | all four laptops clone, copy env, build, prepare DB, boot and run checks; no manual hidden state | all / Member 4 coordinates |
 
 Use isolated test databases/schemas and synthetic fixtures. Never use production data or destructive reset commands against development. Record command, commit, environment, result and evidence link; skipped tests remain gaps. Regression on Day 6 and acceptance on Day 7 use the same approved criteria.
+
+## Account onboarding evidence
+
+The new local increment passed 64 Rails tests (514 assertions) and 71 Angular tests, including existing suites. Account invitation, permission, CSRF, concurrent acceptance and membership schema checks use synthetic test data and test mail delivery. Live SMTP/inbox verification remains pending. See [account onboarding](account-onboarding.md).

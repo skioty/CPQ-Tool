@@ -1,3 +1,4 @@
+import { TenantSession } from './access/access-api';
 import { TestBed } from '@angular/core/testing';
 import { App } from './app';
 import { provideRouter } from '@angular/router';
@@ -11,6 +12,7 @@ describe('App', () => {
       imports: [App],
       providers: [
         provideRouter([]),
+        { provide: TenantSession, useValue: { actor: signal(null), logout: () => of(null) } },
         {
           provide: Session,
           useValue: { actor: signal({ id: 'test', role: 'super_admin' }), refresh: () => of(null) },

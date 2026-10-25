@@ -1,0 +1,84 @@
+.access-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.8fr) minmax(0, 1.5fr);
+  gap: 24px;
+  align-items: start;
+}
+form {
+  display: grid;
+  gap: 8px;
+  margin-top: 24px;
+}
+label {
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 12px;
+}
+form input {
+  width: 100%;
+}
+form button {
+  margin-top: 16px;
+}
+.staff-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.staff-list li {
+  padding: 20px 24px;
+  border-top: 1px solid var(--line);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.card .staff-list li {
+  padding-inline: 0;
+}
+.staff-list p {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 8px 0;
+}
+.staff-title {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.staff-title strong {
+  font-size: 14px;
+}
+.row-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.row-actions input {
+  flex: 1;
+  min-width: 140px;
+}
+.invitation-history {
+  margin-top: 24px;
+}
+.panel-heading {
+  flex-wrap: wrap;
+}
+.staff-list label {
+  display: block;
+}
+@media (max-width: 1050px) {
+  .access-layout {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 500px) {
+  .staff-list li {
+    padding: 20px;
+  }
+  .row-actions > * {
+    width: 100%;
+  }
+}

@@ -33,3 +33,7 @@ Member 3 coordinates shared vs tenant migrations and schema version evidence wit
 ## Approved-rule forward migration
 
 Migration 20261023000100 adds optional contact phone, payment-method description and trusted first-invoice timestamp to shared tenant settings. New shared platform_reference_options records enabled/disabled global industry/currency/payment codes; codes are stable and rows retained. New shared platform_brand_assets stores validated image bytes with generated storage keys, owner, kind and nullable tenant ID while staged. Successful registry updates bind staged assets under lock; references are authorized by tenant and asset kind. Both new models are Apartment exclusions and are never cloned into tenant schemas. Tenant-local migrations are unchanged. See approved-rules.md for transaction and retention limits.
+
+## Implemented account tables
+
+Migration 20261025000100 adds platform_invitations, platform_account_events, tenant_access_users and tenant_access_memberships in public; these models are excluded from Apartment cloning. Memberships uniquely link a user and tenant with fixed tenant_admin role. Invitations retain only a token digest, expiry, delivery status and accepted/revoked timestamps. Existing staff receive name/activated_at columns without changing passwords. See [account onboarding](account-onboarding.md).

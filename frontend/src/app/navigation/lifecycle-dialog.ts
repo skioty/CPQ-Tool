@@ -24,8 +24,8 @@ import { LifecycleAction } from './tenant-directory';
     <div>
       <button autofocus (click)="cancelled.emit()">Cancel</button
       ><button
-        [class.danger]="action().code === 'archive' || action().code === 'suspend'"
-        [class.primary]="action().code !== 'archive' && action().code !== 'suspend'"
+        [class.danger]="['archive', 'suspend', 'disable_account'].includes(action().code)"
+        [class.primary]="!['archive', 'suspend', 'disable_account'].includes(action().code)"
         (click)="confirmed.emit()"
       >
         Confirm {{ action().label }}

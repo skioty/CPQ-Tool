@@ -76,3 +76,7 @@ The following supplied table is approved in full. Its original recommendation wo
 | **Clearing values** | Provide explicit **Remove logo**, **Remove favicon** and **Reset to default** controls. Optional text fields can be cleared and saved. In update requests, distinguish **an omitted field = keep existing value** from **an explicit null = remove value**. Required fields cannot be cleared. |
 
 Technical choices for this increment: default colours `#17365D` and `#2563EB`; supported system sans-serif and Georgia serif fonts, with system sans-serif default. Asset bytes are stored in PostgreSQL with generated tenant-prefixed storage keys (not public filenames), avoiding filesystem/transaction inconsistency. These are implementation choices, not additional SELISE industry values.
+
+## Approved account onboarding extension
+
+Confirmed by user: Super Admin manages CPQ Admin staff through single-use activation email; no permanent deletion, self-deactivation or UI Super Admin provisioning. Super Admin and assigned CPQ Admin explicitly invite Tenant Admins with 72-hour single-use links and resend/revoke controls. Tenant access requires Active status. Primary contacts remain contacts. SMTP delivery was selected; provider configuration is still pending. This supersedes earlier statements that invitations are outside scope. Owners: Member 3 backend access, Members 1/4 UI, Member 2 review. See [implementation and limits](account-onboarding.md).
