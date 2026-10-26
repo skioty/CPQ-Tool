@@ -1,0 +1,323 @@
+<div class="breadcrumb">
+  <a routerLink="/tenants">Tenants</a><span>/</span
+  ><span>{{ edit ? 'Edit tenant' : 'Create tenant' }}</span>
+</div>
+<div class="page-heading">
+  <div>
+    <p class="eyebrow">COMPANY ADMINISTRATION</p>
+    <h1>{{ edit ? 'Edit tenant' : 'Create tenant' }}</h1>
+    <p>Bring company details, people and workspace identity together.</p>
+  </div>
+  @if (saved()?.id) {
+    <a [routerLink]="['/tenants', saved()?.id, 'branding']">Preview workspace</a>
+  }
+</div>
+@if (!integrationReady) {
+  <aside class="notice" role="status">
+    <strong>Saving is temporarily unavailable</strong>
+    <p>You can prepare your details here. Contact your platform administrator to enable saving.</p>
+  </aside>
+}
+@if (status() === 'loading') {
+  <p role="status">Loading saved tenant settings…</p>
+}
+@if (status() === 'saving') {
+  <p role="status">Uploading selected files and saving tenant…</p>
+}
+@if (status() === 'success') {
+  <p class="success" role="status">Tenant saved successfully. Your changes are up to date.</p>
+}
+@if (errors().length) {
+  <section #summary tabindex="-1" class="error-summary" role="alert" aria-label="Form errors">
+    <h2>We could not complete this action</h2>
+    <ul>
+      @for (error of errors(); track $index) {
+        <li>{{ error }}</li>
+      }
+    </ul>
+    @if (edit && !loaded) {
+      <button type="button" (click)="load()">Retry loading tenant</button>
+    }
+  </section>
+}
+@if (integrationReady && !options.industries.length) {
+  <aside class="notice" role="status">
+    Industry choices are not available. Add your company sectors in
+    <a routerLink="/reference-options">Reference options</a>, or refresh this page to try again.
+  </aside>
+}
+<nav class="form-navigation" aria-label="Form sections">
+  @for (section of sections; track section; let i = $index) {
+    <a [routerLink]="[]" [fragment]="'section-' + section.toLowerCase()"
+      ><span>{{ i + 1 }}</span
+      >{{ section }}</a
+    >
+  }
+</nav>
+<div class="layout">
+  <form
+    (ngSubmit)="submit()"
+    [formGroup]="form"
+    novalidate
+    [attr.aria-busy]="status() === 'loading' || status() === 'saving'"
+  >
+    <fieldset
+      class="form-body"
+      [disabled]="status() === 'loading' || status() === 'saving' || !loaded"
+    >
+      @for (section of sections; track section) {
+        <section class="card" [id]="'section-' + section.toLowerCase()" [attr.aria-label]="section">
+          <fieldset [disabled]="edit && section === 'Subscription' && !commercialEditable">
+            @if (section !== 'Contacts') {
+              <div class="section-title">
+                <span class="section-number">0{{ sections.indexOf(section) + 1 }}</span>
+                <div>
+                  <h2>
+                    {{
+                      section === 'Company'
+                        ? 'Company information'
+                        : section === 'Subscription'
+                          ? 'Subscription settings'
+                          : 'Workspace branding'
+                    }}
+                  </h2>
+                  <p>{{ sectionDescription(section) }}</p>
+                </div>
+              </div>
+            }
+            <div class="field-grid">
+              @for (field of fields; track field.key) {
+                @if (
+                  field.section === section &&
+                  !(
+                    field.key === 'payment_method_description' &&
+                    form.controls.fields.controls['payment_method'].value !== 'other'
+                  ) &&
+                  !(
+                    field.key === 'discount_type' &&
+                    options.discountTypes.length === 1 &&
+                    options.discountTypes[0].id === 'percentage'
+                  ) &&
+                  !(
+                    field.key === 'discount_duration' &&
+                    !+form.controls.fields.controls['discount_value'].value &&
+                    !form.controls.fields.controls['discount_duration'].value
+                  )
+                ) {
+                  <app-tenant-field
+                    [field]="field"
+                    [class.full-width]="
+                      field.kind === 'textarea' ||
+                      field.key === 'typography' ||
+                      field.key === 'payment_method_description'
+                    "
+                    [control]="form.controls.fields.controls[field.key]"
+                    [choices]="choices(field.key)"
+                    [required]="options.requiredFields.includes(field.path)"
+                  />
+                }
+              }
+            </div>
+            @if (section === 'Company') {
+              <label class="check"
+                ><input type="checkbox" formControlName="company_name_display" /> Display company
+                name in workspace branding</label
+              >
+              <label for="admins">Responsible SELISE CPQ Admin</label>
+              <select
+                id="admins"
+                [multiple]="options.assignment === 'many'"
+                (change)="selectedAdmins($event)"
+                [attr.disabled]="
+                  options.assignment === null ||
+                  !options.admins.length ||
+                  (edit && !commercialEditable)
+                    ? ''
+                    : null
+                "
+                aria-describedby="admin-help"
+              >
+                @if (options.assignment !== 'many') {
+                  <option value="">Select an administrator</option>
+                }
+                @for (admin of options.admins; track admin.id) {
+                  <option
+                    [value]="admin.id"
+                    [selected]="form.controls.admins.value.includes(admin.id)"
+                  >
+                    {{ admin.label }}
+                  </option>
+                }
+                @for (id of unknownAdmins(); track id) {
+                  <option [value]="id" selected>Current assigned administrator</option>
+                }</select
+              ><small id="admin-help"
+                >Your point of contact within SELISE. Responsibility can be reassigned by a Super
+                Admin.</small
+              >
+            }
+            @if (section === 'Subscription') {
+              <p class="muted">These settings describe the monthly subscription arrangement.</p>
+            }
+            @if (section === 'Branding') {
+              <button type="button" (click)="resetBranding()">Reset to default</button>
+              <div class="asset-grid">
+                @for (kind of assetKinds; track kind) {
+                  <div class="asset">
+                    <label [for]="kind">{{ kind === 'logo' ? 'Company logo' : 'Favicon' }}</label>
+                    <button type="button" (click)="removeAsset(kind)">Remove {{ kind }}</button>
+                    <input
+                      type="file"
+                      [id]="kind"
+                      (change)="selectFile(kind, $event)"
+                      [attr.aria-describedby]="kind + '-help'"
+                    />
+                    <small [id]="kind + '-help'">{{
+                      kind === 'logo'
+                        ? 'PNG, JPEG or WebP · Up to 2 MB · Maximum 2048 × 2048 px'
+                        : 'PNG or ICO · Up to 500 KB · Square: 16, 32, 48, 64, 128 or 256 px'
+                    }}</small>
+                    @if (files()[kind]) {
+                      <p>{{ files()[kind]?.name }} — selected locally</p>
+                      <button type="button" (click)="cancelFile(kind)">
+                        Cancel {{ kind }} selection
+                      </button>
+                      @if (!urls()[kind]) {
+                        <p>
+                          A preview isn’t available for this image. Check the supported formats
+                          above.
+                        </p>
+                      }
+                    }
+                  </div>
+                }
+              </div>
+              @if (
+                saved()?.branding?.logo_attachment_id || saved()?.branding?.favicon_attachment_id
+              ) {
+                <p class="muted">Your current images stay in place until a replacement is saved.</p>
+              }
+            }
+            @if (section === 'Contacts') {
+              <div class="contacts-content">
+                <div class="section-heading">
+                  <div class="section-title">
+                    <span class="section-number">02</span>
+                    <div>
+                      <h2 id="contacts-heading">Company contacts</h2>
+                      <p>The people to reach for this company.</p>
+                    </div>
+                  </div>
+                  <button #addContactButton type="button" (click)="addContact()">
+                    Add contact
+                  </button>
+                </div>
+                <p id="primary-help">
+                  Select one primary contact for company correspondence. Adding a contact does not
+                  grant account access.
+                </p>
+                @if (contacts.hasError('primaryContact') && (contacts.touched || contacts.dirty)) {
+                  <p class="error" id="primary-error">Select exactly one primary contact.</p>
+                }
+                <div formArrayName="contacts">
+                  @for (contact of contacts.controls; track contact; let i = $index) {
+                    <fieldset [formGroupName]="i" class="contact">
+                      <legend>Contact {{ i + 1 }}</legend>
+                      <div class="field-grid">
+                        <div>
+                          <label [for]="'contact-name-' + i">Name</label
+                          ><input
+                            [id]="'contact-name-' + i"
+                            formControlName="name"
+                            autocomplete="name"
+                          />
+                          @if (contact.controls.name.touched && contact.controls.name.invalid) {
+                            <p class="error">A contact name is required.</p>
+                          }
+                        </div>
+                        <div>
+                          <label [for]="'contact-email-' + i">Email</label
+                          ><input
+                            type="email"
+                            [id]="'contact-email-' + i"
+                            formControlName="email"
+                            autocomplete="email"
+                          />
+                          @if (contact.controls.email.touched && contact.controls.email.invalid) {
+                            <p class="error">
+                              Enter a valid email address{{
+                                contact.controls.email.hasError('required') ? ' (required)' : ''
+                              }}.
+                            </p>
+                          }
+                        </div>
+                      </div>
+                      <label [for]="'contact-phone-' + i">Phone (optional)</label
+                      ><input [id]="'contact-phone-' + i" formControlName="phone" type="tel" />
+                      <div class="contact-actions">
+                        <label class="check"
+                          ><input
+                            #primaryRadio
+                            type="radio"
+                            name="primaryContact"
+                            [checked]="contact.controls.primary.value"
+                            (change)="choosePrimary(i)"
+                            [attr.aria-describedby]="
+                              contacts.hasError('primaryContact') &&
+                              (contacts.touched || contacts.dirty)
+                                ? 'primary-help primary-error'
+                                : 'primary-help'
+                            "
+                          />
+                          Primary contact {{ i + 1 }}</label
+                        >
+                        <button
+                          type="button"
+                          (click)="removeContact(i)"
+                          [attr.aria-label]="'Remove contact ' + (i + 1)"
+                        >
+                          Remove contact
+                        </button>
+                      </div>
+                    </fieldset>
+                  }
+                </div>
+              </div>
+            }
+          </fieldset>
+        </section>
+      }
+      <div class="actions">
+        <span>{{
+          status() === 'success' ? 'All changes saved' : 'Review your details before saving.'
+        }}</span
+        ><button
+          class="primary"
+          type="submit"
+          [disabled]="!integrationReady || status() === 'saving'"
+        >
+          {{ edit ? 'Save changes' : 'Create tenant' }}
+        </button>
+      </div>
+    </fieldset>
+  </form>
+  <aside class="preview-column">
+    <div class="preview-topline"><span class="preview-dot"></span> LIVE PREVIEW</div>
+    <h2>Workspace preview</h2>
+    <p>
+      {{
+        status() === 'success'
+          ? 'Your saved workspace appearance.'
+          : 'See how your brand comes together as you edit.'
+      }}
+    </p>
+    <app-branding-preview
+      [tenant]="status() === 'success' ? saved() : draft()"
+      [logo]="urls().logo || null"
+      [favicon]="urls().favicon || null"
+    />
+    <p class="muted">
+      A preview of your tenant’s workspace identity. Save your changes to apply this branding.
+    </p>
+  </aside>
+</div>
