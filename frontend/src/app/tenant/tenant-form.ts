@@ -426,7 +426,11 @@ export class TenantForm implements OnInit {
       .pipe(takeUntilDestroyed(this.destroy))
       .subscribe((value) => {
         if (value === '__create_industry__')
-          afterNextRender(() => document.getElementById('custom-industry-name')?.focus(), {
+          afterNextRender(() => {
+            const field=document.getElementById('custom-industry-name');
+            field?.focus();
+            field?.scrollIntoView?.({block:'center'});
+          }, {
             injector: this.injector,
           });
         this.customIndustryName.setValidators(
