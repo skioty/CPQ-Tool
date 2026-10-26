@@ -53,6 +53,7 @@ services:
       - '127.0.0.1:${FRONTEND_PORT:-4200}:4200'
     volumes:
       - ./frontend/src:/app/src
+      - ./frontend/public:/app/public:ro
       - ./frontend/proxy.conf.json:/app/proxy.conf.json:ro
     healthcheck:
       test: [CMD, node, -e, "fetch('http://127.0.0.1:4200').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
