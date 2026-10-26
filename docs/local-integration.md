@@ -57,4 +57,3 @@ Against the integration database and real same-origin Rails APIs:
 Isolation/concurrent requests/provisioning recovery are verified through Rails tests, not claimed as manual browser proof. Asset upload was exercised through HTTP, not the browser file picker. Favicon variants are covered by the existing tests, not manually uploaded in this run. Browser responsiveness/four-laptop setup/accessibility/stakeholder acceptance are not newly certified by this integration task. The known stylesheet advisory and abandoned-asset cleanup policy remain follow-up work, not startup blockers.
 
 Assigned CPQ Admin HTTP acceptance: assigned details returned 200; archive action was rejected with 403. Unassigned-tenant denials remain covered by the Rails suite.
-
