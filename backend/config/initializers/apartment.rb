@@ -4,7 +4,7 @@ Apartment.configure do |config|
   config.default_tenant = "public"
   # Deliberately no public fallback for tenant business tables.
   config.persistent_schemas = []
-  config.excluded_models = %w[Platform::Invitation Platform::AccountEvent TenantAccess::User TenantAccess::Membership Platform::Administrator Platform::ProvisioningFailure
+  config.excluded_models = %w[Platform::ExternalIdentity Platform::TenantRetentionEvent Platform::Invitation Platform::AccountEvent TenantAccess::User TenantAccess::Membership Platform::Administrator Platform::ProvisioningFailure
     TenantManagement::Tenant TenantManagement::Contact TenantManagement::Branding
     TenantManagement::Subscription TenantManagement::Assignment TenantManagement::AuditEvent
     TenantManagement::ReferenceOption TenantManagement::BrandAsset]

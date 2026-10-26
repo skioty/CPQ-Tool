@@ -22,6 +22,11 @@ services:
       dockerfile: infra/backend.Dockerfile
     environment: &backend_environment
       RAILS_ENV: development
+      TENANT_RETENTION_DAYS: ${TENANT_RETENTION_DAYS:-90}
+      MICROSOFT_TENANT_ID: ${MICROSOFT_TENANT_ID:-}
+      MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID:-}
+      MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET:-}
+      MICROSOFT_REDIRECT_URI: ${MICROSOFT_REDIRECT_URI:-}
       DATABASE_HOST: db
       DATABASE_USER: ${POSTGRES_USER:-cpq}
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD:?Set a local POSTGRES_PASSWORD in .env}

@@ -24,7 +24,7 @@ export class App {
   readonly tenantSession = inject(TenantSession);
   readonly router = inject(Router);
   get isLogin() {
-    return this.router.url.startsWith('/login') || this.isTenantArea;
+    return this.router.url.startsWith('/login') || this.router.url.startsWith('/security') || this.isTenantArea;
   }
   get isTenantArea() {
     return ['/tenant-login', '/workspaces', '/invitations/accept'].some((path) =>

@@ -11,6 +11,9 @@ module TenantAccess
       unless account && account.active_for_authentication?
         return render json: {error: {code: "invalid_credentials", message: "Invalid email or password", fields: {}}}, status: 401
       end
+      if Platform::AccountSecurity.enforced?
+        return render json: Platform::AccountSecurity.begin!(self, "tenant_user", account), status: :accepted
+      end
       reset_session
       sign_in(:tenant_user, account, force: true)
       render json: {data: {id: account.id, email: account.email}, csrf_token: form_authenticity_token}

@@ -1,0 +1,350 @@
+.workspace {
+  grid-template-columns: 240px minmax(0, 1fr);
+  .sidebar {
+    padding: 32px 20px 24px;
+    background: var(--nav);
+  }
+  .brand {
+    padding: 0;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 0;
+  }
+  .brand small {
+    color: white;
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0;
+    margin-top: 6px;
+  }
+  .sidebar nav {
+    margin-top: 38px;
+  }
+  .nav-caption {
+    color: white;
+    font-size: 12px;
+    padding: 0 0 16px;
+    margin: 0 0 8px;
+    letter-spacing: 0;
+  }
+  nav a {
+    font-size: 14px;
+    padding: 12px;
+    min-height: 48px;
+    border-radius: 6px;
+    margin: 8px 0;
+  }
+  nav a.active {
+    background: var(--accent);
+    color: white;
+    box-shadow: none;
+  }
+  .sidebar-bottom {
+    padding: 24px 0 0;
+  }
+  .sidebar-bottom small {
+    color: #d6e0ed;
+    font-size: 12px;
+  }
+  .sidebar-bottom p {
+    margin: 10px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: white;
+  }
+  .topbar {
+    min-height: 80px;
+    padding: 20px 24px;
+  }
+  .topbar-location strong {
+    font-weight: 600;
+    font-size: 14px;
+  }
+  .account-avatar {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .account-description strong {
+    font-weight: 400;
+    font-size: 14px;
+  }
+  .account-description span {
+    font-size: 12px;
+  }
+  .content-shell main {
+    padding: 24px 32px 40px;
+  }
+  .workspace-footer {
+    font-size: 11px;
+    border-top: 0;
+    padding: 12px 32px 20px;
+    color: var(--muted);
+  }
+  :is(button, .button) {
+    font-size: 14px;
+    font-weight: 600;
+  }
+}
+.directory-page {
+  .heading {
+    align-items: center;
+    margin-bottom: 24px;
+  }
+  .heading .eyebrow {
+    display: none;
+  }
+  .heading h1 {
+    margin-top: 0;
+    font-size: 28px;
+    line-height: 1.45;
+    letter-spacing: 0;
+  }
+  .subheading {
+    font-size: 14px;
+  }
+  .directory-panel,
+  .card {
+    box-shadow: none;
+    border-radius: 8px;
+  }
+  .filters {
+    padding: 16px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .filters label {
+    color: var(--muted);
+  }
+  .search-label {
+    max-width: none;
+  }
+  .panel-heading {
+    padding: 20px 16px;
+  }
+  .panel-label {
+    display: none;
+  }
+  .results-bar {
+    padding: 12px 16px;
+  }
+  .row-head,
+  .tenant-row {
+    grid-template-columns: minmax(190px, 2fr) minmax(100px, 1.1fr) minmax(90px, 1fr) 60px minmax(
+        100px,
+        1fr
+      ) 70px;
+    gap: 12px;
+    padding: 16px;
+  }
+  .row-head {
+    font-size: 12px;
+    letter-spacing: 0;
+    font-weight: 400;
+    background: var(--canvas);
+  }
+  .tenant-row {
+    min-height: 76px;
+  }
+  .tenant-row:hover {
+    background: var(--accent-soft);
+  }
+  .company-avatar {
+    display: none;
+  }
+  .tenant-identity a {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .tenant-identity p {
+    font-size: 12px;
+  }
+  .row-open {
+    width: auto;
+    min-height: 40px;
+    height: auto;
+    padding: 8px;
+    font-size: 14px;
+    color: var(--ink);
+    background: white;
+    border: 1px solid var(--line);
+  }
+  .pagination {
+    padding: 16px;
+    font-size: 12px;
+  }
+  .tenant-grid .card {
+    min-width: 0;
+  }
+}
+.tenant-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.tenant-summary > div {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px;
+}
+.tenant-summary span,
+.tenant-summary small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+.tenant-summary strong {
+  display: block;
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.45;
+  margin: 4px 0;
+}
+.detail-tabs {
+  display: flex;
+  gap: 24px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--line);
+  margin: 0 0 24px;
+}
+.detail-tabs button {
+  border: 0;
+  border-radius: 0;
+  white-space: nowrap;
+  border-bottom: 3px solid transparent;
+  background: none;
+  color: var(--muted);
+  padding: 12px 0;
+}
+.detail-tabs button.active {
+  border-bottom-color: var(--accent);
+  color: var(--accent);
+}
+.directory-page .tenant-grid > section[hidden],
+.directory-page section[hidden] {
+  display: none !important;
+}
+.access-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.access-stats > div {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px;
+}
+.access-stats span,
+.access-stats small {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+}
+.access-stats strong {
+  display: block;
+  font-size: 30px;
+  font-weight: 600;
+}
+@media (max-width: 1200px) {
+  .directory-page .row-head,
+  .directory-page .tenant-row {
+    grid-template-columns: minmax(150px, 2fr) 100px 90px 45px 90px 60px;
+    gap: 10px;
+  }
+  .directory-page .tenant-rows {
+    overflow-wrap: anywhere;
+  }
+}
+@media (max-width: 1000px) {
+  .directory-page .row-head {
+    display: none;
+  }
+  .directory-page .tenant-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 16px;
+  }
+  .directory-page .tenant-identity {
+    grid-column: 1/-1;
+  }
+  .directory-page .mobile-label {
+    display: block;
+    color: var(--muted);
+    font-size: 11px;
+    margin-bottom: 4px;
+  }
+  .directory-page .row-open {
+    width: 70px;
+  }
+  .tenant-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 760px) {
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+  .workspace .sidebar {
+    padding: 16px 20px;
+  }
+  .workspace .sidebar nav {
+    margin-top: 0;
+  }
+  .workspace .topbar {
+    min-height: 64px;
+    padding: 12px 20px;
+  }
+  .workspace .content-shell main {
+    padding: 24px 20px;
+  }
+  .workspace .sidebar-bottom {
+    display: none;
+  }
+  .tenant-summary {
+    gap: 12px;
+  }
+  .tenant-summary > div {
+    padding: 14px;
+  }
+  .tenant-summary strong {
+    font-size: 26px;
+  }
+  .tenant-summary small {
+    font-size: 11px;
+  }
+  .workspace .heading {
+    align-items: flex-start;
+  }
+  .workspace .workspace-footer {
+    padding: 12px 20px;
+  }
+  .workspace .account-description {
+    display: none;
+  }
+  .detail-tabs {
+    gap: 20px;
+  }
+  .access-stats {
+    gap: 8px;
+  }
+  .access-stats > div {
+    padding: 12px;
+  }
+  .access-stats small {
+    display: none;
+  }
+}
+
+.directory-page .single-profile-panel {
+  grid-template-columns: minmax(0, 1fr);
+}
+.workspace-account-count {
+  font-size: 28px;
+  line-height: 1.45;
+  margin: 20px 0 8px;
+}
+.workspace-profile .button {
+  margin-top: 24px;
+}

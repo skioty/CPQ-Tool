@@ -1,5 +1,8 @@
 # API contract
 
+> Current design/account-security update: see [Figma integration and approved policy changes](figma-integration.md). This supersedes historical statements below that exclude 2FA, Microsoft linking, or guarded development deletion. Microsoft credentials and production deletion approval remain pending.
+
+
 ## Approved-rule increment (current)
 
 This section supersedes the historical gated/proposed sections below. The complete approved policy is in [decisions](decisions.md).

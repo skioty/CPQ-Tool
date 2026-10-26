@@ -1,5 +1,8 @@
 # Decision log
 
+> Current design/account-security update: see [Figma integration and approved policy changes](figma-integration.md). This supersedes historical statements below that exclude 2FA, Microsoft linking, or guarded development deletion. Microsoft credentials and production deletion approval remain pending.
+
+
 Confirmed means supplied project direction; proposed means a reviewable engineering choice; open means no business answer has been invented. Owner roles coordinate decisions with the team/SELISE, rather than unilaterally inventing product policy.
 
 | Decision | Status | Rationale / next action | Owner role |

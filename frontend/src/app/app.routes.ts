@@ -21,6 +21,10 @@ const preserveDraft = (component: TenantForm) =>
 
 // Additive Member 1 reservations; list/detail/lifecycle remain Member 4 ownership.
 export const routes: Routes = [
+  {path:'security/verify',title:'Verify sign-in | CPQ Console',loadComponent:()=>import('./access/account-security').then(m=>m.FactorVerification)},
+  {path:'security/microsoft',title:'Microsoft sign-in | CPQ Console',loadComponent:()=>import('./access/account-security').then(m=>m.MicrosoftSignIn)},
+  {path:'security/account',title:'Account security | CPQ Console',loadComponent:()=>import('./access/account-security').then(m=>m.MicrosoftSignIn)},
+  {path:'security/identity-error',title:'Sign-in unavailable | CPQ Console',loadComponent:()=>import('./access/account-security').then(m=>m.IdentityError)},
   {
     path: 'administrators',
     title: 'Administrators | SELISE CPQ',
@@ -64,7 +68,7 @@ export const routes: Routes = [
     component: ReferenceManager,
   },
   { path: 'login', title: 'Sign in | SELISE CPQ', component: Login },
-  { path: 'tenants', title: 'Tenants | SELISE CPQ', component: TenantList },
+  { path: 'tenants', title: 'Tenants | SELISE CPQ', component: TenantList, resolve: {references: loadReferences} },
   {
     path: 'tenants/new',
     title: 'Create tenant | SELISE CPQ',

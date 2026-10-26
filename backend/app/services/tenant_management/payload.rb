@@ -1,6 +1,6 @@
 module TenantManagement
   class Payload
-    SCALARS = %w[company_name company_name_display description industry_id].freeze
+    SCALARS = %w[company_name company_name_display display_name country time_zone description industry_id].freeze
     BRANDING = %w[primary_colour secondary_colour typography logo_attachment_id favicon_attachment_id].freeze
     SUBSCRIPTION = %w[currency fee payment_method payment_method_description discount].freeze
     DISCOUNT = %w[type value duration].freeze

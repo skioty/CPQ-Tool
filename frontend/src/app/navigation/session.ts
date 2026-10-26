@@ -36,12 +36,12 @@ export class Session {
     this.clear();
     return this.csrf().pipe(
       switchMap(() =>
-        this.http.post<{ data: Actor; csrf_token: string }>('/api/v1/session', {
+        this.http.post<{ data?: Actor; challenge?: boolean; csrf_token: string }>('/api/v1/session', {
           administrator: { email, password },
         }),
       ),
       tap((r) => {
-        this.actor.set(r.data);
+        this.actor.set(r.data || null);
         this.token.set(r.csrf_token);
       }),
     );

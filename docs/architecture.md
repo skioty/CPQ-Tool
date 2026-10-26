@@ -1,5 +1,8 @@
 # Architecture
 
+> Current design/account-security update: see [Figma integration and approved policy changes](figma-integration.md). This supersedes historical statements below that exclude 2FA, Microsoft linking, or guarded development deletion. Microsoft credentials and production deletion approval remain pending.
+
+
 ## Member 3 implemented increment
 
 The user selected same-origin Devise cookie sessions plus CSRF. Public-qualified administrator/management records are excluded from Apartment. Tenant schema keys are server-generated and immutable. Provisioning schema DDL and registry/settings/audit share one PostgreSQL transaction; failed attempts leave no partial registry/schema, with post-rollback failure history where the process/database remain available. TenantContext authorizes trusted tenant identity, checks readiness/lifecycle policy/migration versions, block-switches via Apartment and restores public context. No public fallback for tenant tables, schema header elevator or public-table cloning. [Full handoff](member3-auth-tenancy.md) records migration boundaries and limits; older proposed sections below remain historical planning context.

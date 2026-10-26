@@ -17,7 +17,7 @@ import { ASSET_URL, FORM_OPTIONS, Tenant } from './tenant.types';
         <img [src]="asset('logo')" alt="Company logo preview" class="logo" />
       }
       @if (tenant()?.company_name_display) {
-        <strong>{{ tenant()?.company_name || 'Company name' }}</strong>
+        <strong>{{ tenant()?.display_name || tenant()?.company_name || 'Company name' }}</strong>
       }
       @if (asset('favicon')) {
         <img [src]="asset('favicon')" alt="Favicon preview" width="24" height="24" />

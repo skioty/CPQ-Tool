@@ -1,3 +1,4 @@
+import { TenantReview } from '../features/tenants/tenant-review';
 import {
   Component,
   DestroyRef,
@@ -38,6 +39,20 @@ import { Field, TenantField } from './tenant-field';
 import { BrandingPreview } from './branding-preview';
 
 export const FIELDS: Field[] = [
+  {
+    key: 'display_name',
+    path: 'display_name',
+    label: 'Company display name (optional)',
+    section: 'Company',
+  },
+  { key: 'country', path: 'country', label: 'Country (optional)', section: 'Company' },
+  {
+    key: 'time_zone',
+    path: 'time_zone',
+    label: 'Time zone (optional)',
+    section: 'Company',
+    help: 'IANA time zone, for example Asia/Thimphu.',
+  },
   {
     key: 'payment_method_description',
     path: 'subscription.payment_method_description',
@@ -125,7 +140,7 @@ export const FIELDS: Field[] = [
 
 @Component({
   selector: 'app-tenant-form',
-  imports: [ReactiveFormsModule, RouterLink, TenantField, BrandingPreview],
+  imports: [ReactiveFormsModule, RouterLink, TenantField, BrandingPreview, TenantReview],
   templateUrl: './tenant-form.html',
   styleUrl: './tenant-form.scss',
 })
@@ -152,6 +167,82 @@ export class TenantForm implements OnInit {
   readonly files = signal<Partial<Record<AssetKind, File>>>({});
   readonly urls = signal<Partial<Record<AssetKind, string>>>({});
   readonly sections = ['Company', 'Contacts', 'Branding', 'Subscription'];
+  readonly registrationSteps = ['Organization details', 'Tenant registration', 'Review & create'];
+  readonly step = signal(0);
+  readonly activeSection = signal('Company');
+  visibleSection(section: string) {
+    return this.edit
+      ? section === this.activeSection()
+      : this.step() === (['Company', 'Contacts'].includes(section) ? 0 : 1);
+  }
+  onFormSubmit() {
+    if (this.edit || this.step() === 2) this.submit();
+    else this.advance();
+  }
+  goStep(next: number) {
+    if (next <= this.step()) {
+      this.step.set(next);
+      this.errors.set([]);
+      return;
+    }
+    while (this.step() < next) {
+      if (!this.advance()) break;
+    }
+  }
+  advance() {
+    this.errors.set([]);
+    if (this.step() === 0) {
+      const controls = [
+        this.form.controls.fields.controls['company_name'],
+        this.form.controls.fields.controls['industry_id'],
+        this.form.controls.admins,
+        this.contacts,
+      ];
+      controls.forEach((c) => c.markAllAsTouched());
+      if (controls.some((c) => c.invalid)) {
+        this.fail(
+          new Error(
+            'Complete the organization details, choose a responsible administrator and select exactly one primary contact.',
+          ),
+        );
+        return false;
+      }
+    } else {
+      this.form.markAllAsTouched();
+      const errors =
+        this.commercialEditable && this.options.contractApproved
+          ? commercialErrors(this.draft())
+          : [];
+      if (this.form.invalid || errors.length) {
+        this.fail(
+          new Error(errors.join(' ') || 'Review the highlighted fields before continuing.'),
+        );
+        return false;
+      }
+    }
+    this.step.update((step) => Math.min(2, step + 1));
+    return true;
+  }
+  reviewEdit(section: string) {
+    this.step.set(['Company', 'Contacts'].includes(section) ? 0 : 1);
+    this.activeSection.set(section);
+    afterNextRender(() => document.getElementById('section-' + section.toLowerCase())?.focus(), {
+      injector: this.injector,
+    });
+  }
+  sectionLabel(section: string) {
+    return (
+      (
+        {
+          Company: 'Basic details',
+          Contacts: 'Contacts',
+          Branding: 'Branding',
+          Subscription: 'Billing',
+        } as Record<string, string>
+      )[section] || section
+    );
+  }
+
   sectionDescription(section: string) {
     return (
       (
@@ -176,7 +267,10 @@ export class TenantForm implements OnInit {
   ).sort((a, b) => {
     const order = [
       'company_name',
+      'display_name',
       'description',
+      'country',
+      'time_zone',
       'industry_id',
       'primary_colour',
       'secondary_colour',
@@ -255,6 +349,13 @@ export class TenantForm implements OnInit {
     }
   }
   ngOnInit() {
+    this.route.fragment?.pipe(takeUntilDestroyed(this.destroy)).subscribe((fragment) => {
+      const section = this.sections.find((s) => fragment === 'section-' + s.toLowerCase());
+      if (section) {
+        this.activeSection.set(section);
+        this.step.set(['Company', 'Contacts'].includes(section) ? 0 : 1);
+      }
+    });
     this.route.paramMap.pipe(takeUntilDestroyed(this.destroy)).subscribe((params) => {
       this.request?.unsubscribe();
       this.assetKinds.forEach((kind) => this.cancelFile(kind));
@@ -365,6 +466,9 @@ export class TenantForm implements OnInit {
     this.original = structuredClone(t);
     this.form.controls.fields.patchValue({
       company_name: t.company_name,
+      display_name: t.display_name || '',
+      country: t.country || '',
+      time_zone: t.time_zone || '',
       description: t.description,
       industry_id: t.industry_id,
       currency: t.subscription.currency,
@@ -391,6 +495,9 @@ export class TenantForm implements OnInit {
     return {
       ...base,
       company_name: f['company_name'],
+      display_name: f['display_name'],
+      country: f['country'],
+      time_zone: f['time_zone'],
       company_name_display: this.form.controls.company_name_display.value,
       description: f['description'],
       industry_id: f['industry_id'],
@@ -546,6 +653,9 @@ export class TenantForm implements OnInit {
           // Explicit allowlist: never send platform states, schema identifiers, or unknown detail metadata.
           const payload: Tenant = {
             company_name: t.company_name,
+            display_name: t['display_name'],
+            country: t['country'],
+            time_zone: t['time_zone'],
             company_name_display: t.company_name_display,
             description: t.description,
             industry_id: t.industry_id,

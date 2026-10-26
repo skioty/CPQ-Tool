@@ -1,5 +1,8 @@
 # CPQ Tool
 
+> Current design/account-security update: see [Figma integration and approved policy changes](docs/figma-integration.md). This supersedes historical statements below that exclude 2FA, Microsoft linking, or guarded development deletion. Microsoft credentials and production deletion approval remain pending.
+
+
 Four-student final-year SELISE project: a reusable multi-tenant CPQ SaaS adaptable to different industries. This semester targets a one-week tenant management prototype; the remaining CPQ modules extend this application next semester.
 
 ## Current status

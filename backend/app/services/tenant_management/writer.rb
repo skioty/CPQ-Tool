@@ -54,6 +54,7 @@ module TenantManagement
         end
         approved!(@integration.validate_business!(@actor, attributes, tenant))
         tenant.assign_attributes(attributes.slice(*Payload::SCALARS))
+        tenant.assign_attributes(billing_resolved:nil,contracts_resolved:nil,retention_records_approved:nil) if attributes.key?("subscription")
         persist_settings!(tenant, attributes)
         # touch increments lock_version even when only child settings change.
         tenant.save!

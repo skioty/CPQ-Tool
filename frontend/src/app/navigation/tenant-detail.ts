@@ -1,3 +1,4 @@
+import { TenantRetention } from '../features/tenants/tenant-retention';
 import { TenantActivity } from './tenant-activity';
 import { brandingInk } from '../tenant/branding-colour';
 import { DecimalPipe } from '@angular/common';
@@ -26,7 +27,7 @@ import { FORM_OPTIONS, ASSET_URL } from '../tenant/tenant.types';
 import { LifecycleDialog } from './lifecycle-dialog';
 
 @Component({
-  imports: [RouterLink, LifecycleDialog, DecimalPipe, TenantActivity],
+  imports: [RouterLink, LifecycleDialog, DecimalPipe, TenantActivity, TenantRetention],
   host: { class: 'directory-page' },
   template: `<div class="breadcrumb">
       <a routerLink="/tenants">Tenants</a><span>/</span><span>Company overview</span>
@@ -68,8 +69,9 @@ import { LifecycleDialog } from './lifecycle-dialog';
       @if (success()) {
         <p class="success" role="status">{{ success() }}</p>
       }
-      <div class="tenant-grid">
-        <section class="card">
+      <nav class="detail-tabs" aria-label="Tenant profile sections">@for(section of profileSections;track section){<button type="button" [class.active]="tab()===section" [attr.aria-current]="tab()===section ? 'page' : null" (click)="selectTab(section)">{{section}}{{section==='Contacts' ? ' ('+t.contacts.length+')' : ''}}</button>}</nav>
+      <div class="tenant-grid" [class.single-profile-panel]="tab() !== 'Overview'">
+        <section class="card" [hidden]="tab() !== 'Overview'">
           <div class="card-heading">
             <h2>Company information</h2>
             <span class="section-kicker">OVERVIEW</span>
@@ -78,6 +80,7 @@ import { LifecycleDialog } from './lifecycle-dialog';
           <dl>
             <dt>Industry</dt>
             <dd>{{ industry(t.industry_id) }}</dd>
+            <dt>Display name</dt><dd>{{t.display_name || t.company_name}}</dd><dt>Country</dt><dd>{{t.country || 'Not provided'}}</dd><dt>Time zone</dt><dd>{{t.time_zone || 'Not provided'}}</dd>
             <dt>Company name in branding</dt>
             <dd>{{ t.company_name_display ? 'Visible' : 'Hidden' }}</dd>
             <dt>Workspace setup</dt>
@@ -90,7 +93,8 @@ import { LifecycleDialog } from './lifecycle-dialog';
             </dd>
           </dl>
         </section>
-        <section class="card">
+        @if(tab() === 'Overview') {<section class="card workspace-profile"><h2>Workspace configuration</h2><p class="workspace-account-count">{{t.user_count ?? '—'}} tenant accounts</p><p class="muted">Accepted, enabled memberships</p><dl><dt>Billing currency</dt><dd>{{t.subscription.currency || 'Not set'}}</dd><dt>Provisioning</dt><dd>{{t.provisioning_status === 'ready' ? 'Ready' : 'In progress'}}</dd></dl><a class="button" [routerLink]="['/tenants',t.id,'access']">Manage workspace access</a></section>}
+        <section class="card" [hidden]="tab() !== 'Contacts'">
           <div class="card-heading">
             <h2>Contacts</h2>
             <span class="section-kicker"
@@ -123,7 +127,7 @@ import { LifecycleDialog } from './lifecycle-dialog';
             }
           </div>
         </section>
-        <section class="card">
+        <section class="card" [hidden]="tab() !== 'Branding'">
           <div class="card-heading">
             <h2>Workspace branding</h2>
             <a class="text-link" [routerLink]="['/tenants', t.id, 'branding']">Full preview ↗</a>
@@ -174,7 +178,7 @@ import { LifecycleDialog } from './lifecycle-dialog';
             <dd>{{ t.branding['favicon_attachment_id'] ? 'Uploaded' : 'Default' }}</dd>
           </dl>
         </section>
-        <section class="card">
+        <section class="card" [hidden]="tab() !== 'Billing'">
           <div class="card-heading">
             <h2>Subscription</h2>
             <span class="section-kicker">MONTHLY PLAN</span>
@@ -235,7 +239,7 @@ import { LifecycleDialog } from './lifecycle-dialog';
           }
         </div>
       </section>
-      <section class="card activity-panel" aria-labelledby="activity-heading">
+      <section class="card activity-panel" [hidden]="tab() !== 'Activity'" aria-labelledby="activity-heading">
         <div class="card-heading">
           <div>
             <h2 id="activity-heading">Tenant activity</h2>
@@ -256,6 +260,7 @@ import { LifecycleDialog } from './lifecycle-dialog';
           }
         </div>
       </section>
+      @if(tab()==='Retention'){<app-tenant-retention [tenantId]="t.id" [company]="t.company_name || 'this tenant'" />}
       @if (selected(); as action) {
         <app-lifecycle-dialog
           [action]="action"
@@ -267,6 +272,9 @@ import { LifecycleDialog } from './lifecycle-dialog';
     }`,
 })
 export class TenantDetail {
+  readonly profileSections = ['Overview','Contacts','Branding','Billing','Activity','Retention'];
+  readonly tab = signal('Overview');
+  selectTab(section:string) {this.tab.set(section);if(section==='Activity')this.activityOpen.set(true);}
   readonly ink = brandingInk;
   private api = inject(TenantDirectory);
   private references = inject(FORM_OPTIONS);

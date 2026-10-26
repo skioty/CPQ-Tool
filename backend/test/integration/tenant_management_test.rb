@@ -211,12 +211,12 @@ class TenantManagementTest < ActionDispatch::IntegrationTest
     assert_empty @adapter.provisioned
   end
 
-  test "no delete route or destructive model operation is supplied" do
+  test "generic tenant deletion and destructive model destroy remain unavailable" do
     data = create_tenant
     tenant = TenantManagement::Tenant.find(data["id"])
     assert_nil tenant.lifecycle_status
     assert_equal 1, tenant.audit_events.count
     assert_not tenant.destroy
-    assert_not Rails.application.routes.routes.any? { |route| route.verb == "DELETE" && route.path.spec.to_s.include?("tenants") }
+    assert_not Rails.application.routes.routes.any? { |route| route.verb == "DELETE" && route.path.spec.to_s == "/api/v1/tenants/:id(.:format)" }
   end
 end

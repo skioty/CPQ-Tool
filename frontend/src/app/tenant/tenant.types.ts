@@ -20,6 +20,9 @@ export interface Branding {
 export interface Tenant {
   id?: string;
   company_name: string;
+  display_name?: string;
+  country?: string;
+  time_zone?: string;
   company_name_display: boolean;
   description: string;
   industry_id: string;

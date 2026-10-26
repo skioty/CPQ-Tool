@@ -1,4 +1,5 @@
-import { DecimalPipe } from '@angular/common';
+import { FORM_OPTIONS } from '../tenant/tenant.types';
+import { DatePipe } from '@angular/common';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -8,12 +9,12 @@ import { DIRECTORY_POLICY, TenantDirectory, TenantPage, apiMessage } from './ten
 import { Session } from './session';
 
 @Component({
-  imports: [FormsModule, RouterLink, DecimalPipe],
+  imports: [FormsModule, RouterLink, DatePipe],
   host: { class: 'directory-page' },
   template: `<div class="heading portfolio-heading">
       <div>
-        <p class="eyebrow">TENANT OPERATIONS</p>
-        <h1>Tenants</h1>
+        <p class="eyebrow">ORGANIZATION WORKSPACES</p>
+        <h1>Tenant management</h1>
         <p class="subheading">
           Manage company workspaces, contacts and subscriptions in one place.
         </p>
@@ -24,22 +25,11 @@ import { Session } from './session';
         >
       }
     </div>
-    <div class="portfolio-context">
-      <div class="portfolio-context-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24">
-          <path d="M4 21V5l8-3v19M12 8h8v13M2 21h20M7 7h2M7 11h2M7 15h2M15 12h2M15 16h2" />
-        </svg>
-      </div>
-      <div>
-        <h2>{{ hasFilters() ? 'Your filtered portfolio' : 'Your company workspaces' }}</h2>
-        <p>Open a company to review its setup, manage access or update its details.</p>
-      </div>
-      @if (result(); as page) {
-        <div class="portfolio-total">
-          <strong>{{ page.meta.total_count }}</strong
-          ><span>{{ hasFilters() ? 'matching tenants' : 'accessible tenants' }}</span>
-        </div>
-      }
+    <div class="tenant-summary" aria-label="Tenant summary">
+      <div><span>Total tenants</span><strong>{{result()?.summary?.total ?? result()?.meta?.total_count ?? '—'}}</strong><small>{{result()?.summary?.industries ?? '—'}} industries</small></div>
+      <div><span>Active tenants</span><strong>{{result()?.summary?.active ?? '—'}}</strong><small>Workspace access enabled</small></div>
+      <div><span>Inactive tenants</span><strong>{{result()?.summary?.inactive ?? '—'}}</strong><small>Workspace access disabled</small></div>
+      <div><span>Suspended</span><strong>{{result()?.summary?.suspended ?? '—'}}</strong><small>Administratively restricted</small></div>
     </div>
     <section class="directory-panel" aria-label="Tenant directory" [attr.aria-busy]="loading()">
       <div class="panel-heading">
@@ -60,7 +50,7 @@ import { Session } from './session';
               name="query"
               [(ngModel)]="query"
               type="search"
-              placeholder="Search by company name…"
+              placeholder="Search organizations or tenant ID…"
             /></div
         ></label>
         <label class="status-label"
@@ -71,6 +61,7 @@ import { Session } from './session';
             }
           </select></label
         >
+        <label class="status-label">Industry<select name="industry" [(ngModel)]="industry"><option value="">All industries</option>@for(choice of options.industries;track choice.id){<option [value]="choice.id">{{choice.label}}</option>}</select></label>
         <button class="filter-submit">Search</button>
         @if (hasFilters()) {
           <button class="clear-filters" type="button" (click)="clearFilters()">
@@ -122,8 +113,7 @@ import { Session } from './session';
           </div>
         } @else {
           <div class="row-head" aria-hidden="true">
-            <span>COMPANY</span><span>CONTACTS</span><span>SUBSCRIPTION</span><span>STATUS</span
-            ><span></span>
+            <span>ORGANIZATION</span><span>INDUSTRY</span><span>STATUS</span><span>USERS</span><span>CREATED</span><span>ACTIONS</span>
           </div>
           <ul class="tenant-rows">
             @for (t of r.data; track t.id) {
@@ -139,30 +129,10 @@ import { Session } from './session';
                     <p>{{ t.description || 'Company workspace' }}</p>
                   </div>
                 </div>
-                <div class="row-contacts">
-                  <span class="mobile-label">Contacts</span
-                  ><strong
-                    >{{ t.contacts.length }}
-                    {{ t.contacts.length === 1 ? 'contact' : 'contacts' }}</strong
-                  ><small>{{ primaryName(t.contacts) }}</small>
-                </div>
-                <div class="row-subscription">
-                  <span class="mobile-label">Subscription</span
-                  ><strong
-                    >{{
-                      t.subscription.fee === null ? '—' : (t.subscription.fee | number: '1.2-2')
-                    }}
-                    <span>{{ t.subscription.currency || '' }}</span></strong
-                  ><small>per month</small>
-                </div>
-                <div class="row-status">
-                  <span class="badge" [attr.data-status]="t.lifecycle_status">{{
-                    t.lifecycle_status || 'Not set'
-                  }}</span>
-                  @if (t.provisioning_status !== 'ready') {
-                    <small>Setup in progress</small>
-                  }
-                </div>
+                <div class="row-industry"><span class="mobile-label">Industry</span>{{industryLabel(t.industry_id)}}</div>
+                <div class="row-status"><span class="badge" [attr.data-status]="t.lifecycle_status">{{t.lifecycle_status || 'Not set'}}</span>@if(t.provisioning_status !== 'ready'){<small>Setup in progress</small>}</div>
+                <div class="row-users"><span class="mobile-label">Tenant accounts</span>{{t.user_count ?? '—'}}</div>
+                <div class="row-created"><span class="mobile-label">Created</span>{{t.created_at ? (t.created_at | date:'dd MMM yyyy') : 'Not available'}}</div>
                 <a
                   class="row-open"
                   [routerLink]="['/tenants', t.id]"
@@ -198,6 +168,8 @@ import { Session } from './session';
 })
 export class TenantList {
   readonly session = inject(Session);
+  readonly options = inject(FORM_OPTIONS);
+  industryLabel(id: string|null) { return this.options.industries.find(c=>c.id===id)?.label || id || 'Not set'; }
   readonly policy = inject(DIRECTORY_POLICY);
   private api = inject(TenantDirectory);
   initials(name: string | null) {
@@ -215,6 +187,8 @@ export class TenantList {
   query = this.api.view().query;
   status = this.api.view().status;
   perPage = this.api.view().perPage;
+  industry = this.api.view().industry || '';
+  private activeIndustry = this.industry;
   private activeQuery = this.query;
   private activeStatus = this.status;
   private currentPage = this.api.view().page;
@@ -232,7 +206,7 @@ export class TenantList {
           this.result.set(null);
         }),
         switchMap(() =>
-          this.api.list(this.activeQuery, this.activeStatus, this.currentPage, this.perPage).pipe(
+          this.api.list(this.activeQuery, this.activeStatus, this.currentPage, this.perPage, this.activeIndustry).pipe(
             catchError((e) => {
               this.error.set(apiMessage(e));
               return of(null);
@@ -247,16 +221,18 @@ export class TenantList {
       });
   }
   hasFilters() {
-    return Boolean(this.activeQuery || this.activeStatus);
+    return Boolean(this.activeQuery || this.activeStatus || this.activeIndustry);
   }
   clearFilters() {
     this.query = '';
     this.status = '';
+    this.industry = '';
     this.search();
   }
   search() {
     this.activeQuery = this.query.trim();
     this.activeStatus = this.status;
+    this.activeIndustry = this.industry;
     this.currentPage = 1;
     this.reload();
   }
@@ -274,6 +250,7 @@ export class TenantList {
     this.api.view.set({
       query: this.activeQuery,
       status: this.activeStatus,
+      industry: this.activeIndustry,
       page: this.currentPage,
       perPage: this.perPage,
     });

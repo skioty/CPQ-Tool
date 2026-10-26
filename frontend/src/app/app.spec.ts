@@ -69,6 +69,6 @@ describe('App', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('a.skip')?.getAttribute('href')).toBe('#main');
     expect(compiled.querySelector('nav')?.getAttribute('aria-label')).toBe('Workspace navigation');
-    expect(compiled.querySelector('a[href="/tenants/new"]')).toBeTruthy();
+    expect(compiled.querySelector('a[href="/tenants"]')).toBeTruthy();
   });
 });

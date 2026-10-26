@@ -1,5 +1,8 @@
 # Test plan
 
+> Current design/account-security update: see [Figma integration and approved policy changes](figma-integration.md). This supersedes historical statements below that exclude 2FA, Microsoft linking, or guarded development deletion. Microsoft credentials and production deletion approval remain pending.
+
+
 ## Implemented Member 3 evidence
 
 See [authentication/tenancy evidence](member3-auth-tenancy.md): 42 Rails tests / 248 assertions passed, including real Devise/CSRF, assigned access, alternating/concurrent schema requests, context cleanup, provisioning failures/retry and forward tenant migration. Tests use synthetic product/lifecycle rules only where decisions remain open; no production policy approval or deployment readiness is implied. Remaining planned cases below are not claimed as implemented.

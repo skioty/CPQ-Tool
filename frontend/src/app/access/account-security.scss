@@ -1,0 +1,138 @@
+:host {
+  display: block;
+  width: 100%;
+  max-width: 1440px;
+  margin: auto;
+}
+.security-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 360px) minmax(0, 1fr);
+  min-height: 700px;
+  background: var(--canvas);
+}
+.security-story {
+  padding: 40px;
+  background: var(--nav);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.security-brand {
+  font-size: 18px;
+  font-weight: 600;
+}
+.security-story > div {
+  margin: auto 0;
+}
+.security-story h2 {
+  font-size: 28px;
+  color: white;
+  line-height: 1.5;
+}
+.security-story p {
+  font-size: 14px;
+  line-height: 1.6;
+}
+.security-panel {
+  padding: 60px;
+  max-width: 760px;
+  min-width: 0;
+}
+.security-panel h1 {
+  font-size: 28px;
+}
+.security-panel > p {
+  color: var(--muted);
+  margin-bottom: 24px;
+}
+.security-panel form,
+.identity-card form {
+  display: grid;
+  gap: 12px;
+  margin: 24px 0;
+}
+.security-panel input,
+.identity-card input,
+.identity-card select {
+  width: 100%;
+}
+.setup-key {
+  display: flex;
+  gap: 12px;
+  margin: 10px 0 24px;
+}
+.setup-key input {
+  font-family: ui-monospace, monospace;
+  font-size: 13px;
+}
+.setup-key button {
+  white-space: nowrap;
+}
+.recovery-codes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 24px 0;
+}
+.recovery-codes code {
+  padding: 12px;
+  background: white;
+  border: 1px solid var(--line);
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+.security-footnote {
+  font-size: 12px;
+  margin-top: 32px;
+}
+.check {
+  display: flex;
+  gap: 10px;
+  align-items: start;
+  margin: 24px 0;
+}
+.check input {
+  width: auto;
+  min-height: 20px;
+}
+.identity-card {
+  max-width: 620px;
+  padding: 36px;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  margin: 40px auto;
+}
+.identity-card > a {
+  display: block;
+  margin-top: 20px;
+}
+@media (max-width: 800px) {
+  .security-layout {
+    grid-template-columns: 1fr;
+  }
+  .security-story {
+    padding: 24px;
+  }
+  .security-story > div {
+    margin: 10px 0;
+  }
+  .security-story h2 {
+    font-size: 22px;
+  }
+  .security-panel {
+    padding: 28px;
+    max-width: none;
+  }
+  .identity-card {
+    margin: 0;
+    padding: 24px;
+  }
+  .setup-key {
+    flex-wrap: wrap;
+  }
+  .recovery-codes {
+    grid-template-columns: 1fr;
+  }
+}

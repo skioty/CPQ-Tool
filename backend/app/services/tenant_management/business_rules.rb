@@ -1,7 +1,7 @@
 module TenantManagement
   class BusinessRules
     DEFAULT_BRANDING = { "primary_colour" => "#17365D", "secondary_colour" => "#2563EB", "typography" => "system" }.freeze
-    FONTS = [{ id: "system", label: "System sans serif", fontFamily: "system-ui, sans-serif" },
+    FONTS = [{id:"open_sans",label:"Open Sans",fontFamily:"'Open Sans', sans-serif"}, { id: "system", label: "System sans serif", fontFamily: "system-ui, sans-serif" },
       { id: "serif", label: "System serif", fontFamily: "Georgia, serif" }].freeze
     def self.validate!(actor, changes, tenant)
       errors = {}
