@@ -9,7 +9,10 @@
     <p>Bring company details, people and workspace identity together.</p>
   </div>
   @if (saved()?.id) {
-    <a [routerLink]="['/tenants', saved()?.id, 'branding']">Preview workspace</a>
+    <div class="save-buttons">
+      <a class="button" [routerLink]="['/tenants', saved()?.id, 'setup']">Review setup</a
+      ><a class="button" [routerLink]="['/tenants', saved()?.id, 'branding']">Preview workspace</a>
+    </div>
   }
 </div>
 @if (!integrationReady) {
@@ -114,6 +117,7 @@
                     [control]="form.controls.fields.controls[field.key]"
                     [choices]="choices(field.key)"
                     [required]="options.requiredFields.includes(field.path)"
+                    [serverErrors]="serverErrors()[field.path] || []"
                   />
                 }
               }
@@ -123,7 +127,9 @@
                 ><input type="checkbox" formControlName="company_name_display" /> Display company
                 name in workspace branding</label
               >
-              <label for="admins">Responsible SELISE CPQ Admin</label>
+              <label for="admins"
+                >Responsible SELISE CPQ Admin <span class="muted">(required)</span></label
+              >
               <select
                 id="admins"
                 [multiple]="options.assignment === 'many'"
@@ -135,7 +141,19 @@
                     ? ''
                     : null
                 "
-                aria-describedby="admin-help"
+                [attr.aria-describedby]="
+                  (form.controls.admins.touched && form.controls.admins.invalid) ||
+                  serverErrors()['responsible_admin_ids']?.length
+                    ? 'admin-help admin-error'
+                    : 'admin-help'
+                "
+                [attr.aria-invalid]="
+                  (form.controls.admins.touched && form.controls.admins.invalid) ||
+                  serverErrors()['responsible_admin_ids']?.length
+                    ? 'true'
+                    : null
+                "
+                [attr.aria-required]="options.requiredFields.includes('responsible_admin_ids')"
               >
                 @if (options.assignment !== 'many') {
                   <option value="">Select an administrator</option>
@@ -155,6 +173,17 @@
                 >Your point of contact within SELISE. Responsibility can be reassigned by a Super
                 Admin.</small
               >
+              @if (
+                (form.controls.admins.touched && form.controls.admins.invalid) ||
+                serverErrors()['responsible_admin_ids']?.length
+              ) {
+                <p class="error" id="admin-error">
+                  {{
+                    serverErrors()['responsible_admin_ids']?.join(' ') ||
+                      'Choose one responsible CPQ Admin.'
+                  }}
+                </p>
+              }
             }
             @if (section === 'Subscription') {
               <p class="muted">These settings describe the monthly subscription arrangement.</p>
@@ -168,6 +197,11 @@
                     <button type="button" (click)="removeAsset(kind)">Remove {{ kind }}</button>
                     <input
                       type="file"
+                      [attr.accept]="
+                        kind === 'logo'
+                          ? 'image/png,image/jpeg,image/webp'
+                          : 'image/png,image/x-icon,image/vnd.microsoft.icon,.ico'
+                      "
                       [id]="kind"
                       (change)="selectFile(kind, $event)"
                       [attr.aria-describedby]="kind + '-help'"
@@ -225,29 +259,73 @@
                       <legend>Contact {{ i + 1 }}</legend>
                       <div class="field-grid">
                         <div>
-                          <label [for]="'contact-name-' + i">Name</label
+                          <label [for]="'contact-name-' + i"
+                            >Name
+                            @if (options.requiredFields.includes('contacts.name')) {
+                              <span class="muted">(required)</span>
+                            }</label
                           ><input
                             [id]="'contact-name-' + i"
                             formControlName="name"
+                            [attr.aria-required]="options.requiredFields.includes('contacts.name')"
+                            [attr.aria-invalid]="
+                              (contact.controls.name.touched && contact.controls.name.invalid) ||
+                              serverErrors()['contacts.' + i + '.name']?.length
+                                ? 'true'
+                                : null
+                            "
+                            [attr.aria-describedby]="
+                              (contact.controls.name.touched && contact.controls.name.invalid) ||
+                              serverErrors()['contacts.' + i + '.name']?.length
+                                ? 'contact-name-error-' + i
+                                : null
+                            "
                             autocomplete="name"
                           />
                           @if (contact.controls.name.touched && contact.controls.name.invalid) {
-                            <p class="error">A contact name is required.</p>
+                            <p class="error" [id]="'contact-name-error-' + i">
+                              A contact name is required.
+                            </p>
+                          } @else if (serverErrors()['contacts.' + i + '.name']?.length) {
+                            <p class="error" [id]="'contact-name-error-' + i">
+                              {{ serverErrors()['contacts.' + i + '.name']?.join(' ') }}
+                            </p>
                           }
                         </div>
                         <div>
-                          <label [for]="'contact-email-' + i">Email</label
+                          <label [for]="'contact-email-' + i"
+                            >Email
+                            @if (options.requiredFields.includes('contacts.email')) {
+                              <span class="muted">(required)</span>
+                            }</label
                           ><input
                             type="email"
                             [id]="'contact-email-' + i"
                             formControlName="email"
+                            [attr.aria-required]="options.requiredFields.includes('contacts.email')"
+                            [attr.aria-invalid]="
+                              (contact.controls.email.touched && contact.controls.email.invalid) ||
+                              serverErrors()['contacts.' + i + '.email']?.length
+                                ? 'true'
+                                : null
+                            "
+                            [attr.aria-describedby]="
+                              (contact.controls.email.touched && contact.controls.email.invalid) ||
+                              serverErrors()['contacts.' + i + '.email']?.length
+                                ? 'contact-email-error-' + i
+                                : null
+                            "
                             autocomplete="email"
                           />
                           @if (contact.controls.email.touched && contact.controls.email.invalid) {
-                            <p class="error">
+                            <p class="error" [id]="'contact-email-error-' + i">
                               Enter a valid email address{{
                                 contact.controls.email.hasError('required') ? ' (required)' : ''
                               }}.
+                            </p>
+                          } @else if (serverErrors()['contacts.' + i + '.email']?.length) {
+                            <p class="error" [id]="'contact-email-error-' + i">
+                              {{ serverErrors()['contacts.' + i + '.email']?.join(' ') }}
                             </p>
                           }
                         </div>
@@ -290,14 +368,23 @@
       <div class="actions">
         <span>{{
           status() === 'success' ? 'All changes saved' : 'Review your details before saving.'
-        }}</span
-        ><button
-          class="primary"
-          type="submit"
-          [disabled]="!integrationReady || status() === 'saving'"
-        >
-          {{ edit ? 'Save changes' : 'Create tenant' }}
-        </button>
+        }}</span>
+        <div class="save-buttons">
+          @if (status() !== 'saving') {
+            <a
+              class="button"
+              [routerLink]="edit && saved()?.id ? ['/tenants', saved()?.id] : ['/tenants']"
+              >Cancel</a
+            >
+          }
+          <button
+            class="primary"
+            type="submit"
+            [disabled]="!integrationReady || status() === 'saving'"
+          >
+            {{ status() === 'saving' ? 'Saving…' : edit ? 'Save changes' : 'Create tenant' }}
+          </button>
+        </div>
       </div>
     </fieldset>
   </form>

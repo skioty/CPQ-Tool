@@ -1,22 +1,18 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Session } from './session';
 import { finalize } from 'rxjs';
 
 @Component({
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink],
   template: `<div class="login-layout">
     <section class="login-story" aria-label="SELISE CPQ workspace">
       <div class="story-top">SELISE <span>CPQ</span></div>
       <div class="story-copy">
         <span class="story-line"></span>
         <p class="eyebrow">BUILT AROUND YOUR BUSINESS</p>
-        <h2>
-          Every company.<br />
-          One connected<br />
-          <em>workspace.</em>
-        </h2>
+        <h2>Every company. One connected <em>workspace.</em></h2>
         <p>
           Bring your tenants, people and company identities together in a focused administration
           experience.
@@ -26,8 +22,6 @@ import { finalize } from 'rxjs';
         <span class="story-monogram">S.</span
         ><span>Clarity for your team.<br />Consistency for every tenant.</span>
       </div>
-      <div class="orb orb-one" aria-hidden="true"></div>
-      <div class="orb orb-two" aria-hidden="true"></div>
     </section>
     <section class="login-form">
       <div class="login-form-inner">
@@ -59,6 +53,7 @@ import { finalize } from 'rxjs';
           </button>
         </form>
         <p class="access-note">Need access? Contact your platform administrator.</p>
+        <p><a routerLink="/tenant-login">Tenant workspace sign-in</a></p>
         <div class="login-divider"></div>
         <p class="login-bottom">Your administration workspace.<br /><strong>SELISE CPQ</strong></p>
       </div>
@@ -73,7 +68,7 @@ import { finalize } from 'rxjs';
     .login-layout {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      min-height: 620px;
+      min-height: 540px;
       border: 1px solid #e2e6ec;
       border-radius: 18px;
       overflow: hidden;
@@ -113,12 +108,12 @@ import { finalize } from 'rxjs';
       margin-bottom: 24px;
     }
     .story-copy .eyebrow {
-      font-size: 8px;
+      font-size: 12px;
       color: #a1b0c3;
       letter-spacing: 1.6px;
     }
     .story-copy h2 {
-      font-size: 39px;
+      font-size: 32px;
       line-height: 1.23;
       letter-spacing: -1.6px;
       font-weight: 500;
@@ -129,7 +124,7 @@ import { finalize } from 'rxjs';
       color: #f28e75;
     }
     .story-copy > p:last-child {
-      color: #91a1b5;
+      color: #b8c6d8;
       font-size: 12px;
       max-width: 290px;
       line-height: 1.9;
@@ -138,8 +133,8 @@ import { finalize } from 'rxjs';
       display: flex;
       align-items: center;
       gap: 13px;
-      color: #8e9eb2;
-      font-size: 10px;
+      color: #b8c6d8;
+      font-size: 12px;
       line-height: 1.8;
       position: relative;
       z-index: 1;
@@ -154,26 +149,6 @@ import { finalize } from 'rxjs';
       place-content: center;
       font-size: 20px;
       font-weight: 600;
-    }
-    .orb {
-      position: absolute;
-      border: 1px solid #ffffff09;
-      border-radius: 50%;
-      width: 400px;
-      height: 400px;
-      right: -260px;
-      bottom: 70px;
-      box-shadow:
-        0 0 0 40px #ffffff02,
-        0 0 0 80px #ffffff02,
-        0 0 0 120px #ffffff02;
-    }
-    .orb-two {
-      width: 100px;
-      height: 100px;
-      top: -30px;
-      left: -55px;
-      box-shadow: none;
     }
     .login-form {
       display: grid;
@@ -194,14 +169,14 @@ import { finalize } from 'rxjs';
       margin: 12px 0 32px;
     }
     .login-form .eyebrow {
-      font-size: 8px;
+      font-size: 12px;
     }
     .login-form form {
       display: grid;
       gap: 10px;
     }
     .login-form label {
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 550;
       color: #5a677b;
     }
@@ -219,7 +194,7 @@ import { finalize } from 'rxjs';
       padding-inline: 17px;
     }
     .access-note {
-      font-size: 10px;
+      font-size: 12px;
       color: #687487;
       text-align: center;
       margin: 24px 0 32px;
@@ -228,7 +203,7 @@ import { finalize } from 'rxjs';
       border-top: 1px solid #edf0f4;
     }
     .login-bottom {
-      font-size: 10px;
+      font-size: 12px;
       color: #687487;
       text-align: center;
       line-height: 1.8;
@@ -240,7 +215,7 @@ import { finalize } from 'rxjs';
       letter-spacing: 1px;
     }
     .error-summary {
-      font-size: 11px;
+      font-size: 12px;
     }
     @media (max-width: 850px) {
       .login-layout {

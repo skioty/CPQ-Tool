@@ -24,3 +24,7 @@ Minimum access: Devise administrator login/logout, controlled development/demo p
 Full quoting/pricing/catalogue modules, real payment processing or card storage, production hardening, Azure resources, Kubernetes deployment, public self-registration and automatic Tenant Admin activation. Azure and Kubernetes remain the full-project deployment direction. This setup adds no tenant business feature.
 
 See [decisions](decisions.md) for unresolved rules and [test plan](test-plan.md) for planned evidence.
+
+## Approved onboarding scope extension
+
+Guided persisted setup review, Super Admin staff management, and explicit Tenant Admin link invitations are now implemented locally under the approved policies in [account onboarding](account-onboarding.md). Earlier invitation exclusions are historical. Tenant-side user administration and password recovery remain outside this increment. Contacts never grant access automatically. SMTP delivery was superseded by manually shared links; no email service is required.

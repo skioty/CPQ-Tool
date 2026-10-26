@@ -4,7 +4,7 @@
 }
 .workspace {
   display: grid;
-  grid-template-columns: 236px minmax(0, 1fr);
+  grid-template-columns: 224px minmax(0, 1fr);
   min-height: 100vh;
 }
 .sidebar {
@@ -12,43 +12,42 @@
   color: #d2dae5;
   display: flex;
   flex-direction: column;
-  padding: 30px 18px 22px;
+  padding: 24px 16px;
   position: sticky;
   top: 0;
   height: 100vh;
+  overflow-y: auto;
 }
 .brand {
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 10px;
   color: white;
   text-decoration: none;
-  padding: 0 10px;
+  padding: 0 8px;
   font-size: 18px;
-  letter-spacing: 0.3px;
 }
 .brand b {
   font-weight: 400;
-  color: #bbc5d3;
+  color: #c5cfdd;
 }
 .brand small {
   display: block;
-  font-size: 8px;
-  letter-spacing: 2px;
-  color: #8193aa;
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  color: #a6b5c8;
   margin-top: 2px;
 }
 .brand-symbol {
-  font-size: 17px;
-  letter-spacing: -2px;
-  background: #ed6650;
-  color: white;
-  border-radius: 10px;
   display: grid;
   place-content: center;
   grid-template-columns: auto auto auto;
-  width: 37px;
-  height: 37px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--accent);
+  font-size: 17px;
+  letter-spacing: -2px;
   font-weight: 800;
 }
 .brand-symbol span {
@@ -56,58 +55,55 @@
   top: 3px;
 }
 .workspace-label {
-  border: 1px solid #ffffff13;
-  border-radius: 9px;
-  margin: 34px 4px 30px;
-  padding: 11px;
+  border: 1px solid #ffffff24;
+  border-radius: 6px;
+  margin: 28px 0;
+  padding: 12px;
   display: flex;
   gap: 10px;
   align-items: center;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 12px;
 }
 .workspace-label small {
   display: block;
-  font-weight: 400;
-  color: #8293ab;
-  font-size: 10px;
+  color: #adbbce;
+  font-size: 12px;
   margin-top: 2px;
 }
 .workspace-avatar {
   display: grid;
   place-items: center;
+  flex-shrink: 0;
   width: 30px;
   height: 30px;
-  background: #ffffff0d;
-  border: 1px solid #ffffff18;
-  border-radius: 6px;
-  color: #e0e6ee;
-  font-size: 13px;
+  background: #ffffff12;
+  border-radius: 5px;
 }
 nav a {
   display: flex;
   align-items: center;
   gap: 12px;
-  color: #a9b7ca;
-  font-size: 12px;
-  font-weight: 500;
+  color: #c1cddd;
+  font-size: 14px;
   text-decoration: none;
-  padding: 12px;
-  border-radius: 7px;
-  margin: 5px 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  margin: 4px 0;
 }
 nav a:hover {
-  background: #ffffff08;
+  background: #ffffff0d;
   color: white;
 }
 nav a.active {
-  background: #ffffff0d;
-  color: #fff;
-  box-shadow: inset 3px 0 #f17b66;
+  background: #ffffff14;
+  color: white;
+  box-shadow: inset 3px 0 #f48c78;
 }
 nav svg {
-  width: 17px;
-  height: 17px;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
   fill: none;
   stroke: currentColor;
   stroke-width: 1.6;
@@ -115,49 +111,39 @@ nav svg {
   stroke-linejoin: round;
 }
 .nav-caption {
-  font-size: 9px;
-  letter-spacing: 1.8px;
-  color: #70839d;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: #adbbce;
   padding: 0 12px;
-  margin: 0 0 14px;
+  margin: 0 0 8px;
 }
 .settings-caption {
-  margin-top: 34px;
+  margin-top: 28px;
 }
 .nav-chevron {
   margin-left: auto;
-  color: #8c9db4;
   font-size: 20px;
-  line-height: 1;
 }
 .sidebar-bottom {
   margin-top: auto;
-  padding: 34px 13px 0;
+  padding: 32px 12px 0;
 }
 .sidebar-bottom p {
   font-size: 12px;
-  color: #758ba5;
   line-height: 1.8;
-  margin: 14px 0;
+  color: #c1cddd;
+  margin: 12px 0;
 }
 .sidebar-bottom strong {
-  color: #bac8d9;
   font-weight: 400;
 }
 .sidebar-bottom small {
-  font-size: 9px;
-  color: #647b97;
-  letter-spacing: 0.4px;
+  font-size: 11px;
+  color: #a6b5c8;
 }
 .sidebar-mark {
-  display: grid;
-  place-content: center;
-  width: 30px;
-  height: 30px;
-  color: #f28774;
+  color: #f48c78;
   font-weight: 700;
-  border: 1px solid #ffffff19;
-  border-radius: 8px;
 }
 .content-shell {
   min-width: 0;
@@ -165,28 +151,25 @@ nav svg {
   flex-direction: column;
 }
 .topbar {
-  min-height: 78px;
-  background: #ffffffd9;
+  min-height: 68px;
+  background: var(--surface);
   border-bottom: 1px solid var(--line);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 36px;
+  padding: 12px 32px;
   gap: 16px;
 }
 .topbar-location {
   display: flex;
-  gap: 14px;
+  gap: 12px;
   align-items: center;
-  font-size: 11px;
-  color: #8b95a3;
+  font-size: 13px;
+  color: var(--muted);
 }
 .topbar-location strong {
-  font-weight: 500;
-  color: #4e5b6c;
-}
-.divider {
-  color: #c0c7d0;
+  font-weight: 600;
+  color: var(--ink);
 }
 .account {
   display: flex;
@@ -196,58 +179,55 @@ nav svg {
 }
 .account-description {
   text-align: right;
-  font-size: 10px;
-  line-height: 1.6;
+  font-size: 12px;
 }
 .account-description strong {
   font-weight: 600;
 }
 .account-description span {
   display: block;
-  color: #8b95a3;
-  font-size: 9px;
+  color: var(--muted);
+  font-size: 11px;
 }
 .account-avatar {
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: #fbece6;
-  color: #b95b43;
+  background: var(--accent-soft);
+  color: #993527;
   display: grid;
   place-content: center;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
-  border: 3px solid #fff;
-  box-shadow: 0 0 0 1px #ece3df;
+  flex-shrink: 0;
 }
 .logout {
-  border: 0;
-  background: none;
-  font-size: 11px;
-  color: #717d8e;
-  padding: 6px;
-  min-height: 32px;
+  font-size: 12px;
+  padding: 8px 12px;
+  min-height: 44px;
 }
-main {
-  padding: 38px 38px 48px;
+.content-shell main {
+  width: 100%;
+  max-width: calc(var(--content-width) + 64px);
+  margin-inline: auto;
+  padding: 28px 32px 40px;
   min-width: 0;
   flex: 1;
 }
 .workspace-footer {
-  padding: 18px 38px;
+  padding: 16px 32px;
   border-top: 1px solid var(--line);
-  color: #9ba3af;
+  color: var(--muted);
   display: flex;
   justify-content: space-between;
-  font-size: 10px;
-  letter-spacing: 0.2px;
+  font-size: 12px;
 }
 .skip {
   position: fixed;
   top: -100px;
-  left: 20px;
-  background: #fff;
-  padding: 15px;
+  left: 16px;
+  background: white;
+  padding: 12px;
   z-index: 100;
 }
 .skip:focus {
@@ -260,57 +240,51 @@ main {
   font-size: 20px;
   text-decoration: none;
   color: var(--ink);
-  letter-spacing: 1px;
 }
 .login-wordmark strong {
   color: var(--accent);
 }
 .login-context {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 13px;
 }
-.login-main {
-  padding: 36px;
+.content-shell .login-main {
   display: grid;
   place-items: center;
+  padding: 32px;
 }
-@media (min-width: 1600px) {
-  main {
-    padding: 48px 60px;
-  }
-  .topbar {
-    padding-inline: 60px;
-  }
+.menu-toggle {
+  display: none;
 }
-@media (max-width: 1050px) {
+@media (max-width: 1100px) {
   .workspace {
-    grid-template-columns: 196px minmax(0, 1fr);
-  }
-  .sidebar {
-    padding-inline: 12px;
-  }
-  main {
-    padding: 28px 24px;
+    grid-template-columns: 204px minmax(0, 1fr);
   }
   .topbar {
-    padding: 16px 24px;
+    padding-inline: 24px;
   }
-  .account-description span {
+  .content-shell main {
+    padding: 24px;
+  }
+  .topbar-location > span,
+  .topbar-location .divider {
     display: none;
   }
 }
 @media (max-width: 760px) {
   .workspace {
     grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
   }
   .sidebar {
     position: static;
     height: auto;
-    padding: 16px 18px;
-    gap: 15px;
+    padding: 16px 20px;
+    gap: 12px;
   }
   .brand {
     padding: 0;
+    font-size: 17px;
   }
   .brand small,
   .workspace-label,
@@ -319,70 +293,85 @@ main {
   .nav-chevron {
     display: none;
   }
-  nav {
+  .sidebar-heading {
     display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
   }
-  nav a {
+  .menu-toggle {
+    display: inline-flex;
+    background: transparent;
+    border-color: #65758b;
+    color: white;
+  }
+  .sidebar nav {
+    display: none;
+  }
+  .sidebar nav.menu-open {
+    display: grid;
+    gap: 4px;
+  }
+  .sidebar nav a {
     margin: 0;
-    padding: 9px 10px;
-    font-size: 11px;
-  }
-  nav a.active {
-    box-shadow: inset 0 -2px #f17b66;
-  }
-  .sidebar .brand-symbol {
-    height: 30px;
-    width: 30px;
-    font-size: 15px;
   }
   .topbar {
-    min-height: 58px;
-    padding: 10px 20px;
+    min-height: 60px;
+    padding: 8px 20px;
   }
   .topbar-location {
-    font-size: 10px;
-    gap: 7px;
+    font-size: 12px;
   }
   .account-description {
     display: none;
   }
-  .account-avatar {
-    height: 28px;
-    width: 28px;
-  }
   .account {
-    gap: 6px;
+    gap: 8px;
   }
-  main {
-    padding: 26px 18px 36px;
+  .content-shell main {
+    padding: 24px 20px;
   }
   .workspace-footer {
-    padding: 16px 18px;
-    font-size: 9px;
+    padding: 16px 20px;
+    font-size: 11px;
+    gap: 16px;
   }
-  .login-main {
+  .content-shell .login-main {
     padding: 20px;
-  }
-  .auth-layout {
-    display: block;
   }
   .login-context {
     display: none;
   }
 }
-@media (max-width: 360px) {
-  nav a {
-    padding: 8px;
-    font-size: 10px;
-    gap: 6px;
-  }
-  .topbar-location > span:first-child,
-  .topbar-location .divider {
+@media (max-width: 400px) {
+  .account-avatar {
     display: none;
   }
+  .topbar-location {
+    font-size: 11px;
+  }
+  .logout {
+    padding: 8px;
+  }
   .workspace-footer span:last-child {
+    display: none;
+  }
+}
+
+.sidebar :is(a, button):focus-visible {
+  outline-color: #ffc9ad;
+}
+.content-shell main:focus {
+  outline: none;
+}
+
+.tenant-account-label {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+  min-width: 0;
+  max-width: 260px;
+}
+@media (max-width: 600px) {
+  .tenant-account-label {
     display: none;
   }
 }

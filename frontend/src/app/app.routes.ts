@@ -21,8 +21,48 @@ const preserveDraft = (component: TenantForm) =>
 
 // Additive Member 1 reservations; list/detail/lifecycle remain Member 4 ownership.
 export const routes: Routes = [
+  {
+    path: 'administrators',
+    title: 'Administrators | SELISE CPQ',
+    loadComponent: () =>
+      import('./access/administrator-manager').then((m) => m.AdministratorManager),
+  },
+  {
+    path: 'tenant-login',
+    title: 'Tenant sign in | SELISE CPQ',
+    loadComponent: () => import('./access/tenant-login').then((m) => m.TenantLogin),
+  },
+  {
+    path: 'invitations/accept',
+    title: 'Your invitation | SELISE CPQ',
+    loadComponent: () => import('./access/invitation-accept').then((m) => m.InvitationAccept),
+  },
+  {
+    path: 'workspaces',
+    title: 'Your workspaces | SELISE CPQ',
+    loadComponent: () => import('./access/tenant-workspaces').then((m) => m.TenantWorkspaces),
+  },
+  {
+    path: 'workspaces/:id',
+    title: 'Company workspace | SELISE CPQ',
+    loadComponent: () => import('./access/tenant-workspaces').then((m) => m.TenantWorkspaces),
+  },
+  {
+    path: 'tenants/:id/setup',
+    title: 'Tenant setup | SELISE CPQ',
+    loadComponent: () => import('./access/setup-guide').then((m) => m.SetupGuide),
+  },
+  {
+    path: 'tenants/:id/access',
+    title: 'Tenant access | SELISE CPQ',
+    loadComponent: () => import('./access/tenant-invitations').then((m) => m.TenantInvitations),
+  },
   { path: '', pathMatch: 'full', redirectTo: 'tenants' },
-  { path: 'reference-options', title: 'Reference options | SELISE CPQ', component: ReferenceManager },
+  {
+    path: 'reference-options',
+    title: 'Reference options | SELISE CPQ',
+    component: ReferenceManager,
+  },
   { path: 'login', title: 'Sign in | SELISE CPQ', component: Login },
   { path: 'tenants', title: 'Tenants | SELISE CPQ', component: TenantList },
   {
@@ -40,10 +80,16 @@ export const routes: Routes = [
     canDeactivate: [preserveDraft],
   },
   {
-    path: 'tenants/:id/branding', title: 'Branding preview | SELISE CPQ',
+    path: 'tenants/:id/branding',
+    title: 'Branding preview | SELISE CPQ',
     component: SavedBranding,
     resolve: { references: loadReferences },
   },
-  { path: 'tenants/:id', title: 'Company overview | SELISE CPQ', component: TenantDetail, resolve: { references: loadReferences } },
+  {
+    path: 'tenants/:id',
+    title: 'Company overview | SELISE CPQ',
+    component: TenantDetail,
+    resolve: { references: loadReferences },
+  },
   { path: '**', component: UnavailablePage },
 ];

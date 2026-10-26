@@ -25,3 +25,7 @@ Schema switching does not replace authorization. Shared tables still need assign
 Proposed provisioning flow: persist a non-ready registry entry, provision schema/migrate, mark ready only after success, and expose recoverable failure state. Database transactions alone cannot be assumed to reverse all provisioning side effects; specify retry idempotency and compensation in the implementation issue. Do not activate an incompletely provisioned tenant.
 
 Session transport is now user-approved: a same-origin cookie session with CSRF protection. API-only Rails now includes explicit session middleware; do not disable CSRF simply to integrate Angular. Cross-origin development must use an explicit proxy/origin policy.
+
+## Account onboarding extension
+
+Platform staff and Tenant Admins use separate Devise scopes. Public shared invitation and membership records authorize access before Apartment switches to a trusted registry schema. Both entry paths share readiness, Active-status and migration checks and connection restoration. Tokens are hashed, single-use and consumed under row locks. See [account onboarding](account-onboarding.md) for transaction and manual link issuance boundaries.

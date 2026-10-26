@@ -154,9 +154,57 @@ describe('tenant directory', () => {
       .expectOne((r) => r.url === '/api/v1/tenants')
       .flush({ data: [], meta: { page: 1, per_page: 20, total_count: 0, total_pages: 0 } });
     fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('No tenants found');
+    expect(fixture.nativeElement.textContent).toContain('No tenants yet');
     await fixture.whenStable();
     expect(fixture.nativeElement.querySelector('select').disabled).toBe(false);
+  });
+  it('distinguishes filtered empty results and clears submitted filters through the API', () => {
+    const fixture = TestBed.createComponent(TenantList);
+    fixture.detectChanges();
+    http.expectOne((r) => r.url === '/api/v1/tenants').flush(page);
+    fixture.componentInstance.query = 'No matching company';
+    fixture.componentInstance.status = 'archived';
+    fixture.componentInstance.search();
+    http
+      .expectOne((r) => r.url === '/api/v1/tenants')
+      .flush({ data: [], meta: { page: 1, per_page: 20, total_count: 0, total_pages: 0 } });
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('No tenants match your filters');
+    expect(fixture.nativeElement.textContent).not.toContain('Create your first tenant');
+    fixture.componentInstance.clearFilters();
+    const request = http.expectOne((r) => r.url === '/api/v1/tenants');
+    expect(request.request.params.has('q')).toBe(false);
+    expect(request.request.params.has('status')).toBe(false);
+    expect(request.request.params.get('page')).toBe('1');
+    request.flush(page);
+    expect(fixture.componentInstance.query).toBe('');
+    expect(fixture.componentInstance.status).toBe('');
+  });
+  it('remembers submitted directory filters and row count while navigating away and back', () => {
+    const first = TestBed.createComponent(TenantList);
+    first.detectChanges();
+    http.expectOne((r) => r.url === '/api/v1/tenants').flush(page);
+    first.componentInstance.query = 'Keep this search';
+    first.componentInstance.search();
+    http.expectOne((r) => r.url === '/api/v1/tenants').flush(page);
+    first.componentInstance.resize(50);
+    const resized = http.expectOne((r) => r.url === '/api/v1/tenants');
+    expect(resized.request.params.get('per_page')).toBe('50');
+    expect(resized.request.params.get('page')).toBe('1');
+    resized.flush(page);
+    first.componentInstance.page(2);
+    http
+      .expectOne((r) => r.url === '/api/v1/tenants')
+      .flush({ ...page, meta: { ...page.meta, page: 2 } });
+    first.destroy();
+    const second = TestBed.createComponent(TenantList);
+    second.detectChanges();
+    const restored = http.expectOne((r) => r.url === '/api/v1/tenants');
+    expect(restored.request.params.get('q')).toBe('Keep this search');
+    expect(restored.request.params.get('per_page')).toBe('50');
+    expect(restored.request.params.get('page')).toBe('2');
+    restored.flush(page);
+    expect(second.componentInstance.query).toBe('Keep this search');
   });
   it('shows denied/connection failures and retries without stale tenant rows', () => {
     const fixture = TestBed.createComponent(TenantList);
@@ -270,6 +318,8 @@ describe('native lifecycle confirmation dialog', () => {
     await fixture.whenStable();
     const dialog = fixture.nativeElement.querySelector('dialog');
     expect(dialog.getAttribute('aria-labelledby')).toBe('action-title');
+    expect(dialog.getAttribute('aria-describedby')).toBe('action-description action-company');
+    expect(dialog.querySelector('#action-company')?.textContent).toContain('Fixture company');
     dialog.dispatchEvent(new Event('cancel'));
     fixture.nativeElement.querySelectorAll('button')[1].click();
     expect(cancel).toHaveBeenCalledOnce();

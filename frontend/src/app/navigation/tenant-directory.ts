@@ -1,4 +1,4 @@
-import { Injectable, InjectionToken, inject } from '@angular/core';
+import { Injectable, InjectionToken, inject, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 
 export interface DirectoryTenant {
@@ -11,7 +11,13 @@ export interface DirectoryTenant {
   lifecycle_status: string | null;
   provisioning_status: string;
   responsible_admin_ids: string[];
-  contacts: { id: string; name: string | null; email: string | null; primary: boolean }[];
+  contacts: {
+    id: string;
+    name: string | null;
+    email: string | null;
+    phone?: string | null;
+    primary: boolean;
+  }[];
   branding: Record<string, string | null>;
   subscription: {
     currency: string | null;
@@ -56,19 +62,31 @@ export const DIRECTORY_POLICY = new InjectionToken<{
             } as Record<string, string>
           )[code] || code,
         confirmation:
-          code === 'archive'
-            ? 'Archive this tenant? Company records and workspace data will be retained. Tenant users will no longer have access.'
-            : code === 'restore' || code === 'reactivate'
-              ? 'Return this tenant to inactive? Activation is a separate step.'
-              : `Confirm ${code}? Status changes do not automatically change subscription charges.`,
+          (
+            {
+              activate:
+                'Enable this tenant workspace once required setup is complete. Subscription charges are unchanged.',
+              deactivate:
+                'Block tenant-user access until the workspace is activated again. Company records and subscription settings are retained.',
+              suspend:
+                'Administratively block tenant-user access. A Super Admin must return the tenant to Inactive before activating it again. Records are retained.',
+              reactivate:
+                'Return this tenant to Inactive. Tenant-user access remains blocked. Activation is a separate step.',
+              archive:
+                'Retire this tenant and block tenant-user access. Company records, branding, audit history and the tenant schema are retained. You can restore it to Inactive.',
+              restore:
+                'Restore this tenant to Inactive with its retained records. Activation is a separate step.',
+            } as Record<string, string>
+          )[code] || 'Confirm this tenant status change? Subscription charges are unchanged.',
       })),
   }),
 });
 @Injectable({ providedIn: 'root' })
 export class TenantDirectory {
   private http = inject(HttpClient);
-  list(query: string, status: string, page: number) {
-    let params = new HttpParams().set('page', page).set('per_page', 20);
+  readonly view = signal({ query: '', status: '', page: 1, perPage: 20 });
+  list(query: string, status: string, page: number, perPage = 20) {
+    let params = new HttpParams().set('page', page).set('per_page', perPage);
     if (query) params = params.set('q', query);
     if (status) params = params.set('status', status);
     return this.http.get<TenantPage>('/api/v1/tenants', { params });

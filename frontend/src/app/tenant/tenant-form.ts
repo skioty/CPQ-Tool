@@ -163,6 +163,7 @@ export class TenantForm implements OnInit {
       )[section] || ''
     );
   }
+  readonly serverErrors = signal<Record<string, string[]>>({});
   readonly assetKinds = ['logo', 'favicon'] as const;
   readonly fields = FIELDS.map((field) =>
     field.key === 'discount_duration' && this.options.discountDurationLabel
@@ -241,6 +242,7 @@ export class TenantForm implements OnInit {
     );
     this.form.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => {
       this.previewVersion.update((v) => v + 1);
+      this.serverErrors.set({});
       if (this.status() === 'success') this.status.set('ready');
     });
   }
@@ -476,6 +478,7 @@ export class TenantForm implements OnInit {
   submit() {
     if (this.status() === 'saving' || this.status() === 'loading') return;
     this.errors.set([]);
+    this.serverErrors.set({});
     this.form.markAllAsTouched();
     if (!this.loaded) {
       this.fail(new Error('Load the saved tenant before editing.'));
@@ -615,6 +618,18 @@ export class TenantForm implements OnInit {
     let messages: string[];
     if (error instanceof HttpErrorResponse) {
       const fields = error.error?.error?.fields;
+      this.serverErrors.set(
+        fields && typeof fields === 'object'
+          ? Object.fromEntries(
+              Object.entries(fields).map(([key, value]) => [
+                key,
+                (Array.isArray(value) ? value : [value]).filter(
+                  (v): v is string => typeof v === 'string',
+                ),
+              ]),
+            )
+          : {},
+      );
       messages =
         fields && typeof fields === 'object'
           ? Object.entries(fields).flatMap(([key, value]) =>

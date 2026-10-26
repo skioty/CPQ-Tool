@@ -196,6 +196,10 @@ describe('tenant form', () => {
     await fixture.whenStable();
     expect(form.form.controls.fields.controls['description'].value).toBe('Keep this draft');
     expect(form.errors().join()).toContain('Contact 1 email: Rejected by server');
+    expect(dom.querySelector('#contact-email-0')?.getAttribute('aria-invalid')).toBe('true');
+    expect(dom.querySelector('#contact-email-error-0')?.textContent).toContain(
+      'Rejected by server',
+    );
     expect(form.status()).toBe('failed');
     expect(form.form.enabled).toBe(true);
     expect(dom.ownerDocument.activeElement?.getAttribute('aria-label')).toBe('Form errors');

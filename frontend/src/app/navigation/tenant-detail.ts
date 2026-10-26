@@ -1,3 +1,4 @@
+import { TenantActivity } from './tenant-activity';
 import { brandingInk } from '../tenant/branding-colour';
 import { DecimalPipe } from '@angular/common';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
@@ -25,7 +26,7 @@ import { FORM_OPTIONS, ASSET_URL } from '../tenant/tenant.types';
 import { LifecycleDialog } from './lifecycle-dialog';
 
 @Component({
-  imports: [RouterLink, LifecycleDialog, DecimalPipe],
+  imports: [RouterLink, LifecycleDialog, DecimalPipe, TenantActivity],
   host: { class: 'directory-page' },
   template: `<div class="breadcrumb">
       <a routerLink="/tenants">Tenants</a><span>/</span><span>Company overview</span>
@@ -33,12 +34,12 @@ import { LifecycleDialog } from './lifecycle-dialog';
     @if (loading()) {
       <div class="loading-state" role="status">
         <span class="loading-dot"></span>
-        <h2>Loading tenant details…</h2>
+        <h1>Loading tenant details…</h1>
       </div>
     } @else if (error()) {
       <div class="state empty-state" role="alert">
         <div class="state-symbol">!</div>
-        <h2>Tenant unavailable</h2>
+        <h1>Tenant unavailable</h1>
         <p>{{ error() }}</p>
         <button (click)="reload()">Retry</button>
       </div>
@@ -56,6 +57,8 @@ import { LifecycleDialog } from './lifecycle-dialog';
           </div>
         </div>
         <div class="actions">
+          <a class="button" [routerLink]="['/tenants', t.id, 'setup']">Review setup</a
+          ><a class="button" [routerLink]="['/tenants', t.id, 'access']">Tenant access</a>
           <a class="button" [routerLink]="['/tenants', t.id, 'branding']">Branding preview</a
           ><a class="button primary" [routerLink]="['/tenants', t.id, 'edit']"
             >Edit tenant <span aria-hidden="true">↗</span></a
@@ -101,6 +104,9 @@ import { LifecycleDialog } from './lifecycle-dialog';
                 <div>
                   <strong>{{ c.name || 'Unnamed contact' }}</strong>
                   <p>{{ c.email || 'No email provided' }}</p>
+                  @if (c.phone) {
+                    <p>{{ c.phone }}</p>
+                  }
                 </div>
                 @if (c.primary) {
                   <span class="badge" data-status="active">Primary</span>
@@ -209,9 +215,12 @@ import { LifecycleDialog } from './lifecycle-dialog';
           <h2>Tenant status</h2>
           <p>Manage availability while keeping company records intact.</p>
           @if (actionError()) {
-            <p role="alert">{{ actionError() }}</p>
+            <p class="action-error" role="alert">{{ actionError() }}</p>
           }
         </div>
+        @if (busy()) {
+          <p class="busy-status" role="status">Updating tenant status…</p>
+        }
         <div class="actions">
           @for (action of policy.actions(t); track action.code) {
             <button
@@ -223,6 +232,27 @@ import { LifecycleDialog } from './lifecycle-dialog';
             </button>
           } @empty {
             <p class="muted">No actions available for your role and the current tenant status.</p>
+          }
+        </div>
+      </section>
+      <section class="card activity-panel" aria-labelledby="activity-heading">
+        <div class="card-heading">
+          <div>
+            <h2 id="activity-heading">Tenant activity</h2>
+            <p class="muted">Recorded changes and lifecycle actions for this company.</p>
+          </div>
+          <button
+            type="button"
+            [attr.aria-expanded]="activityOpen()"
+            aria-controls="tenant-activity"
+            (click)="activityOpen.set(!activityOpen())"
+          >
+            {{ activityOpen() ? 'Hide activity' : 'View activity' }}
+          </button>
+        </div>
+        <div id="tenant-activity" [hidden]="!activityOpen()">
+          @if (activityOpen()) {
+            <app-tenant-activity [tenantId]="t.id" />
           }
         </div>
       </section>
@@ -282,6 +312,7 @@ export class TenantDetail {
   readonly success = signal('');
   readonly selected = signal<LifecycleAction | null>(null);
   readonly actionError = signal('');
+  readonly activityOpen = signal(false);
   private actionCancel = new Subject<void>();
   readonly brandingKeys = [
     'primary_colour',
@@ -299,6 +330,7 @@ export class TenantDetail {
         distinctUntilChanged(),
         tap(() => {
           this.actionCancel.next();
+          this.activityOpen.set(false);
           this.busy.set(false);
           this.success.set('');
           this.actionError.set('');

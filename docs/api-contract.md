@@ -99,3 +99,37 @@ The display flag, identifiers, reference lists, assignment cardinality and disco
 Proposed detail response: `{"data":{"id":"tenant-id","company_name":"Example company","lifecycle_status":"approved-state","provisioning_status":"approved-state"}}` plus authorized settings/contacts. Never expose credentials, raw internal errors or schema identifiers. List responses use `{"data":[],"meta":{"page":1,"total_pages":1}}` (pagination style to review).
 
 Proposed error envelope: `{"error":{"code":"validation_failed","message":"Review the highlighted fields","fields":{"contacts":["Exactly one primary contact is required"]}}}` with 422. Plan 401 for unauthenticated, 403/404 for denied access, 409 for approved conflict cases, and sanitized 5xx errors with a correlation identifier. Resolve async provisioning/retry contract jointly between Members 2 and 3.
+
+## Tenant activity (implemented local application increment)
+
+`GET /api/v1/tenants/:id/activity?page=1&per_page=20` requires the same administrator authentication, assigned-tenant scope and read authorization as tenant details. Out-of-scope/malformed tenant IDs return 404; anonymous requests return 401. `page` is a positive integer; `per_page` is 1–100, default 20; invalid values return 400. Response is no-store. Events are ordered by created_at descending, then ID descending, and pagination is applied server-side.
+
+```json
+{"data":[{"id":"event UUID","action":"updated","occurred_at":"ISO-8601 timestamp","changed_fields":["branding"]}],"meta":{"page":1,"per_page":20,"total_count":1,"total_pages":1}}
+```
+
+The example illustrates the shape, not a seeded event. `changed_fields` contains allowlisted top-level names only. No actor identity, correlation/request ID, values, schemas or arbitrary metadata are returned. Existing audit recording is unchanged. There is no write/delete history endpoint. Angular loads the timeline on demand with loading, empty, retry and pagination states. This is a read-only addition to the implemented tenant-management scope.
+
+## Implemented account onboarding API extension
+
+Same-origin cookie sessions and CSRF apply to all writes, including invitation preview/acceptance. Fetch the existing `/api/v1/session/csrf` first; return its token in `X-CSRF-Token`. No public registration endpoint exists. The following are implemented, not future contracts.
+
+| Method/path | Access and payload/result |
+| --- | --- |
+| GET `/api/v1/tenants/:id/setup_review` | Authorized platform staff; `{data:{tenant_id,company_name,lifecycle_status,complete,can_activate,checks:[{key,label,complete,errors}]}}` |
+| GET `/api/v1/administrators` | Super Admin; `{data:[{id,name,email,role,enabled,activated,assigned_tenants,invitation}],invitation_delivery}` |
+| POST `/api/v1/administrators` | Super Admin; `{administrator:{email,name?}}`; 201 `{id,invitation,invitation_token}` with a one-time `invitation_token`; no password input |
+| PATCH `/api/v1/administrators/:id` | Super Admin; `{administrator:{name?,enabled?}}`; 204. Email/role cannot be changed here. Pending accounts cannot be enabled without activation; assigned staff cannot be disabled |
+| POST `/api/v1/administrators/:id/invite` | Super Admin; recover pending staff activation, `{data:invitation,invitation_token}` |
+| GET `/api/v1/tenants/:tenant_id/invitations` | Super Admin or assigned CPQ Admin; `{data:[invitation],members:[{id,email,role,enabled}],invitation_delivery}`; latest 100 invitations |
+| POST same tenant invitations path | Same access; `{email}`; 201 `{data:invitation,invitation_token}` with a one-time `invitation_token` |
+| POST `/api/v1/invitations/:id/resend` | Appropriate staff/tenant permission; rotates token and returns `{data:invitation,invitation_token}` |
+| POST `/api/v1/invitations/:id/revoke` | Same permission; 204; only unused invitations, not accepted account access |
+| POST `/api/v1/invitation_preview` | Token holder with CSRF; `{token}`; `{data:{email,kind,expires_at,company_name,existing_account}}` |
+| POST `/api/v1/invitation_acceptance` | `{token,password,password_confirmation?}`; confirmation required for new accounts; existing tenant users authenticate current password; `{data:{kind,accepted:true}}` |
+| GET/POST/DELETE `/api/v1/tenant_session` | Separate Tenant Admin session; POST `{tenant_user:{email,password}}`; `{data:{id,email},csrf_token}`. GET returns identity, DELETE 204 |
+| GET `/api/v1/my_workspaces` | Enabled signed-in tenant user; `{data:[{id,company_name,status}]}` for own enabled memberships |
+| GET `/api/v1/my_workspaces/:id` | Own enabled membership, Active/ready/current schema; `{data:{id,company_name,description,company_name_display,role,branding}}` |
+| GET `/api/v1/my_workspaces/:id/assets/:asset_id` | Same access plus asset ownership; binary content, private/no-store and nosniff |
+
+Invitation summaries contain `{id,kind,email,expires_at,state,delivery_status}`; never token or digest. Errors use `{error:{code,message,fields}}`: 401 unauthenticated/invalid credentials, 403 forbidden, 404 inaccessible record, 409 conflicting state, 410 unusable invitation, 422 validation. Delivery is `manual_link`; no SMTP request is made. Raw tokens appear only on create/replace and are absent from history. A lost response requires replacing the link, not creating another account. Acceptance is transactional and single-use under concurrent requests. See [account onboarding](account-onboarding.md) for private sharing, transaction boundaries and verification limits.

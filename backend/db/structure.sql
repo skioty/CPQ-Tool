@@ -102,6 +102,19 @@ CREATE TABLE public.ar_internal_metadata (
 
 
 --
+-- Name: platform_account_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.platform_account_events (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    actor_id character varying NOT NULL,
+    subject_id character varying NOT NULL,
+    action character varying NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
 -- Name: platform_administrators; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -113,6 +126,8 @@ CREATE TABLE public.platform_administrators (
     enabled boolean DEFAULT true NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
+    name character varying,
+    activated_at timestamp(6) without time zone,
     CONSTRAINT platform_administrator_role CHECK (((role)::text = ANY (ARRAY[('super_admin'::character varying)::text, ('admin'::character varying)::text])))
 );
 
@@ -131,6 +146,29 @@ CREATE TABLE public.platform_brand_assets (
     storage_key character varying NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: platform_invitations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.platform_invitations (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    kind character varying NOT NULL,
+    email character varying NOT NULL,
+    token_digest character varying NOT NULL,
+    tenant_id uuid,
+    administrator_id uuid,
+    invited_by_id uuid NOT NULL,
+    delivery_status character varying DEFAULT 'pending'::character varying NOT NULL,
+    expires_at timestamp(6) without time zone NOT NULL,
+    accepted_at timestamp(6) without time zone,
+    revoked_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT invitation_delivery_status CHECK (((delivery_status)::text = ANY ((ARRAY['pending'::character varying, 'sent'::character varying, 'failed'::character varying])::text[]))),
+    CONSTRAINT invitation_target_kind CHECK (((((kind)::text = 'staff'::text) AND (administrator_id IS NOT NULL) AND (tenant_id IS NULL)) OR (((kind)::text = 'tenant'::text) AND (tenant_id IS NOT NULL) AND (administrator_id IS NULL))))
 );
 
 
@@ -274,6 +312,36 @@ CREATE TABLE public.schema_migrations (
 
 
 --
+-- Name: tenant_access_memberships; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.tenant_access_memberships (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    tenant_id uuid NOT NULL,
+    role character varying DEFAULT 'tenant_admin'::character varying NOT NULL,
+    enabled boolean DEFAULT true NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT tenant_membership_role CHECK (((role)::text = 'tenant_admin'::text))
+);
+
+
+--
+-- Name: tenant_access_users; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.tenant_access_users (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    email character varying NOT NULL,
+    encrypted_password character varying NOT NULL,
+    enabled boolean DEFAULT true NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
 -- Name: platform_administrators administrator_id_text_unique; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -290,6 +358,14 @@ ALTER TABLE ONLY public.ar_internal_metadata
 
 
 --
+-- Name: platform_account_events platform_account_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.platform_account_events
+    ADD CONSTRAINT platform_account_events_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: platform_administrators platform_administrators_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -303,6 +379,14 @@ ALTER TABLE ONLY public.platform_administrators
 
 ALTER TABLE ONLY public.platform_brand_assets
     ADD CONSTRAINT platform_brand_assets_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: platform_invitations platform_invitations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.platform_invitations
+    ADD CONSTRAINT platform_invitations_pkey PRIMARY KEY (id);
 
 
 --
@@ -378,6 +462,36 @@ ALTER TABLE ONLY public.schema_migrations
 
 
 --
+-- Name: tenant_access_memberships tenant_access_memberships_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tenant_access_memberships
+    ADD CONSTRAINT tenant_access_memberships_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: tenant_access_users tenant_access_users_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tenant_access_users
+    ADD CONSTRAINT tenant_access_users_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: index_platform_invitations_on_tenant_id_and_email; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_platform_invitations_on_tenant_id_and_email ON public.platform_invitations USING btree (tenant_id, email);
+
+
+--
+-- Name: index_platform_invitations_on_token_digest; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_platform_invitations_on_token_digest ON public.platform_invitations USING btree (token_digest);
+
+
+--
 -- Name: index_platform_reference_options_on_kind_and_code; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -448,6 +562,20 @@ CREATE UNIQUE INDEX unique_platform_tenant_admin ON public.platform_tenant_assig
 
 
 --
+-- Name: unique_tenant_access_email; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX unique_tenant_access_email ON public.tenant_access_users USING btree (lower((email)::text));
+
+
+--
+-- Name: unique_tenant_access_membership; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX unique_tenant_access_membership ON public.tenant_access_memberships USING btree (user_id, tenant_id);
+
+
+--
 -- Name: platform_tenants immutable_platform_schema_key; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -508,11 +636,35 @@ ALTER TABLE ONLY public.platform_tenant_contacts
 
 
 --
+-- Name: platform_invitations fk_rails_721b56b164; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.platform_invitations
+    ADD CONSTRAINT fk_rails_721b56b164 FOREIGN KEY (invited_by_id) REFERENCES public.platform_administrators(id);
+
+
+--
 -- Name: platform_tenant_subscriptions fk_rails_768a77920a; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.platform_tenant_subscriptions
     ADD CONSTRAINT fk_rails_768a77920a FOREIGN KEY (tenant_id) REFERENCES public.platform_tenants(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: platform_invitations fk_rails_8bd10f8e96; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.platform_invitations
+    ADD CONSTRAINT fk_rails_8bd10f8e96 FOREIGN KEY (administrator_id) REFERENCES public.platform_administrators(id);
+
+
+--
+-- Name: tenant_access_memberships fk_rails_8f18afb2c6; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tenant_access_memberships
+    ADD CONSTRAINT fk_rails_8f18afb2c6 FOREIGN KEY (tenant_id) REFERENCES public.platform_tenants(id);
 
 
 --
@@ -524,12 +676,29 @@ ALTER TABLE ONLY public.platform_brand_assets
 
 
 --
+-- Name: tenant_access_memberships fk_rails_e4086e218d; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tenant_access_memberships
+    ADD CONSTRAINT fk_rails_e4086e218d FOREIGN KEY (user_id) REFERENCES public.tenant_access_users(id);
+
+
+--
+-- Name: platform_invitations fk_rails_eedf51d672; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.platform_invitations
+    ADD CONSTRAINT fk_rails_eedf51d672 FOREIGN KEY (tenant_id) REFERENCES public.platform_tenants(id);
+
+
+--
 -- PostgreSQL database dump complete
 --
 
-SET search_path TO "public";
+SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261025000100'),
 ('20261023000100'),
 ('20261022000200'),
 ('20261022000100');

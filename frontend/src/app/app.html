@@ -2,19 +2,42 @@
 <div class="workspace" [class.auth-layout]="isLogin">
   @if (!isLogin) {
     <aside class="sidebar">
-      <a class="brand" routerLink="/tenants" aria-label="CPQ home"
-        ><span class="brand-symbol" aria-hidden="true">c<span>p</span>q</span
-        ><span>SELISE <b>CPQ</b><small>ADMINISTRATION</small></span></a
-      >
+      <div class="sidebar-heading">
+        <a class="brand" routerLink="/tenants" aria-label="CPQ home"
+          ><span class="brand-symbol" aria-hidden="true">c<span>p</span>q</span
+          ><span>SELISE <b>CPQ</b><small>ADMINISTRATION</small></span></a
+        >
+        <button
+          class="menu-toggle"
+          #menuButton
+          type="button"
+          aria-controls="workspace-nav"
+          [attr.aria-expanded]="menuOpen()"
+          (click)="menuOpen.set(!menuOpen())"
+        >
+          {{ menuOpen() ? 'Close menu' : 'Menu' }}
+        </button>
+      </div>
       <div class="workspace-label">
         <span class="workspace-avatar">S</span>
         <div>Platform workspace<small>Tenant management</small></div>
       </div>
-      <nav aria-label="Workspace navigation">
+      <nav
+        id="workspace-nav"
+        aria-label="Workspace navigation"
+        (keydown.escape)="menuOpen.set(false); menuButton.focus()"
+        [class.menu-open]="menuOpen()"
+        (click)="menuOpen.set(false)"
+      >
         <p class="nav-caption">WORKSPACE</p>
         <a
           routerLink="/tenants"
-          aria-label="Tenant list" [attr.aria-current]="router.url.startsWith('/tenants') && !router.url.startsWith('/tenants/new') ? 'page' : null"
+          aria-label="Tenant list"
+          [attr.aria-current]="
+            router.url.startsWith('/tenants') && !router.url.startsWith('/tenants/new')
+              ? 'page'
+              : null
+          "
           [class.active]="
             router.url.startsWith('/tenants') && !router.url.startsWith('/tenants/new')
           "
@@ -35,6 +58,15 @@
           >
           <p class="nav-caption settings-caption">CONFIGURATION</p>
           <a
+            routerLink="/administrators"
+            [class.active]="router.url.startsWith('/administrators')"
+            [attr.aria-current]="router.url.startsWith('/administrators') ? 'page' : null"
+            ><svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="9" cy="8" r="3" />
+              <path d="M3 21v-3a6 6 0 0 1 12 0v3M16 5a3 3 0 0 1 0 6M18 15a5 5 0 0 1 3 5" /></svg
+            >Administrators</a
+          >
+          <a
             routerLink="/reference-options"
             [class.active]="router.url.startsWith('/reference-options')"
             [attr.aria-current]="router.url.startsWith('/reference-options') ? 'page' : null"
@@ -49,7 +81,7 @@
       </nav>
       <div class="sidebar-bottom">
         <span class="sidebar-mark" aria-hidden="true">S.</span>
-        <p>One workspace.<br /><strong>Every tenant, connected.</strong></p>
+        <p>Built for your team.<br /><strong>Designed around your tenants.</strong></p>
         <small>SELISE CPQ Platform</small>
       </div>
     </aside>
@@ -57,14 +89,23 @@
   <div class="content-shell">
     <header class="topbar">
       @if (isLogin) {
-        <a routerLink="/" class="login-wordmark">SELISE <strong>CPQ</strong></a>
+        <a [routerLink]="isTenantArea ? '/workspaces' : '/'" class="login-wordmark"
+          >SELISE <strong>CPQ</strong></a
+        >
       } @else {
         <div class="topbar-location">
-          <span>Workspace</span><span class="divider">/</span><strong>Tenant management</strong>
+          <span>Workspace</span><span class="divider">/</span><strong>{{ pageLabel }}</strong>
         </div>
       }
       <div class="account">
-        @if (session.actor()) {
+        @if (isTenantArea) {
+          @if (tenantSession.actor()) {
+            <span class="tenant-account-label">{{ tenantSession.actor()?.email }}</span
+            ><button (click)="tenantLogout()">Log out of workspace</button>
+          } @else {
+            <a class="button" routerLink="/tenant-login">Tenant sign in</a>
+          }
+        } @else if (session.actor()) {
           <div class="account-description">
             <strong>{{
               session.actor()?.role === 'super_admin' ? 'Super Administrator' : 'CPQ Administrator'
@@ -82,7 +123,7 @@
         }
       </div>
     </header>
-    <main id="main" tabindex="-1" [class.login-main]="isLogin">
+    <main #mainContent id="main" tabindex="-1" [class.login-main]="isLogin">
       @if (message()) {
         <p class="notice" role="status">{{ message() }}</p>
       }

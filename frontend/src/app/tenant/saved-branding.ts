@@ -55,7 +55,8 @@ import { EMPTY, Subject, catchError, distinctUntilChanged, map, startWith, switc
       box-shadow: 0 8px 40px #17233a06;
     }
     .browser-bar {
-      height: 60px;
+      min-height: 60px;
+      padding-block: 12px;
       display: flex;
       align-items: center;
       gap: 5px;
@@ -71,15 +72,17 @@ import { EMPTY, Subject, catchError, distinctUntilChanged, map, startWith, switc
     }
     .browser-bar > div {
       margin: auto;
-      font-size: 10px;
-      color: #9ba4b2;
+      min-width: 0;
+      overflow-wrap: anywhere;
+      font-size: 12px;
+      color: var(--muted);
       background: #f6f7f9;
       padding: 6px 30px;
       border-radius: 5px;
     }
     .preview-frame + p {
       color: var(--muted);
-      font-size: 11px;
+      font-size: 12px;
       margin-top: 18px;
     }
     a {

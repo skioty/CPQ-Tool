@@ -10,9 +10,9 @@ import { Session } from './session';
 @Component({
   imports: [FormsModule, RouterLink, DecimalPipe],
   host: { class: 'directory-page' },
-  template: `<div class="heading">
+  template: `<div class="heading portfolio-heading">
       <div>
-        <p class="eyebrow">YOUR WORKSPACE, ORGANIZED</p>
+        <p class="eyebrow">TENANT OPERATIONS</p>
         <h1>Tenants</h1>
         <p class="subheading">
           Manage company workspaces, contacts and subscriptions in one place.
@@ -24,7 +24,24 @@ import { Session } from './session';
         >
       }
     </div>
-    <section class="directory-panel" aria-label="Tenant directory">
+    <div class="portfolio-context">
+      <div class="portfolio-context-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <path d="M4 21V5l8-3v19M12 8h8v13M2 21h20M7 7h2M7 11h2M7 15h2M15 12h2M15 16h2" />
+        </svg>
+      </div>
+      <div>
+        <h2>{{ hasFilters() ? 'Your filtered portfolio' : 'Your company workspaces' }}</h2>
+        <p>Open a company to review its setup, manage access or update its details.</p>
+      </div>
+      @if (result(); as page) {
+        <div class="portfolio-total">
+          <strong>{{ page.meta.total_count }}</strong
+          ><span>{{ hasFilters() ? 'matching tenants' : 'accessible tenants' }}</span>
+        </div>
+      }
+    </div>
+    <section class="directory-panel" aria-label="Tenant directory" [attr.aria-busy]="loading()">
       <div class="panel-heading">
         <div>
           <h2>Tenant directory</h2>
@@ -55,6 +72,11 @@ import { Session } from './session';
           </select></label
         >
         <button class="filter-submit">Search</button>
+        @if (hasFilters()) {
+          <button class="clear-filters" type="button" (click)="clearFilters()">
+            Clear filters
+          </button>
+        }
       </form>
       @if (loading()) {
         <div class="loading-state" role="status">
@@ -81,9 +103,20 @@ import { Session } from './session';
         @if (!r.data.length) {
           <div class="empty-state">
             <div class="state-symbol">⌕</div>
-            <h2>No tenants found</h2>
-            <p>Try another company name or status. Assigned companies will appear here.</p>
-            @if (session.actor()?.role === 'super_admin') {
+            <h2>{{ hasFilters() ? 'No tenants match your filters' : 'No tenants yet' }}</h2>
+            <p>
+              {{
+                hasFilters()
+                  ? 'Try a different company name or clear your filters to see all available tenants.'
+                  : session.actor()?.role === 'super_admin'
+                    ? 'Create a tenant to bring company details, contacts and branding into your workspace.'
+                    : 'Companies will appear here when a Super Admin assigns them to you.'
+              }}
+            </p>
+            @if (hasFilters()) {
+              <button type="button" (click)="clearFilters()">Clear filters</button>
+            }
+            @if (!hasFilters() && session.actor()?.role === 'super_admin') {
               <a class="button primary" routerLink="/tenants/new">Create your first tenant</a>
             }
           </div>
@@ -141,6 +174,14 @@ import { Session } from './session';
           </ul>
         }
         <nav class="pagination" aria-label="Tenant pages">
+          <label class="page-size"
+            >Rows per page
+            <select aria-label="Rows per page" [ngModel]="perPage" (ngModelChange)="resize($event)">
+              <option [ngValue]="20">20</option>
+              <option [ngValue]="50">50</option>
+              <option [ngValue]="100">100</option>
+            </select>
+          </label>
           <span
             >Page <strong>{{ r.meta.page }}</strong> of {{ r.meta.total_pages || 1 }}</span
           >
@@ -171,11 +212,12 @@ export class TenantList {
   primaryName(contacts: { name: string | null; primary: boolean }[]) {
     return contacts.find((c) => c.primary)?.name || 'Primary contact';
   }
-  query = '';
-  status = '';
-  private activeQuery = '';
-  private activeStatus = '';
-  private currentPage = 1;
+  query = this.api.view().query;
+  status = this.api.view().status;
+  perPage = this.api.view().perPage;
+  private activeQuery = this.query;
+  private activeStatus = this.status;
+  private currentPage = this.api.view().page;
   readonly loading = signal(false);
   readonly error = signal('');
   readonly result = signal<TenantPage | null>(null);
@@ -190,7 +232,7 @@ export class TenantList {
           this.result.set(null);
         }),
         switchMap(() =>
-          this.api.list(this.activeQuery, this.activeStatus, this.currentPage).pipe(
+          this.api.list(this.activeQuery, this.activeStatus, this.currentPage, this.perPage).pipe(
             catchError((e) => {
               this.error.set(apiMessage(e));
               return of(null);
@@ -204,6 +246,14 @@ export class TenantList {
         this.loading.set(false);
       });
   }
+  hasFilters() {
+    return Boolean(this.activeQuery || this.activeStatus);
+  }
+  clearFilters() {
+    this.query = '';
+    this.status = '';
+    this.search();
+  }
   search() {
     this.activeQuery = this.query.trim();
     this.activeStatus = this.status;
@@ -214,7 +264,19 @@ export class TenantList {
     this.currentPage = page;
     this.reload();
   }
+  resize(size: number) {
+    if (![20, 50, 100].includes(size)) return;
+    this.perPage = size;
+    this.currentPage = 1;
+    this.reload();
+  }
   reload() {
+    this.api.view.set({
+      query: this.activeQuery,
+      status: this.activeStatus,
+      page: this.currentPage,
+      perPage: this.perPage,
+    });
     this.changes.next();
   }
 }
