@@ -83,6 +83,27 @@ async function formFixture() {
   form.choosePrimary(0);
   return { f, form, gateway, router, http: TestBed.inject(HttpTestingController) };
 }
+
+it('renders every country and time-zone option without truncating the list and supports the final option by keyboard', () => {
+  const fixture = TestBed.createComponent(SearchChoice);
+  const control = new FormControl('', { nonNullable: true });
+  const choices = Array.from({ length: 600 }, (_, i) => ({
+    id: 'zone-' + i,
+    label: 'Time zone ' + i,
+  }));
+  fixture.componentRef.setInput('id', 'all-zones');
+  fixture.componentRef.setInput('control', control);
+  fixture.componentRef.setInput('choices', choices);
+  fixture.detectChanges();
+  const input = fixture.nativeElement.querySelector('input') as HTMLInputElement;
+  input.dispatchEvent(new FocusEvent('focus'));
+  fixture.detectChanges();
+  expect(fixture.nativeElement.querySelectorAll('[role=option]').length).toBe(600);
+  input.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+  input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  fixture.detectChanges();
+  expect(control.value).toBe('zone-599');
+});
 it('creates a trimmed custom industry then saves its code and redirects with a durable success notice', async () => {
   const { form, gateway, router, http } = await formFixture();
   form.form.controls.fields.controls['industry_id'].setValue('__create_industry__');

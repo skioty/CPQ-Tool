@@ -167,30 +167,36 @@
                     "
                     [serverErrors]="serverErrors()[field.path] || []"
                   />
+                  @if (field.key === 'industry_id' && creatingIndustry) {
+                    <div class="full-width">
+                      <label for="custom-industry-name">Industry name (required)</label>
+                      <input
+                        id="custom-industry-name"
+                        [formControl]="customIndustryName"
+                        maxlength="120"
+                        placeholder="Type your industry name"
+                        [attr.aria-invalid]="
+                          customIndustryName.touched && customIndustryName.invalid
+                        "
+                        aria-describedby="custom-industry-help"
+                      />
+                      <small id="custom-industry-help"
+                        >Your typed name will be saved and selected when you save this tenant. This
+                        is a shared platform catalog option; do not enter private tenant
+                        data.</small
+                      >
+                      @if (customIndustryName.touched && customIndustryName.invalid) {
+                        <p class="error" role="alert">
+                          Enter a unique industry name, up to 120 characters. Names are checked
+                          without case or surrounding spaces.
+                        </p>
+                      }
+                    </div>
+                  }
                 }
               }
             </div>
             @if (section === 'Company') {
-              @if (creatingIndustry) {
-                <label for="custom-industry-name">Industry name (required)</label>
-                <input
-                  id="custom-industry-name"
-                  [formControl]="customIndustryName"
-                  maxlength="120"
-                  [attr.aria-invalid]="customIndustryName.touched && customIndustryName.invalid"
-                  aria-describedby="custom-industry-help"
-                />
-                <small id="custom-industry-help"
-                  >Creates a shared platform catalog option under Super Admin permissions. Do not
-                  enter private tenant data.</small
-                >
-                @if (customIndustryName.touched && customIndustryName.invalid) {
-                  <p class="error" role="alert">
-                    Enter a unique industry name, up to 120 characters. Names are checked without
-                    case or surrounding spaces.
-                  </p>
-                }
-              }
               <label class="check"
                 ><input type="checkbox" formControlName="company_name_display" /> Display company
                 name in workspace branding</label

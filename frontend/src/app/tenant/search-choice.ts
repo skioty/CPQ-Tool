@@ -26,21 +26,26 @@ import { Choice } from './tenant.types';
       placeholder="Search or choose an option…"
     />
     @if (open()) {
-      <ul role="listbox" [id]="id() + '-options'">
-        @for (choice of filtered(); track choice.id; let i = $index) {
-          <li
-            role="option"
-            [id]="id() + '-option-' + i"
-            [attr.aria-selected]="i === active()"
-            (mousedown)="$event.preventDefault()"
-            (click)="choose(choice)"
-          >
-            {{ choice.label }}
-          </li>
-        } @empty {
-          <li role="option" aria-disabled="true">No matching options</li>
-        }
-      </ul>
+      <div class="results">
+        <small class="result-count" role="status"
+          >{{ filtered().length }} options. Scroll to browse all, or type to search.</small
+        >
+        <ul role="listbox" [id]="id() + '-options'">
+          @for (choice of filtered(); track choice.id; let i = $index) {
+            <li
+              role="option"
+              [id]="id() + '-option-' + i"
+              [attr.aria-selected]="i === active()"
+              (mousedown)="$event.preventDefault()"
+              (click)="choose(choice)"
+            >
+              {{ choice.label }}
+            </li>
+          } @empty {
+            <li role="option" aria-disabled="true">No matching options</li>
+          }
+        </ul>
+      </div>
     }
   </div>`,
   styles: `
@@ -55,19 +60,32 @@ import { Choice } from './tenant.types';
       width: 100%;
       min-height: 44px;
     }
-    ul {
+    .results {
       position: absolute;
       z-index: 20;
       inset: calc(100% + 4px) 0 auto;
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 8px 20px #14263d20;
+    }
+    ul {
       margin: 0;
       padding: 4px;
       max-height: 260px;
       overflow: auto;
       list-style: none;
-      border: 1px solid var(--line);
+      border: 0;
       border-radius: 8px;
       background: white;
-      box-shadow: 0 8px 20px #14263d20;
+    }
+    .result-count {
+      display: block;
+      padding: 6px 10px;
+      background: white;
+      border-bottom: 1px solid var(--line);
+      font-size: 12px;
+      color: var(--muted);
     }
     li {
       padding: 10px;
@@ -97,9 +115,7 @@ export class SearchChoice {
   }
   filtered() {
     const q = this.query().toLocaleLowerCase();
-    return this.choices()
-      .filter((c) => (c.id + ' ' + c.label).toLocaleLowerCase().includes(q))
-      .slice(0, 50);
+    return this.choices().filter((c) => (c.id + ' ' + c.label).toLocaleLowerCase().includes(q));
   }
   focus() {
     this.open.set(true);
@@ -148,7 +164,13 @@ export class SearchChoice {
       );
       document
         .getElementById(this.id() + '-option-' + this.active())
-        ?.scrollIntoView({ block: 'nearest' });
+        ?.scrollIntoView?.({ block: 'nearest' });
+    } else if ((event.key === 'Home' || event.key === 'End') && this.open()) {
+      event.preventDefault();
+      this.active.set(event.key === 'Home' ? 0 : Math.max(0, this.filtered().length - 1));
+      document
+        .getElementById(this.id() + '-option-' + this.active())
+        ?.scrollIntoView?.({ block: 'nearest' });
     } else if (event.key === 'Enter' && this.open()) {
       event.preventDefault();
       const choice = this.filtered()[this.active()];

@@ -105,6 +105,7 @@ export const FIELDS: Field[] = [
     key: 'industry_id',
     path: 'industry_id',
     label: 'Industry',
+    help: 'If your industry is not listed, Super Admins can choose “Create your own industry” and enter its name.',
     section: 'Company',
     kind: 'select',
   },
@@ -424,6 +425,10 @@ export class TenantForm implements OnInit {
     this.form.controls.fields.controls['industry_id'].valueChanges
       .pipe(takeUntilDestroyed(this.destroy))
       .subscribe((value) => {
+        if (value === '__create_industry__')
+          afterNextRender(() => document.getElementById('custom-industry-name')?.focus(), {
+            injector: this.injector,
+          });
         this.customIndustryName.setValidators(
           value === '__create_industry__'
             ? [

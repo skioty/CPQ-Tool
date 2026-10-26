@@ -27,6 +27,8 @@ class TenantSetupAndSeatsTest < ActionDispatch::IntegrationTest
     get "/api/v1/reference_options"
     assert_response :success
     data=response.parsed_body
+    assert_equal TZInfo::Country.all.map(&:code).sort,data["countries"].map{|c|c["id"]}.sort
+    assert_equal TZInfo::Timezone.all_identifiers.sort,data["time_zones"].map{|z|z["id"]}.sort
     assert_includes data["countries"],{"id"=>"BT","label"=>"Bhutan"}
     assert data["time_zones"].any? { |z|z["id"]=="Asia/Thimphu" && z["label"].include?("UTC+06:00") }
     %w[raw_materials services manufacturing].each { |code|assert data["data"].any?{|o|o["kind"]=="industry"&&o["code"]==code} }
