@@ -75,7 +75,19 @@ class FigmaSecurityTest < ActionDispatch::IntegrationTest
     post "/api/v1/factor",params:{code:ROTP::TOTP.new(@setup["setup_key"]).now},as: :json
     assert_response :too_many_requests
   end
-  test "expired and disabled account challenges do not create sessions" do
+    test "expired lock starts a fresh attempt window and accepts a valid code" do
+      @account.update!(totp_failed_attempts:5,totp_locked_until:1.second.ago)
+      password_login
+      post "/api/v1/factor",params:{code:"invalid"},as: :json
+      assert_response :unprocessable_entity
+      assert_equal 1,@account.reload.totp_failed_attempts
+      assert_nil @account.totp_locked_until
+      post "/api/v1/factor",params:{code:ROTP::TOTP.new(@setup["setup_key"]).now},as: :json
+      assert_response :success
+      assert_equal 0,@account.reload.totp_failed_attempts
+      assert_nil @account.totp_locked_until
+    end
+    test "expired and disabled account challenges do not create sessions" do
     password_login
     travel 11.minutes do
       get "/api/v1/factor"

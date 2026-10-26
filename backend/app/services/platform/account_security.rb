@@ -27,7 +27,14 @@ module Platform
       valid = true
       account.with_lock do
         if account.totp_locked_until && account.totp_locked_until > Time.current
-          raise TenantManagement::Error.new("factor_locked", "Too many attempts. Try again after ten minutes.",status:429)
+          seconds = (account.totp_locked_until - Time.current).ceil
+          raise TenantManagement::Error.new("factor_locked", "Too many attempts. Try again in #{seconds} seconds. If this sign-in expires, cancel and sign in again.",status:429)
+        end
+        # An elapsed lock starts a new attempt window. Do not immediately relock
+        # the account on its first typo after the waiting period.
+        if account.totp_locked_until
+          account.totp_failed_attempts = 0
+          account.totp_locked_until = nil
         end
         enrolling = account.totp_secret_ciphertext.blank?
         key = enrolling ? pending["secret"] : secret(account)

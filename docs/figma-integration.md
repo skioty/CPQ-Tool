@@ -71,3 +71,7 @@ Review fields: `legal_hold`, `billing_resolved`, `contracts_resolved`, `retentio
 - New tests cover guided review, preserved edit values, API failures, MFA enrollment/replay/recovery/lockout/concurrency, signed synthetic Microsoft tokens/linking, metadata, retention unknowns, authorization, target-schema deletion and retained audit evidence.
 - Legacy domain test fixtures explicitly use password sessions; dedicated security tests enable mandatory MFA. This is not a claim that every old domain test exercises MFA.
 - Live Microsoft provider, four-laptop fresh setup and stakeholder acceptance remain unverified. Production deletion, real billing/legal integrations, seat/module rules and administrative MFA recovery remain pending.
+
+### Authenticator lockout recovery
+
+After a ten-minute lock expires, the next submission starts a fresh failed-attempt window. A typo must not immediately renew the previous five-attempt lock. Active lockouts report remaining seconds; signing in again does not bypass them. Enrollment sessions expire after ten minutes, so cancel and sign in again after a lockout, then use the new session's setup key for unfinished enrollment. A disclosed enrollment key should be abandoned in favor of a fresh session. Completed enrollment continues to use its existing authenticator; no automatic MFA reset is performed.
