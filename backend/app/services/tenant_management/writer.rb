@@ -20,6 +20,7 @@ module TenantManagement
           tenant.save!
           attempt_tenant_id = tenant.id
           persist_settings!(tenant, attributes)
+          Seats.validate!(tenant)
           # Validate constraints before external effects (not just at commit).
           Tenant.connection.execute("SET CONSTRAINTS ALL IMMEDIATE")
           receipt = @integration.provision!(tenant)
@@ -56,6 +57,7 @@ module TenantManagement
         tenant.assign_attributes(attributes.slice(*Payload::SCALARS))
         tenant.assign_attributes(billing_resolved:nil,contracts_resolved:nil,retention_records_approved:nil) if attributes.key?("subscription")
         persist_settings!(tenant, attributes)
+        Seats.validate!(tenant)
         # touch increments lock_version even when only child settings change.
         tenant.save!
         tenant.touch

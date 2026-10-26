@@ -135,6 +135,7 @@
               @for (field of fields; track field.key) {
                 @if (
                   field.section === section &&
+                  field.key !== 'primary_contact_role' &&
                   !(
                     field.key === 'payment_method_description' &&
                     form.controls.fields.controls['payment_method'].value !== 'other'
@@ -159,13 +160,37 @@
                     "
                     [control]="form.controls.fields.controls[field.key]"
                     [choices]="choices(field.key)"
-                    [required]="options.requiredFields.includes(field.path)"
+                    [required]="
+                      options.requiredFields.includes(field.path) ||
+                      field.key === 'user_limit' ||
+                      field.key === 'primary_contact_role'
+                    "
                     [serverErrors]="serverErrors()[field.path] || []"
                   />
                 }
               }
             </div>
             @if (section === 'Company') {
+              @if (creatingIndustry) {
+                <label for="custom-industry-name">Industry name (required)</label>
+                <input
+                  id="custom-industry-name"
+                  [formControl]="customIndustryName"
+                  maxlength="120"
+                  [attr.aria-invalid]="customIndustryName.touched && customIndustryName.invalid"
+                  aria-describedby="custom-industry-help"
+                />
+                <small id="custom-industry-help"
+                  >Creates a shared platform catalog option under Super Admin permissions. Do not
+                  enter private tenant data.</small
+                >
+                @if (customIndustryName.touched && customIndustryName.invalid) {
+                  <p class="error" role="alert">
+                    Enter a unique industry name, up to 120 characters. Names are checked without
+                    case or surrounding spaces.
+                  </p>
+                }
+              }
               <label class="check"
                 ><input type="checkbox" formControlName="company_name_display" /> Display company
                 name in workspace branding</label
@@ -305,6 +330,13 @@
                   Select one primary contact for company correspondence. Adding a contact does not
                   grant account access.
                 </p>
+                <app-tenant-field
+                  [field]="primaryRoleField"
+                  [control]="form.controls.fields.controls['primary_contact_role']"
+                  [choices]="choices('primary_contact_role')"
+                  [required]="true"
+                  [serverErrors]="serverErrors()['primary_contact_role'] || []"
+                />
                 @if (contacts.hasError('primaryContact') && (contacts.touched || contacts.dirty)) {
                   <p class="error" id="primary-error">Select exactly one primary contact.</p>
                 }
@@ -423,7 +455,7 @@
       @if (!edit && step() === 2) {
         <app-tenant-review
           [tenant]="draft()"
-          [options]="options"
+          [options]="reviewOptions()"
           (editSection)="reviewEdit($event)"
         />
       }

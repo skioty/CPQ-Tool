@@ -13,7 +13,7 @@ class TenantManagementTest < ActionDispatch::IntegrationTest
   end
 
   def payload
-    { company_name: "Synthetic tenant", company_name_display: true, description: "Sample",
+    { user_limit:10, primary_contact_role: "tenant_admin", company_name: "Synthetic tenant", company_name_display: true, description: "Sample",
       industry_id: nil, responsible_admin_ids: ["eligible-admin"],
       contacts: [{ name: "Contact", email: "contact@example.invalid", primary: true }],
       branding: { primary_colour: "#123456", logo_attachment_id: "authorized-test-asset" },

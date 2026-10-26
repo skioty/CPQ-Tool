@@ -33,9 +33,11 @@ import { Tenant, FormOptions } from '../../tenant/tenant.types';
             <dt>Display name</dt>
             <dd>{{ tenant().display_name || 'Not provided' }}</dd>
             <dt>Country</dt>
-            <dd>{{ tenant().country || 'Not provided' }}</dd>
+            <dd>{{ referenceLabel('country', tenant().country) }}</dd>
             <dt>Time zone</dt>
-            <dd>{{ tenant().time_zone || 'Not provided' }}</dd>
+            <dd>{{ referenceLabel('time_zone', tenant().time_zone) }}</dd>
+            <dt>User limit</dt>
+            <dd>{{ tenant().user_limit }} seats (primary contact included)</dd>
             <dt>Description</dt>
             <dd>{{ tenant().description || 'Not provided' }}</dd>
             <dt>Industry</dt>
@@ -66,6 +68,7 @@ import { Tenant, FormOptions } from '../../tenant/tenant.types';
             </div>
           }
           <p class="review-note">
+            Primary contact role: Tenant Admin.
             <img src="/design/shield.svg" alt="" />Contacts remain contacts. Invite users separately
             after creation.
           </p>
@@ -314,6 +317,10 @@ export class TenantReview {
   readonly tenant = input.required<Tenant>();
   readonly options = input.required<FormOptions>();
   readonly editSection = output<string>();
+  referenceLabel(kind: string, value: string | undefined) {
+    const choices = kind === 'country' ? this.options().countries : this.options().timeZones;
+    return choices?.find((c) => c.id === value)?.label || value || 'Not provided';
+  }
   label(key: 'industries' | 'admins' | 'typography' | 'paymentMethods', value: string | undefined) {
     return this.options()[key].find((c) => c.id === value)?.label || value || 'Not specified';
   }

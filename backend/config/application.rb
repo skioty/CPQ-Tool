@@ -6,6 +6,10 @@ require "rails/all"
 # you've limited to :test, :development, or :production.
 Bundler.require(*Rails.groups)
 
+# Apartment reads this while loading rake tasks, before initializers run.
+# Public migrations and tenant-only migrations deliberately have separate paths.
+Apartment.db_migrate_tenants = false
+
 module Backend
   class Application < Rails::Application
     # Initialize configuration defaults for originally generated Rails version.

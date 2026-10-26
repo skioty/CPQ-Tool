@@ -340,8 +340,12 @@ CREATE TABLE public.platform_tenants (
     contracts_resolved boolean,
     retention_records_approved boolean,
     retention_policy_reference character varying,
+    user_limit integer NOT NULL,
+    primary_contact_role character varying DEFAULT 'tenant_admin'::character varying NOT NULL,
     CONSTRAINT platform_provisioning_status CHECK (((provisioning_status)::text = ANY (ARRAY[('pending'::character varying)::text, ('ready'::character varying)::text]))),
-    CONSTRAINT platform_schema_key_format CHECK (((schema_key)::text ~ '^cpq_t_[0-9a-f]{32}$'::text))
+    CONSTRAINT platform_schema_key_format CHECK (((schema_key)::text ~ '^cpq_t_[0-9a-f]{32}$'::text)),
+    CONSTRAINT positive_tenant_user_limit CHECK ((user_limit > 0)),
+    CONSTRAINT tenant_primary_contact_role CHECK (((primary_contact_role)::text = 'tenant_admin'::text))
 );
 
 
@@ -619,6 +623,13 @@ CREATE UNIQUE INDEX one_platform_primary_contact ON public.platform_tenant_conta
 
 
 --
+-- Name: unique_industry_name; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX unique_industry_name ON public.platform_reference_options USING btree (lower(btrim((label)::text))) WHERE ((kind)::text = 'industry'::text);
+
+
+--
 -- Name: unique_platform_account_external_identity; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -783,6 +794,7 @@ ALTER TABLE ONLY public.platform_invitations
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261026000300'),
 ('20261026000200'),
 ('20261026000100'),
 ('20261025000100'),

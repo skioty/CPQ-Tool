@@ -7,6 +7,7 @@ module TenantManagement
         id: tenant.id,
         created_at: tenant.created_at.iso8601,
         workspace_identifier: tenant.id,
+        occupied_seats: Seats.emails(tenant).length,
         user_count: TenantAccess::Membership.joins(:user).where(tenant_id: tenant.id, enabled: true, "public.tenant_access_users" => {enabled: true}).count,
         **tenant.attributes.slice(*Payload::SCALARS).symbolize_keys,
         lifecycle_status: tenant.lifecycle_status,

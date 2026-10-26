@@ -69,7 +69,18 @@ import { LifecycleDialog } from './lifecycle-dialog';
       @if (success()) {
         <p class="success" role="status">{{ success() }}</p>
       }
-      <nav class="detail-tabs" aria-label="Tenant profile sections">@for(section of profileSections;track section){<button type="button" [class.active]="tab()===section" [attr.aria-current]="tab()===section ? 'page' : null" (click)="selectTab(section)">{{section}}{{section==='Contacts' ? ' ('+t.contacts.length+')' : ''}}</button>}</nav>
+      <nav class="detail-tabs" aria-label="Tenant profile sections">
+        @for (section of profileSections; track section) {
+          <button
+            type="button"
+            [class.active]="tab() === section"
+            [attr.aria-current]="tab() === section ? 'page' : null"
+            (click)="selectTab(section)"
+          >
+            {{ section }}{{ section === 'Contacts' ? ' (' + t.contacts.length + ')' : '' }}
+          </button>
+        }
+      </nav>
       <div class="tenant-grid" [class.single-profile-panel]="tab() !== 'Overview'">
         <section class="card" [hidden]="tab() !== 'Overview'">
           <div class="card-heading">
@@ -80,7 +91,12 @@ import { LifecycleDialog } from './lifecycle-dialog';
           <dl>
             <dt>Industry</dt>
             <dd>{{ industry(t.industry_id) }}</dd>
-            <dt>Display name</dt><dd>{{t.display_name || t.company_name}}</dd><dt>Country</dt><dd>{{t.country || 'Not provided'}}</dd><dt>Time zone</dt><dd>{{t.time_zone || 'Not provided'}}</dd>
+            <dt>Display name</dt>
+            <dd>{{ t.display_name || t.company_name }}</dd>
+            <dt>Country</dt>
+            <dd>{{ referenceLabel('country', t.country) }}</dd>
+            <dt>Time zone</dt>
+            <dd>{{ referenceLabel('time_zone', t.time_zone) }}</dd>
             <dt>Company name in branding</dt>
             <dd>{{ t.company_name_display ? 'Visible' : 'Hidden' }}</dd>
             <dt>Workspace setup</dt>
@@ -93,7 +109,28 @@ import { LifecycleDialog } from './lifecycle-dialog';
             </dd>
           </dl>
         </section>
-        @if(tab() === 'Overview') {<section class="card workspace-profile"><h2>Workspace configuration</h2><p class="workspace-account-count">{{t.user_count ?? '—'}} tenant accounts</p><p class="muted">Accepted, enabled memberships</p><dl><dt>Billing currency</dt><dd>{{t.subscription.currency || 'Not set'}}</dd><dt>Provisioning</dt><dd>{{t.provisioning_status === 'ready' ? 'Ready' : 'In progress'}}</dd></dl><a class="button" [routerLink]="['/tenants',t.id,'access']">Manage workspace access</a></section>}
+        @if (tab() === 'Overview') {
+          <section class="card workspace-profile">
+            <h2>Workspace configuration</h2>
+            <p class="workspace-account-count">{{ t.user_count ?? '—' }} tenant accounts</p>
+            <p class="muted">Accepted, enabled memberships</p>
+            <dl>
+              <dt>Billing currency</dt>
+              <dd>{{ t.subscription.currency || 'Not set' }}</dd>
+              <dt>User limit</dt>
+              <dd>{{ t.user_limit }} seats</dd>
+              <dt>Occupied seats</dt>
+              <dd>{{ t.occupied_seats }} (including primary contact)</dd>
+              <dt>Primary contact role</dt>
+              <dd>Tenant Admin · Invitation required</dd>
+              <dt>Provisioning</dt>
+              <dd>{{ t.provisioning_status === 'ready' ? 'Ready' : 'In progress' }}</dd>
+            </dl>
+            <a class="button" [routerLink]="['/tenants', t.id, 'access']"
+              >Manage workspace access</a
+            >
+          </section>
+        }
         <section class="card" [hidden]="tab() !== 'Contacts'">
           <div class="card-heading">
             <h2>Contacts</h2>
@@ -239,7 +276,11 @@ import { LifecycleDialog } from './lifecycle-dialog';
           }
         </div>
       </section>
-      <section class="card activity-panel" [hidden]="tab() !== 'Activity'" aria-labelledby="activity-heading">
+      <section
+        class="card activity-panel"
+        [hidden]="tab() !== 'Activity'"
+        aria-labelledby="activity-heading"
+      >
         <div class="card-heading">
           <div>
             <h2 id="activity-heading">Tenant activity</h2>
@@ -260,7 +301,9 @@ import { LifecycleDialog } from './lifecycle-dialog';
           }
         </div>
       </section>
-      @if(tab()==='Retention'){<app-tenant-retention [tenantId]="t.id" [company]="t.company_name || 'this tenant'" />}
+      @if (tab() === 'Retention') {
+        <app-tenant-retention [tenantId]="t.id" [company]="t.company_name || 'this tenant'" />
+      }
       @if (selected(); as action) {
         <app-lifecycle-dialog
           [action]="action"
@@ -272,9 +315,19 @@ import { LifecycleDialog } from './lifecycle-dialog';
     }`,
 })
 export class TenantDetail {
-  readonly profileSections = ['Overview','Contacts','Branding','Billing','Activity','Retention'];
+  readonly profileSections = [
+    'Overview',
+    'Contacts',
+    'Branding',
+    'Billing',
+    'Activity',
+    'Retention',
+  ];
   readonly tab = signal('Overview');
-  selectTab(section:string) {this.tab.set(section);if(section==='Activity')this.activityOpen.set(true);}
+  selectTab(section: string) {
+    this.tab.set(section);
+    if (section === 'Activity') this.activityOpen.set(true);
+  }
   readonly ink = brandingInk;
   private api = inject(TenantDirectory);
   private references = inject(FORM_OPTIONS);
@@ -287,6 +340,10 @@ export class TenantDetail {
       .map((n) => n[0])
       .join('')
       .toUpperCase();
+  }
+  referenceLabel(kind: string, id: string | null | undefined) {
+    const list = kind === 'country' ? this.references.countries : this.references.timeZones;
+    return list?.find((c) => c.id === id)?.label || id || 'Not provided';
   }
   industry(id: string | null) {
     return (

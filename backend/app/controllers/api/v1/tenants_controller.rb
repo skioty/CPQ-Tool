@@ -64,7 +64,7 @@ module Api
         render json: {
           data: events.order(created_at: :desc, id: :desc).offset((page - 1) * per_page).limit(per_page).map { |event|
             { id: event.id, action: event.action, occurred_at: event.created_at.iso8601(6),
-              changed_fields: Array(event.changed_fields) & %w[company_name company_name_display description industry_id contacts responsible_admin_ids branding subscription lifecycle_status] }
+              changed_fields: Array(event.changed_fields) & %w[company_name company_name_display display_name country time_zone user_limit primary_contact_role description industry_id contacts responsible_admin_ids branding subscription lifecycle_status] }
           },
           meta: { page: page, per_page: per_page, total_count: count, total_pages: (count.to_f / per_page).ceil }
         }

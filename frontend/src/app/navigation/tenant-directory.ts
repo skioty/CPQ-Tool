@@ -5,6 +5,9 @@ export interface DirectoryTenant {
   id: string;
   created_at?: string;
   user_count?: number;
+  user_limit?:number;
+  occupied_seats?:number;
+  primary_contact_role?:string;
   permitted_actions?: string[];
   company_name: string | null;
   display_name?: string|null;

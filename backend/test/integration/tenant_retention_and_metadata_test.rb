@@ -25,7 +25,7 @@ class TenantRetentionAndMetadataTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
   def create_tenant(name,owner)
-    post "/api/v1/tenants",params:{tenant:{company_name:name,display_name:"Display #{name}",country:"Bhutan",time_zone:"Asia/Thimphu",company_name_display:true,industry_id:@industry,responsible_admin_ids:[owner.id],contacts:[{name:"Synthetic contact",email:"retention.contact@example.invalid",primary:true}],subscription:{currency:"BTN",fee:"0",discount:{type:"percentage",value:"0",duration:nil}}}},as: :json
+    post "/api/v1/tenants",params:{tenant:{ user_limit:10, primary_contact_role: "tenant_admin", company_name:name,display_name:"Display #{name}",country:"Bhutan",time_zone:"Asia/Thimphu",company_name_display:true,industry_id:@industry,responsible_admin_ids:[owner.id],contacts:[{name:"Synthetic contact",email:"retention.contact@example.invalid",primary:true}],subscription:{currency:"BTN",fee:"0",discount:{type:"percentage",value:"0",duration:nil}}}},as: :json
     assert_response :created
     TenantManagement::Tenant.find(response.parsed_body.dig("data","id"))
   end

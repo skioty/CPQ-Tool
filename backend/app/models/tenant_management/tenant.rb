@@ -19,6 +19,8 @@ module TenantManagement
       %i[display_name country].each { |field| errors.add(field, "is too long") if public_send(field).to_s.length > 255 }
     end
     validates :provisioning_status, inclusion: { in: %w[pending ready] }
+    validates :user_limit, numericality: {only_integer:true,greater_than:0,less_than_or_equal_to:2147483647}
+    validates :primary_contact_role, inclusion: {in:["tenant_admin"]}
     before_destroy { throw :abort } # Generic destroy is blocked; reviewed permanent deletion uses the dedicated retention service.
   end
 end

@@ -13,7 +13,7 @@ class AccountOnboardingTest < ActionDispatch::IntegrationTest
     Rails.application.config.x.tenant_management.integration = -> { Platform::TenantIntegration.new }
     ActionMailer::Base.deliveries.clear
     login(@super)
-    post "/api/v1/tenants", params: {tenant: {company_name: "Synthetic onboarding company", company_name_display: true, industry_id: "sector-#{@admin.id}",
+    post "/api/v1/tenants", params: {tenant: { user_limit:10, primary_contact_role: "tenant_admin", company_name: "Synthetic onboarding company", company_name_display: true, industry_id: "sector-#{@admin.id}",
       responsible_admin_ids: [@admin.id], contacts: [{name:"Contact",email:"contact@example.invalid",primary:true}],
       subscription: {currency:"BTN",fee:"0",discount:{type:"percentage",value:"0",duration:nil}}}}, as: :json
     assert_response :created
@@ -213,7 +213,7 @@ class AccountOnboardingTest < ActionDispatch::IntegrationTest
     accept(raw)
     user=TenantAccess::User.find_by!(email:email)
     login(@super)
-    post "/api/v1/tenants", params:{tenant:{company_name:"Second synthetic company",company_name_display:true,industry_id:"sector-#{@admin.id}",responsible_admin_ids:[@admin.id],contacts:[{name:"Contact",email:"second@example.invalid",primary:true}],subscription:{currency:"BTN",fee:"0",discount:{type:"percentage",value:"0",duration:nil}}}},as: :json
+    post "/api/v1/tenants", params:{tenant:{ user_limit:10, primary_contact_role: "tenant_admin", company_name:"Second synthetic company",company_name_display:true,industry_id:"sector-#{@admin.id}",responsible_admin_ids:[@admin.id],contacts:[{name:"Contact",email:"second@example.invalid",primary:true}],subscription:{currency:"BTN",fee:"0",discount:{type:"percentage",value:"0",duration:nil}}}},as: :json
     assert_response :created
     second=TenantManagement::Tenant.find(response.parsed_body.dig("data","id"))
     post "/api/v1/tenants/#{second.id}/invitations",params:{email:email},as: :json

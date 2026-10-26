@@ -26,7 +26,7 @@ class TenantManagementIntegrityTest < ActiveSupport::TestCase
   end
 
   def attributes
-    TenantManagement::Payload.parse({ "company_name" => "Integrity test", "contacts" => [{ "primary" => true }] })
+    TenantManagement::Payload.parse({ "user_limit"=>10,"company_name" => "Integrity test", "contacts" => [{ "primary" => true }] })
   end
 
   def tenant
@@ -39,7 +39,7 @@ class TenantManagementIntegrityTest < ActiveSupport::TestCase
     before = TenantManagement::Tenant.count
     assert_raises(ActiveRecord::StatementInvalid) do
       TenantManagement::Tenant.transaction do
-        TenantManagement::Tenant.create!(company_name: "No primary")
+        TenantManagement::Tenant.create!(company_name: "No primary",user_limit:10)
       end
     end
     assert_equal before, TenantManagement::Tenant.count

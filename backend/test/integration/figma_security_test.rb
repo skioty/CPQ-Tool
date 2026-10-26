@@ -109,7 +109,8 @@ class FigmaSecurityTest < ActionDispatch::IntegrationTest
   end
   test "pre-existing password sessions cannot bypass newly required two factor" do
     Rails.application.config.x.account_security.enforce=false
-    post "/api/v1/session",params:{administrator:{email:@account.email,password:@password}},as: :json
+    get "/api/v1/session/csrf"
+    post "/api/v1/session",params:{administrator:{email:@account.email,password:@password}},as: :json,headers:{"X-CSRF-Token"=>response.parsed_body["csrf_token"]}
     assert_response :success
     Rails.application.config.x.account_security.enforce=true
     get "/api/v1/session"

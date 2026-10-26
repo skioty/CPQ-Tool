@@ -1,18 +1,19 @@
 import { Component, input } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { Choice } from './tenant.types';
+import { SearchChoice } from './search-choice';
 
 export interface Field {
   key: string;
   path: string;
   label: string;
   section: string;
-  kind?: 'select' | 'textarea';
+  kind?: 'select' | 'textarea' | 'search';
   help?: string;
 }
 @Component({
   selector: 'app-tenant-field',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, SearchChoice],
   template: `
     <label [for]="field().key"
       >{{ field().label }}
@@ -29,6 +30,13 @@ export interface Field {
         [attr.aria-required]="required()"
         rows="3"
       ></textarea>
+    } @else if (field().kind === 'search') {
+      <app-search-choice
+        [id]="field().key"
+        [control]="control()"
+        [choices]="choices()"
+        [required]="required()"
+      />
     } @else if (field().kind === 'select') {
       <select
         [id]="field().key"
@@ -50,7 +58,7 @@ export interface Field {
       </select>
     } @else {
       <input
-        [attr.inputmode]="numeric() ? 'decimal' : null"
+        [attr.inputmode]="field().key === 'user_limit' ? 'numeric' : numeric() ? 'decimal' : null"
         [id]="field().key"
         [formControl]="control()"
         [attr.aria-describedby]="describedBy()"
@@ -63,7 +71,13 @@ export interface Field {
     }
     @if (invalid()) {
       <p class="error" role="alert" [id]="field().key + '-error'">
-        {{ serverErrors().length ? serverErrors().join(' ') : field().label + ' is required.' }}
+        {{
+          serverErrors().length
+            ? serverErrors().join(' ')
+            : control().hasError('required')
+              ? field().label + ' is required.'
+              : 'Enter a valid value for ' + field().label + '.'
+        }}
       </p>
     }
   `,

@@ -14,6 +14,8 @@ function savedTenant(): Tenant {
   return {
     ...t,
     id: 'tenant-1',
+    user_limit: 10,
+    primary_contact_role: 'tenant_admin',
     company_name: 'Saved company',
     description: 'Saved description',
     industry_id: 'saved-industry',
@@ -83,6 +85,7 @@ async function setup(
   vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
   const fixture = TestBed.createComponent(TenantForm);
   fixture.detectChanges();
+  if (!id) fixture.componentInstance.form.controls.fields.controls['user_limit'].setValue('10');
   return {
     fixture,
     form: fixture.componentInstance,
@@ -317,11 +320,11 @@ describe('tenant form', () => {
   });
 });
 
-it('opens the saved edit route after creation so reload cannot lose the tenant context', async () => {
+it('returns to the tenant home after successful creation', async () => {
   const { form } = await setup();
   form.choosePrimary(0);
   form.submit();
-  expect(TestBed.inject(Router).navigate).toHaveBeenCalledWith(['/tenants', 'created-1', 'edit'], {
+  expect(TestBed.inject(Router).navigate).toHaveBeenCalledWith(['/tenants'], {
     replaceUrl: true,
   });
 });

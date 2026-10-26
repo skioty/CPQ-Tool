@@ -43,6 +43,10 @@ import { Invitation, accessError } from './access-api';
         (dismissed)="issuedToken.set('')"
       />
     }
+      <p role="status">
+        {{ occupiedSeats() }} / {{ userLimit() ?? '—' }} seats occupied. Active users, pending
+        invitations and the reserved primary contact count once per email.
+      </p>
     <div class="access-layout">
       <section class="card">
         <p class="eyebrow">NEW WORKSPACE MEMBER</p>
@@ -51,6 +55,11 @@ import { Invitation, accessError } from './access-api';
           Single-use links expire after 72 hours. Workspace access requires an Active tenant.
           Invited people choose their own password; existing users keep their existing password.
         </p>
+        @if (primaryEmail()) {
+          <button type="button" [disabled]="busy() || loading()" (click)="email = primaryEmail()">
+            Use primary contact · Tenant Admin
+          </button>
+        }
         <form #invite="ngForm" (ngSubmit)="send()">
           <label for="invite-email">Email (required)</label
           ><input
@@ -137,6 +146,9 @@ export class TenantInvitations {
   private readonly destroy = inject(DestroyRef);
   id = '';
   email = '';
+  readonly primaryEmail = signal('');
+  readonly occupiedSeats = signal(0);
+  readonly userLimit = signal<number | null>(null);
   readonly invitations = signal<Invitation[]>([]);
   readonly members = signal<{ id: string; email: string; enabled: boolean }[]>([]);
   readonly loading = signal(true);
@@ -168,12 +180,18 @@ export class TenantInvitations {
         data: Invitation[];
         members: { id: string; email: string; enabled: boolean }[];
         invitation_delivery: string;
+        user_limit?: number;
+        occupied_seats?: number;
+        primary_contact?: { email: string } | null;
       }>('/api/v1/tenants/' + encodeURIComponent(id) + '/invitations')
       .subscribe({
         next: (r) => {
           if (id !== this.id) return;
           this.invitations.set(r.data);
           this.members.set(r.members);
+          this.primaryEmail.set(r.primary_contact?.email || '');
+          this.occupiedSeats.set(r.occupied_seats ?? 0);
+          this.userLimit.set(r.user_limit ?? null);
 
           this.loading.set(false);
         },

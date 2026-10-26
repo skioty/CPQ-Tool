@@ -3,7 +3,9 @@ module Platform
     def index
       tenant = tenant!
       members = TenantAccess::Membership.includes(:user).where(tenant_id: tenant.id).map { |member| {id: member.id, email: member.user.email, role: member.role, enabled: member.enabled && member.user.enabled} }
-      render json: {data: Invitation.where(tenant_id: tenant.id).order(created_at: :desc).limit(100).map(&:summary), members: members, invitation_delivery: "manual_link"}
+      render json: {data: Invitation.where(tenant_id: tenant.id).order(created_at: :desc).limit(100).map(&:summary), members: members, invitation_delivery: "manual_link",
+        user_limit:tenant.user_limit,occupied_seats:TenantManagement::Seats.emails(tenant).length,
+        primary_contact:tenant.contacts.find_by(primary:true)&.attributes&.slice("email","name"),primary_contact_role:tenant.primary_contact_role}
     end
     def create
       tenant = tenant!

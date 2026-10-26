@@ -1,6 +1,6 @@
 module TenantManagement
   class Payload
-    SCALARS = %w[company_name company_name_display display_name country time_zone description industry_id].freeze
+    SCALARS = %w[company_name company_name_display display_name country time_zone description industry_id user_limit primary_contact_role].freeze
     BRANDING = %w[primary_colour secondary_colour typography logo_attachment_id favicon_attachment_id].freeze
     SUBSCRIPTION = %w[currency fee payment_method payment_method_description discount].freeze
     DISCOUNT = %w[type value duration].freeze
@@ -12,7 +12,10 @@ module TenantManagement
 
     def parse(value)
       object!(value, "tenant", SCALARS + %w[branding subscription contacts responsible_admin_ids])
-      value.each { |key, item| scalar!(item, key) if SCALARS.include?(key) && key != "company_name_display" }
+      value.each { |key, item| scalar!(item, key) if SCALARS.include?(key) && !%w[company_name_display user_limit].include?(key) }
+      if value.key?("user_limit") && !(value["user_limit"].is_a?(Integer) && value["user_limit"].between?(1,2147483647))
+        invalid!("user_limit","Use a positive whole number up to 2147483647")
+      end
       boolean!(value["company_name_display"], "company_name_display", nullable: true) if value.key?("company_name_display")
       if value.key?("branding")
         object!(value["branding"], "branding", BRANDING)

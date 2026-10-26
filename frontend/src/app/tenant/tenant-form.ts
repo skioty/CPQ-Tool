@@ -19,8 +19,20 @@ import {
   Validators,
 } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { HttpErrorResponse } from '@angular/common/http';
-import { Subscription, concatMap, finalize, from, switchMap, tap, toArray } from 'rxjs';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import {
+  Observable,
+  Subscription,
+  concatMap,
+  finalize,
+  from,
+  switchMap,
+  tap,
+  toArray,
+  of,
+} from 'rxjs';
+import { TenantDirectory } from '../navigation/tenant-directory';
+import { CreationNotice } from '../navigation/creation-notice';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   ASSET_UPLOAD,
@@ -45,13 +57,35 @@ export const FIELDS: Field[] = [
     label: 'Company display name (optional)',
     section: 'Company',
   },
-  { key: 'country', path: 'country', label: 'Country (optional)', section: 'Company' },
+  {
+    key: 'country',
+    path: 'country',
+    label: 'Country (optional)',
+    section: 'Company',
+    kind: 'search',
+  },
+  {
+    key: 'user_limit',
+    path: 'user_limit',
+    label: 'User limit',
+    section: 'Company',
+    help: 'Active users plus pending invitations, including a reserved primary-contact seat. Each email counts once.',
+  },
+  {
+    key: 'primary_contact_role',
+    path: 'primary_contact_role',
+    label: 'Primary contact role',
+    section: 'Contacts',
+    kind: 'select',
+    help: 'Tenant Admin is the only approved tenant role. Access requires a separate invitation and acceptance.',
+  },
   {
     key: 'time_zone',
     path: 'time_zone',
     label: 'Time zone (optional)',
     section: 'Company',
-    help: 'IANA time zone, for example Asia/Thimphu.',
+    kind: 'search',
+    help: 'Search an IANA time zone. Shown UTC offsets are current and may change with daylight saving time.',
   },
   {
     key: 'payment_method_description',
@@ -152,6 +186,42 @@ export class TenantForm implements OnInit {
   }
   private readonly fb = inject(FormBuilder).nonNullable;
   private readonly gateway = inject(TenantGateway);
+  private readonly http = inject(HttpClient, { optional: true });
+  private readonly directory = this.http ? inject(TenantDirectory) : null;
+  private readonly notice = inject(CreationNotice);
+  readonly customIndustryName = new FormControl('', { nonNullable: true });
+  get creatingIndustry() {
+    return this.form.controls.fields.controls['industry_id'].value === '__create_industry__';
+  }
+  reviewOptions() {
+    return this.creatingIndustry
+      ? {
+          ...this.options,
+          industries: [
+            ...this.options.industries,
+            { id: '__create_industry__', label: this.customIndustryName.value.trim() },
+          ],
+        }
+      : this.options;
+  }
+  private resolveIndustry(): Observable<unknown> {
+    if (!this.creatingIndustry) return of(null);
+    if (!this.http) throw new Error('Reference options are unavailable');
+    return this.http
+      .post<{ data: { code: string; label: string } }>('/api/v1/reference_options', {
+        option: {
+          kind: 'industry',
+          code: 'custom_' + crypto.randomUUID(),
+          label: this.customIndustryName.value.trim(),
+        },
+      })
+      .pipe(
+        tap((r) => {
+          this.options.industries.push({ id: r.data.code, label: r.data.label });
+          this.form.controls.fields.controls['industry_id'].setValue(r.data.code);
+        }),
+      );
+  }
   private readonly upload = inject(ASSET_UPLOAD);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -167,6 +237,7 @@ export class TenantForm implements OnInit {
   readonly files = signal<Partial<Record<AssetKind, File>>>({});
   readonly urls = signal<Partial<Record<AssetKind, string>>>({});
   readonly sections = ['Company', 'Contacts', 'Branding', 'Subscription'];
+  readonly primaryRoleField = FIELDS.find((f) => f.key === 'primary_contact_role')!;
   readonly registrationSteps = ['Organization details', 'Tenant registration', 'Review & create'];
   readonly step = signal(0);
   readonly activeSection = signal('Company');
@@ -191,15 +262,23 @@ export class TenantForm implements OnInit {
   }
   advance() {
     this.errors.set([]);
+    this.customIndustryName.markAsTouched();
     if (this.step() === 0) {
       const controls = [
         this.form.controls.fields.controls['company_name'],
         this.form.controls.fields.controls['industry_id'],
         this.form.controls.admins,
         this.contacts,
+        this.form.controls.fields.controls['user_limit'],
+        this.form.controls.fields.controls['primary_contact_role'],
+        this.form.controls.fields.controls['country'],
+        this.form.controls.fields.controls['time_zone'],
       ];
       controls.forEach((c) => c.markAllAsTouched());
-      if (controls.some((c) => c.invalid)) {
+      if (
+        controls.some((c) => c.invalid) ||
+        (this.creatingIndustry && this.customIndustryName.invalid)
+      ) {
         this.fail(
           new Error(
             'Complete the organization details, choose a responsible administrator and select exactly one primary contact.',
@@ -272,6 +351,7 @@ export class TenantForm implements OnInit {
       'country',
       'time_zone',
       'industry_id',
+      'user_limit',
       'primary_colour',
       'secondary_colour',
       'typography',
@@ -292,7 +372,18 @@ export class TenantForm implements OnInit {
           f.key,
           new FormControl('', {
             nonNullable: true,
-            validators: this.options.requiredFields.includes(f.path) ? [Validators.required] : [],
+            validators:
+              f.key === 'user_limit'
+                ? [
+                    Validators.required,
+                    Validators.pattern(/^[1-9]\d*$/),
+                    Validators.max(2147483647),
+                  ]
+                : f.key === 'primary_contact_role'
+                  ? [Validators.required, Validators.pattern(/^tenant_admin$/)]
+                  : this.options.requiredFields.includes(f.path)
+                    ? [Validators.required]
+                    : [],
           }),
         ]),
       ),
@@ -330,6 +421,26 @@ export class TenantForm implements OnInit {
   }
 
   constructor() {
+    this.form.controls.fields.controls['industry_id'].valueChanges
+      .pipe(takeUntilDestroyed(this.destroy))
+      .subscribe((value) => {
+        this.customIndustryName.setValidators(
+          value === '__create_industry__'
+            ? [
+                Validators.required,
+                Validators.pattern(/\S/),
+                Validators.maxLength(120),
+                (control) =>
+                  this.options.industries.some(
+                    (c) => c.label.toLocaleLowerCase() === control.value.trim().toLocaleLowerCase(),
+                  )
+                    ? { duplicate: true }
+                    : null,
+              ]
+            : [],
+        );
+        this.customIndustryName.updateValueAndValidity();
+      });
     this.enableForm();
     this.destroy.onDestroy(() =>
       Object.values(this.urls()).forEach((url) => URL.revokeObjectURL(url)),
@@ -427,7 +538,15 @@ export class TenantForm implements OnInit {
     return (
       (
         {
-          industry_id: this.options.industries,
+          industry_id: [
+            ...this.options.industries,
+            ...(this.options.canManageIndustries
+              ? [{ id: '__create_industry__', label: 'Create your own industry' }]
+              : []),
+          ],
+          country: this.options.countries || [],
+          time_zone: this.options.timeZones || [],
+          primary_contact_role: [{ id: 'tenant_admin', label: 'Tenant Admin' }],
           currency: this.options.currencies,
           payment_method: this.options.paymentMethods,
           typography: this.options.typography,
@@ -469,6 +588,8 @@ export class TenantForm implements OnInit {
       display_name: t.display_name || '',
       country: t.country || '',
       time_zone: t.time_zone || '',
+      user_limit: t.user_limit?.toString() || '',
+      primary_contact_role: t.primary_contact_role || 'tenant_admin',
       description: t.description,
       industry_id: t.industry_id,
       currency: t.subscription.currency,
@@ -498,6 +619,8 @@ export class TenantForm implements OnInit {
       display_name: f['display_name'],
       country: f['country'],
       time_zone: f['time_zone'],
+      user_limit: Number(f['user_limit']),
+      primary_contact_role: f['primary_contact_role'],
       company_name_display: this.form.controls.company_name_display.value,
       description: f['description'],
       industry_id: f['industry_id'],
@@ -587,6 +710,7 @@ export class TenantForm implements OnInit {
     this.errors.set([]);
     this.serverErrors.set({});
     this.form.markAllAsTouched();
+    this.customIndustryName.markAsTouched();
     if (!this.loaded) {
       this.fail(new Error('Load the saved tenant before editing.'));
       return;
@@ -596,7 +720,11 @@ export class TenantForm implements OnInit {
         this.options.requiredFields.includes(f.path) &&
         !this.form.controls.fields.controls[f.key].getRawValue(),
     );
-    if (this.form.invalid || missingReference) {
+    if (
+      this.form.invalid ||
+      missingReference ||
+      (this.creatingIndustry && this.customIndustryName.invalid)
+    ) {
       this.fail(
         new Error(
           'Review required fields. Exactly one primary contact and valid entered email addresses are required.',
@@ -635,8 +763,9 @@ export class TenantForm implements OnInit {
     this.status.set('saving');
     this.form.disable({ emitEvent: false });
     const entries = Object.entries(this.files()) as [AssetKind, File][];
-    from(entries)
+    this.resolveIndustry()
       .pipe(
+        switchMap(() => from(entries)),
         concatMap(([kind, file]) =>
           this.upload!(kind, file, this.id).pipe(
             tap((asset) => {
@@ -656,6 +785,8 @@ export class TenantForm implements OnInit {
             display_name: t['display_name'],
             country: t['country'],
             time_zone: t['time_zone'],
+            user_limit: t.user_limit,
+            primary_contact_role: t.primary_contact_role,
             company_name_display: t.company_name_display,
             description: t.description,
             industry_id: t.industry_id,
@@ -702,8 +833,11 @@ export class TenantForm implements OnInit {
           this.saved.set(structuredClone(t));
           this.patch(t);
           this.status.set('success');
-          if (created && t.id)
-            void this.router.navigate(['/tenants', t.id, 'edit'], { replaceUrl: true });
+          if (created && t.id) {
+            this.directory?.view.set({ query: '', status: '', industry: '', page: 1, perPage: 20 });
+            this.notice.created();
+            void this.router.navigate(['/tenants'], { replaceUrl: true });
+          }
         },
         error: (e) => this.fail(e),
       });

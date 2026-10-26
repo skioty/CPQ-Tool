@@ -44,7 +44,7 @@ describe('Figma registration and account security', () => {
     expect(form.step()).toBe(0);
     expect(gateway.save).not.toHaveBeenCalled();
     form.form.controls.fields.patchValue({
-      company_name: 'Synthetic company',
+      company_name: 'Synthetic company', user_limit:'10',
       industry_id: 'sector',
       currency: 'BTN',
       fee: '0',

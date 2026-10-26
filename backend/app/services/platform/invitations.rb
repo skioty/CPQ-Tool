@@ -17,6 +17,7 @@ module Platform
         # Serialize issuance for the same target; a resend revokes prior unused links.
         target = tenant || administrator
         target.lock!
+        TenantManagement::Seats.ensure_room!(tenant,normalized) if tenant
         scope = Invitation.where(kind: kind, email: normalized, tenant_id: tenant&.id, administrator_id: administrator&.id, accepted_at: nil, revoked_at: nil)
         scope.update_all(revoked_at: Time.current)
         record = Invitation.create!(kind: kind, email: normalized, tenant_id: tenant&.id, administrator_id: administrator&.id,
@@ -51,7 +52,9 @@ module Platform
       record = find_token!(token)
       result = nil
       acceptor_id = nil
-      record.with_lock do
+      Invitation.transaction do
+        tenant = record.tenant_id && TenantManagement::Tenant.lock.find(record.tenant_id)
+        record.lock!
         raise TenantManagement::Error.new("invalid_invitation", "This invitation is no longer available", status: 410) unless record.usable?
         if record.kind == "staff"
           account = Administrator.lock.find(record.administrator_id)
@@ -61,6 +64,7 @@ module Platform
           result = "staff"
           acceptor_id = account.id
         else
+          TenantManagement::Seats.ensure_room!(tenant,record.email)
           user = TenantAccess::User.find_by("lower(email) = ?", record.email)
           if user
             unless user.enabled? && user.valid_password?(password.to_s)

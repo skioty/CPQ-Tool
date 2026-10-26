@@ -7,6 +7,7 @@ import { Subject, catchError, of, startWith, switchMap, tap } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DIRECTORY_POLICY, TenantDirectory, TenantPage, apiMessage } from './tenant-directory';
 import { Session } from './session';
+import { CreationNotice } from './creation-notice';
 
 @Component({
   imports: [FormsModule, RouterLink, DatePipe],
@@ -25,11 +26,27 @@ import { Session } from './session';
         >
       }
     </div>
+    @if (created) {
+      <p class="success" role="status">Tenant created successfully.</p>
+    }
     <div class="tenant-summary" aria-label="Tenant summary">
-      <div><span>Total tenants</span><strong>{{result()?.summary?.total ?? result()?.meta?.total_count ?? '—'}}</strong><small>{{result()?.summary?.industries ?? '—'}} industries</small></div>
-      <div><span>Active tenants</span><strong>{{result()?.summary?.active ?? '—'}}</strong><small>Workspace access enabled</small></div>
-      <div><span>Inactive tenants</span><strong>{{result()?.summary?.inactive ?? '—'}}</strong><small>Workspace access disabled</small></div>
-      <div><span>Suspended</span><strong>{{result()?.summary?.suspended ?? '—'}}</strong><small>Administratively restricted</small></div>
+      <div>
+        <span>Total tenants</span
+        ><strong>{{ result()?.summary?.total ?? result()?.meta?.total_count ?? '—' }}</strong
+        ><small>{{ result()?.summary?.industries ?? '—' }} industries</small>
+      </div>
+      <div>
+        <span>Active tenants</span><strong>{{ result()?.summary?.active ?? '—' }}</strong
+        ><small>Workspace access enabled</small>
+      </div>
+      <div>
+        <span>Inactive tenants</span><strong>{{ result()?.summary?.inactive ?? '—' }}</strong
+        ><small>Workspace access disabled</small>
+      </div>
+      <div>
+        <span>Suspended</span><strong>{{ result()?.summary?.suspended ?? '—' }}</strong
+        ><small>Administratively restricted</small>
+      </div>
     </div>
     <section class="directory-panel" aria-label="Tenant directory" [attr.aria-busy]="loading()">
       <div class="panel-heading">
@@ -61,7 +78,14 @@ import { Session } from './session';
             }
           </select></label
         >
-        <label class="status-label">Industry<select name="industry" [(ngModel)]="industry"><option value="">All industries</option>@for(choice of options.industries;track choice.id){<option [value]="choice.id">{{choice.label}}</option>}</select></label>
+        <label class="status-label"
+          >Industry<select name="industry" [(ngModel)]="industry">
+            <option value="">All industries</option>
+            @for (choice of options.industries; track choice.id) {
+              <option [value]="choice.id">{{ choice.label }}</option>
+            }
+          </select></label
+        >
         <button class="filter-submit">Search</button>
         @if (hasFilters()) {
           <button class="clear-filters" type="button" (click)="clearFilters()">
@@ -113,7 +137,8 @@ import { Session } from './session';
           </div>
         } @else {
           <div class="row-head" aria-hidden="true">
-            <span>ORGANIZATION</span><span>INDUSTRY</span><span>STATUS</span><span>USERS</span><span>CREATED</span><span>ACTIONS</span>
+            <span>ORGANIZATION</span><span>INDUSTRY</span><span>STATUS</span><span>USERS</span
+            ><span>CREATED</span><span>ACTIONS</span>
           </div>
           <ul class="tenant-rows">
             @for (t of r.data; track t.id) {
@@ -129,10 +154,24 @@ import { Session } from './session';
                     <p>{{ t.description || 'Company workspace' }}</p>
                   </div>
                 </div>
-                <div class="row-industry"><span class="mobile-label">Industry</span>{{industryLabel(t.industry_id)}}</div>
-                <div class="row-status"><span class="badge" [attr.data-status]="t.lifecycle_status">{{t.lifecycle_status || 'Not set'}}</span>@if(t.provisioning_status !== 'ready'){<small>Setup in progress</small>}</div>
-                <div class="row-users"><span class="mobile-label">Tenant accounts</span>{{t.user_count ?? '—'}}</div>
-                <div class="row-created"><span class="mobile-label">Created</span>{{t.created_at ? (t.created_at | date:'dd MMM yyyy') : 'Not available'}}</div>
+                <div class="row-industry">
+                  <span class="mobile-label">Industry</span>{{ industryLabel(t.industry_id) }}
+                </div>
+                <div class="row-status">
+                  <span class="badge" [attr.data-status]="t.lifecycle_status">{{
+                    t.lifecycle_status || 'Not set'
+                  }}</span>
+                  @if (t.provisioning_status !== 'ready') {
+                    <small>Setup in progress</small>
+                  }
+                </div>
+                <div class="row-users">
+                  <span class="mobile-label">Tenant accounts</span>{{ t.user_count ?? '—' }}
+                </div>
+                <div class="row-created">
+                  <span class="mobile-label">Created</span
+                  >{{ t.created_at ? (t.created_at | date: 'dd MMM yyyy') : 'Not available' }}
+                </div>
                 <a
                   class="row-open"
                   [routerLink]="['/tenants', t.id]"
@@ -167,9 +206,12 @@ import { Session } from './session';
     </section>`,
 })
 export class TenantList {
+  readonly created = inject(CreationNotice).consume();
   readonly session = inject(Session);
   readonly options = inject(FORM_OPTIONS);
-  industryLabel(id: string|null) { return this.options.industries.find(c=>c.id===id)?.label || id || 'Not set'; }
+  industryLabel(id: string | null) {
+    return this.options.industries.find((c) => c.id === id)?.label || id || 'Not set';
+  }
   readonly policy = inject(DIRECTORY_POLICY);
   private api = inject(TenantDirectory);
   initials(name: string | null) {
@@ -206,12 +248,20 @@ export class TenantList {
           this.result.set(null);
         }),
         switchMap(() =>
-          this.api.list(this.activeQuery, this.activeStatus, this.currentPage, this.perPage, this.activeIndustry).pipe(
-            catchError((e) => {
-              this.error.set(apiMessage(e));
-              return of(null);
-            }),
-          ),
+          this.api
+            .list(
+              this.activeQuery,
+              this.activeStatus,
+              this.currentPage,
+              this.perPage,
+              this.activeIndustry,
+            )
+            .pipe(
+              catchError((e) => {
+                this.error.set(apiMessage(e));
+                return of(null);
+              }),
+            ),
         ),
         takeUntilDestroyed(inject(DestroyRef)),
       )
