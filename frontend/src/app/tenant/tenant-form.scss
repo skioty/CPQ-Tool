@@ -470,3 +470,13 @@ input[type='checkbox'] {
     grid-template-columns: 1fr;
   }
 }
+
+.industry-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.industry-actions button {
+  min-height: 44px;
+}

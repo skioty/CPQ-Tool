@@ -167,6 +167,54 @@
                     "
                     [serverErrors]="serverErrors()[field.path] || []"
                   />
+                  @if (field.key === 'industry_id' && options.canManageIndustries) {
+                    <div class="industry-actions full-width" aria-label="Manage industries">
+                      <button type="button" (click)="createIndustry()" [disabled]="industryBusy()">
+                        {{ industryBusy() ? 'Working…' : 'Create industry' }}
+                      </button>
+                      <button
+                        type="button"
+                        (click)="confirmIndustryDeletion()"
+                        [disabled]="industryBusy() || !selectedIndustry()"
+                      >
+                        Delete industry
+                      </button>
+                    </div>
+                    @if (industryMessage()) {
+                      <p class="full-width notice" role="status">{{ industryMessage() }}</p>
+                    }
+                    @if (industryToDelete(); as industry) {
+                      <section
+                        class="full-width notice"
+                        role="dialog"
+                        aria-modal="false"
+                        aria-labelledby="industry-delete-heading"
+                      >
+                        <h3 id="industry-delete-heading">Delete {{ industry.label }}?</h3>
+                        <p>
+                          This permanently removes the industry from the catalog and database.
+                          Industries referenced by tenants cannot be deleted; deactivate them in
+                          Reference options instead.
+                        </p>
+                        <div class="industry-actions">
+                          <button
+                            type="button"
+                            (click)="deleteIndustry()"
+                            [disabled]="industryBusy()"
+                          >
+                            Confirm deletion
+                          </button>
+                          <button
+                            type="button"
+                            (click)="industryToDelete.set(null)"
+                            [disabled]="industryBusy()"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </section>
+                    }
+                  }
                   @if (field.key === 'industry_id' && creatingIndustry) {
                     <div class="full-width">
                       <label for="custom-industry-name">Industry name (required)</label>
@@ -547,6 +595,8 @@
     <p class="muted">
       A preview of your tenant’s workspace identity. Save your changes to apply this branding.
     </p>
-    @if(saved()?.id){<a [routerLink]="['/tenants',saved()?.id,'branding']">Open full dashboard demonstration</a>}
+    @if (saved()?.id) {
+      <a [routerLink]="['/tenants', saved()?.id, 'branding']">Open full dashboard demonstration</a>
+    }
   </aside>
 </div>

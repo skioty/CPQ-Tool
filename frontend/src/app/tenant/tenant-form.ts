@@ -196,6 +196,84 @@ export class TenantForm implements OnInit {
   get creatingIndustry() {
     return this.form.controls.fields.controls['industry_id'].value === '__create_industry__';
   }
+  readonly industryBusy = signal(false);
+  readonly industryMessage = signal('');
+  readonly industryToDelete = signal<Choice | null>(null);
+  selectedIndustry() {
+    return (
+      this.options.industries.find(
+        (option) => option.id === this.form.controls.fields.controls['industry_id'].value,
+      ) || null
+    );
+  }
+  createIndustry() {
+    if (!this.options.canManageIndustries || this.industryBusy()) return;
+    if (!this.creatingIndustry) {
+      this.form.controls.fields.controls['industry_id'].setValue('__create_industry__');
+      return;
+    }
+    this.customIndustryName.markAsTouched();
+    if (this.customIndustryName.invalid) return;
+    this.industryBusy.set(true);
+    this.industryMessage.set('');
+    this.resolveIndustry()
+      .pipe(
+        takeUntilDestroyed(this.destroy),
+        finalize(() => this.industryBusy.set(false)),
+      )
+      .subscribe({
+        next: () => {
+          this.form.markAsDirty();
+          this.industryMessage.set('Industry created and selected.');
+        },
+        error: (error) =>
+          this.industryMessage.set(
+            error?.error?.error?.message || 'Could not create industry. Please retry.',
+          ),
+      });
+  }
+  confirmIndustryDeletion() {
+    if (!this.options.canManageIndustries || this.industryBusy()) return;
+    this.industryMessage.set('');
+    this.industryToDelete.set(this.selectedIndustry());
+  }
+  deleteIndustry() {
+    const option = this.industryToDelete();
+    if (!option || !this.http || !this.options.canManageIndustries || this.industryBusy()) return;
+    this.industryBusy.set(true);
+    this.industryMessage.set('');
+    this.http
+      .get<{ data: { id: string; kind: string; code: string }[] }>('/api/v1/reference_options')
+      .pipe(
+        switchMap((response) => {
+          const record = response.data.find(
+            (record) => record.kind === 'industry' && record.code === option.id,
+          );
+          if (!record) throw new Error('Industry is no longer available. Reload the form.');
+          return this.http!.delete('/api/v1/reference_options/' + encodeURIComponent(record.id));
+        }),
+        takeUntilDestroyed(this.destroy),
+        finalize(() => this.industryBusy.set(false)),
+      )
+      .subscribe({
+        next: () => {
+          this.options.industries = this.options.industries.filter((item) => item.id !== option.id);
+          const control = this.form.controls.fields.controls['industry_id'];
+          if (control.value === option.id) {
+            control.setValue('');
+            control.markAsDirty();
+          }
+          this.industryToDelete.set(null);
+          this.industryMessage.set('Industry deleted permanently. Select another industry.');
+        },
+        error: (error) =>
+          this.industryMessage.set(
+            error?.error?.error?.message ||
+              error.message ||
+              'Could not delete industry. Please retry.',
+          ),
+      });
+  }
   reviewOptions() {
     return this.creatingIndustry
       ? {
@@ -251,6 +329,7 @@ export class TenantForm implements OnInit {
       : this.step() === (['Company', 'Contacts'].includes(section) ? 0 : 1);
   }
   onFormSubmit() {
+    if (this.industryBusy()) return;
     if (this.edit || this.step() === 2) this.submit();
     else this.advance();
   }
@@ -738,7 +817,7 @@ export class TenantForm implements OnInit {
     });
   }
   submit() {
-    if (this.status() === 'saving' || this.status() === 'loading') return;
+    if (this.industryBusy() || this.status() === 'saving' || this.status() === 'loading') return;
     this.errors.set([]);
     this.serverErrors.set({});
     this.form.markAllAsTouched();

@@ -148,3 +148,61 @@ it('rejects duplicate names and invalid limits and preserves inputs on a failed 
     { id: 'tenant_admin', label: 'Tenant Admin' },
   ]);
 });
+
+it('keeps create and delete industry actions visible and removes a successful deletion from the selector', async () => {
+  const { f, form, http } = await formFixture();
+  f.detectChanges();
+  const actions = f.nativeElement.querySelector('.industry-actions');
+  expect(actions.textContent).toContain('Create industry');
+  expect(actions.textContent).toContain('Delete industry');
+  form.confirmIndustryDeletion();
+  expect(form.industryToDelete()?.label).toBe('Services');
+  form.deleteIndustry();
+  http
+    .expectOne('/api/v1/reference_options')
+    .flush({ data: [{ id: 'industry-record', kind: 'industry', code: 'services' }] });
+  const request = http.expectOne('/api/v1/reference_options/industry-record');
+  expect(request.request.method).toBe('DELETE');
+  request.flush(null);
+  expect(form.options.industries).toEqual([]);
+  expect(form.form.controls.fields.controls['industry_id'].value).toBe('');
+  f.detectChanges();
+  expect(f.nativeElement.querySelector('.industry-actions').textContent).toContain(
+    'Delete industry',
+  );
+  http.verify();
+});
+it('retains industry choices and the draft when the backend blocks deletion of a referenced industry', async () => {
+  const { form, http } = await formFixture();
+  form.confirmIndustryDeletion();
+  form.deleteIndustry();
+  http
+    .expectOne('/api/v1/reference_options')
+    .flush({ data: [{ id: 'industry-record', kind: 'industry', code: 'services' }] });
+  http
+    .expectOne('/api/v1/reference_options/industry-record')
+    .flush(
+      { error: { message: 'Industry is referenced by a tenant. Deactivate it instead.' } },
+      { status: 409, statusText: 'Conflict' },
+    );
+  expect(form.form.controls.fields.controls['industry_id'].value).toBe('services');
+  expect(form.options.industries.length).toBe(1);
+  expect(form.industryMessage()).toContain('Deactivate');
+  expect(form.form.controls.fields.controls['company_name'].value).toBe('New company');
+  http.verify();
+});
+
+it('creates and selects an industry through its button without submitting the tenant', async () => {
+  const {form,http,gateway}=await formFixture();
+  form.createIndustry();
+  expect(form.creatingIndustry).toBe(true);
+  form.customIndustryName.setValue('  Aviation  ');
+  form.createIndustry();
+  const request=http.expectOne('/api/v1/reference_options');
+  expect(request.request.body.option.label).toBe('Aviation');
+  request.flush({data:{code:'custom_aviation',label:'Aviation'}});
+  expect(form.form.controls.fields.controls['industry_id'].value).toBe('custom_aviation');
+  expect(form.industryBusy()).toBe(false);
+  expect(gateway.save).not.toHaveBeenCalled();
+  http.verify();
+});

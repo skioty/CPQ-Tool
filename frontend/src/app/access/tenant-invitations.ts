@@ -1,5 +1,5 @@
 import { InvitationLink } from './invitation-link';
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { Component, DestroyRef, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -57,7 +57,7 @@ import { Invitation, accessError } from './access-api';
           Invited people choose their own password; existing users keep their existing password.
         </p>
         @if (primaryEmail()) {
-          <button type="button" [disabled]="busy() || loading()" (click)="email = primaryEmail()">
+          <button type="button" [disabled]="busy() || loading()" (click)="usePrimaryContact()">
             Use primary contact · Tenant Admin
           </button>
         }
@@ -81,6 +81,7 @@ import { Invitation, accessError } from './access-api';
         <form #invite="ngForm" (ngSubmit)="send()">
           <label for="invite-email">Email (required)</label
           ><input
+            #inviteEmail
             id="invite-email"
             name="email"
             type="email"
@@ -169,6 +170,16 @@ export class TenantInvitations {
   private readonly destroy = inject(DestroyRef);
   id = '';
   email = '';
+  private readonly emailInput = viewChild<ElementRef<HTMLInputElement>>('inviteEmail');
+  usePrimaryContact() {
+    if (this.busy() || this.loading() || !this.primaryEmail()) return;
+    this.email = this.primaryEmail().trim();
+    this.confirmation.set(false);
+    this.message.set(
+      'Primary contact email filled in. Review the recipient before creating the invitation.',
+    );
+    this.emailInput()?.nativeElement.focus();
+  }
   delivery = 'email';
   readonly confirmation = signal(false);
   readonly companyName = signal('');
@@ -191,6 +202,9 @@ export class TenantInvitations {
     this.route.paramMap.pipe(takeUntilDestroyed(inject(DestroyRef))).subscribe((p) => {
       this.issuedToken.set('');
       this.id = p.get('id') || '';
+      this.email = '';
+      this.primaryEmail.set('');
+      this.confirmation.set(false);
       this.invitations.set([]);
       this.members.set([]);
       this.load();

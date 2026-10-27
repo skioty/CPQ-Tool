@@ -141,6 +141,30 @@ describe('account management and guided setup', () => {
       .expectOne('/api/v1/tenants/two/invitations')
       .flush({ data: [], members: [], invitation_delivery: 'manual_link' });
   });
+  it('fills the saved primary contact email on click without issuing an invitation', async () => {
+    const f = TestBed.createComponent(TenantInvitations);
+    f.detectChanges();
+    http
+      .expectOne('/api/v1/tenants/one/invitations')
+      .flush({
+        data: [],
+        members: [],
+        primary_contact: { name: 'Saved primary', email: 'saved-primary@example.invalid' },
+      });
+    f.detectChanges();
+    const button = Array.from(
+      f.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>,
+    ).find((button) => button.textContent?.includes('Use primary contact'))!;
+    button.click();
+    f.detectChanges();
+    await f.whenStable();
+    expect((f.nativeElement.querySelector('#invite-email') as HTMLInputElement).value).toBe(
+      'saved-primary@example.invalid',
+    );
+    expect(f.componentInstance.email).toBe('saved-primary@example.invalid');
+    expect(document.activeElement).toBe(f.nativeElement.querySelector('#invite-email'));
+    http.expectNone((request) => request.method === 'POST');
+  });
   it('distinguishes failed email delivery from invitation creation and offers replacement retry', () => {
     const f = TestBed.createComponent(TenantInvitations);
     f.detectChanges();
@@ -149,12 +173,10 @@ describe('account management and guided setup', () => {
       .flush({ data: [], members: [], company_name: 'Synthetic company' });
     f.componentInstance.email = 'recipient@example.invalid';
     f.componentInstance.confirmedSend();
-    http
-      .expectOne('/api/v1/tenants/one/invitations')
-      .flush({
-        data: { email_delivery_status: 'failed', email: 'recipient@example.invalid' },
-        invitation_token: 'synthetic-private-link',
-      });
+    http.expectOne('/api/v1/tenants/one/invitations').flush({
+      data: { email_delivery_status: 'failed', email: 'recipient@example.invalid' },
+      invitation_token: 'synthetic-private-link',
+    });
     http.expectOne('/api/v1/tenants/one/invitations').flush({ data: [], members: [] });
     expect(f.componentInstance.message()).toContain('email delivery failed');
     expect(f.componentInstance.message()).not.toContain('email accepted');
@@ -269,7 +291,9 @@ describe('account management and guided setup', () => {
       of({ data: { id: 'user', email: 'user@example.invalid' } }),
     );
     const icon = document.createElement('link');
-    icon.rel = 'icon'; icon.href = '/favicon.svg'; icon.type = 'image/svg+xml';
+    icon.rel = 'icon';
+    icon.href = '/favicon.svg';
+    icon.type = 'image/svg+xml';
     document.head.append(icon);
     const f = TestBed.createComponent(TenantWorkspaces);
     f.detectChanges();
@@ -302,6 +326,7 @@ describe('account management and guided setup', () => {
     expect(icon.getAttribute('href')).toBe('/favicon.svg');
     expect(icon.getAttribute('type')).toBe('image/svg+xml');
     http.expectOne('/api/v1/my_workspaces').flush({ data: [] });
-    f.destroy(); icon.remove();
+    f.destroy();
+    icon.remove();
   });
 });
