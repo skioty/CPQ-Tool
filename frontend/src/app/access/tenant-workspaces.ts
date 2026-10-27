@@ -5,9 +5,11 @@ import { catchError, EMPTY, switchMap, Subscription } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TenantSession, accessError } from './access-api';
 import { brandingInk } from '../tenant/branding-colour';
+import { TenantDashboard } from '../tenant/tenant-dashboard';
 interface Workspace {
   id: string;
   company_name: string;
+  display_name?: string;
   description: string | null;
   company_name_display: boolean;
   role: string;
@@ -16,13 +18,14 @@ interface Workspace {
     secondary_colour: string;
     typography: string;
     logo_attachment_id: string | null;
+    favicon_attachment_id?: string | null;
   };
 }
 @Component({
-  imports: [RouterLink],
+  imports: [RouterLink, TenantDashboard],
   host: { class: 'workspace-page' },
   template: `<p class="eyebrow">TENANT ADMINISTRATION</p>
-    <h1>{{ workspace()?.company_name || 'Your workspaces' }}</h1>
+    <h1>{{ workspace() ? 'Company workspace' : 'Your workspaces' }}</h1>
     @if (error()) {
       <p class="error-summary" role="alert">{{ error() }}</p>
       <button (click)="load()">Retry workspace</button>
@@ -32,36 +35,18 @@ interface Workspace {
     }
     @if (workspace(); as w) {
       <a routerLink="/workspaces" class="back-link">← All workspaces</a>
-      <section
-        class="tenant-workspace"
-        [style.font-family]="
-          w.branding.typography === 'serif' ? 'Georgia, serif' : 'system-ui, sans-serif'
+      <button type="button" (click)="load()">Refresh saved branding</button>
+      <p class="muted">
+        Saved company settings · Changes made by your platform administrator appear after refresh.
+      </p>
+      <app-tenant-dashboard
+        [identity]="w"
+        [font]="font(w)"
+        [logo]="w.branding.logo_attachment_id ? asset(w.id, w.branding.logo_attachment_id) : null"
+        [favicon]="
+          w.branding.favicon_attachment_id ? asset(w.id, w.branding.favicon_attachment_id) : null
         "
-      >
-        <header
-          [style.background-color]="colour(w.branding.primary_colour)"
-          [style.color]="ink(w.branding.primary_colour)"
-        >
-          @if (w.branding.logo_attachment_id) {
-            <img [src]="asset(w.id, w.branding.logo_attachment_id)" alt="Company logo" />
-          }
-          @if (w.company_name_display) {
-            <strong>{{ w.company_name }}</strong>
-          } @else {
-            <strong>Company workspace</strong>
-          }
-        </header>
-        <div>
-          <span class="badge" data-status="active">Active workspace</span>
-          <h2>Welcome to your company workspace</h2>
-          <p>{{ w.description || 'Your company workspace is ready.' }}</p>
-          <p>Signed in as Tenant Admin.</p>
-          <p class="muted">
-            Product, pricing and quotation modules are not available in this tenant-management
-            increment. Platform subscription and lifecycle settings are managed by SELISE.
-          </p>
-        </div>
-      </section>
+      />
     } @else if (!loading() && !error()) {
       <p class="subheading">
         Only companies with an explicit membership appear here. Open an Active workspace to
@@ -211,6 +196,13 @@ export class TenantWorkspaces {
         else this.workspaces.set(r.data);
         this.loading.set(false);
       });
+  }
+  font(w: Workspace) {
+    return w.branding.typography === 'open_sans'
+      ? "'Open Sans', sans-serif"
+      : w.branding.typography === 'serif'
+        ? 'Georgia, serif'
+        : 'system-ui, sans-serif';
   }
   colour(value: string) {
     return /^#[0-9a-f]{6}$/i.test(value) ? value : '#17365D';

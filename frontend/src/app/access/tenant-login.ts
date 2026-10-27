@@ -80,10 +80,10 @@ export class TenantLogin {
     this.busy.set(true);
     this.error.set('');
     this.session.login(this.email, this.password).subscribe({
-      next: () => {
+      next: (r) => {
         this.password = '';
         this.busy.set(false);
-        void this.router.navigateByUrl('/workspaces');
+        void this.router.navigateByUrl(r?.challenge ? '/security/verify' : '/workspaces');
       },
       error: (e) => {
         this.password = '';

@@ -3,8 +3,16 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 
 export interface DirectoryTenant {
   id: string;
+  created_at?: string;
+  user_count?: number;
+  user_limit?:number;
+  occupied_seats?:number;
+  primary_contact_role?:string;
   permitted_actions?: string[];
   company_name: string | null;
+  display_name?: string|null;
+  country?: string|null;
+  time_zone?: string|null;
   company_name_display: boolean | null;
   description: string | null;
   industry_id: string | null;
@@ -29,6 +37,7 @@ export interface DirectoryTenant {
 }
 export interface TenantPage {
   data: DirectoryTenant[];
+  summary?: {total:number;active:number;inactive:number;suspended:number;industries:number};
   meta: { page: number; per_page: number; total_count: number; total_pages: number };
 }
 export interface LifecycleAction {
@@ -84,11 +93,12 @@ export const DIRECTORY_POLICY = new InjectionToken<{
 @Injectable({ providedIn: 'root' })
 export class TenantDirectory {
   private http = inject(HttpClient);
-  readonly view = signal({ query: '', status: '', page: 1, perPage: 20 });
-  list(query: string, status: string, page: number, perPage = 20) {
+  readonly view = signal({ query: '', status: '', industry: '', page: 1, perPage: 20 });
+  list(query: string, status: string, page: number, perPage = 20, industry = '') {
     let params = new HttpParams().set('page', page).set('per_page', perPage);
     if (query) params = params.set('q', query);
     if (status) params = params.set('status', status);
+    if (industry) params = params.set('industry', industry);
     return this.http.get<TenantPage>('/api/v1/tenants', { params });
   }
   detail(id: string) {

@@ -1,5 +1,13 @@
 # API contract
 
+Tenant workspace branding refinement: the existing authenticated `/api/v1/my_workspaces/:id` response additionally includes optional saved `display_name` and uses `Cache-Control: no-store`. Tenant membership, Active-status and asset authorization remain unchanged. See [tenant dashboard branding](tenant-branding-dashboard.md).
+
+> Current tenant setup and seat policy: [implemented contract and migration notes](tenant-setup-and-capacity.md). User limits are now approved and enforced; older statements that seat limits are unavailable are superseded. Primary-contact access still requires explicit invitation acceptance.
+
+
+> Current design/account-security update: see [Figma integration and approved policy changes](figma-integration.md). This supersedes historical statements below that exclude 2FA, Microsoft linking, or guarded development deletion. Microsoft credentials and production deletion approval remain pending.
+
+
 ## Approved-rule increment (current)
 
 This section supersedes the historical gated/proposed sections below. The complete approved policy is in [decisions](decisions.md).

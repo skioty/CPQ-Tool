@@ -39,7 +39,7 @@ class PlatformSecurityTest < ActionDispatch::IntegrationTest
     end
     TenantManagement::Tenant.transaction do
       ActiveRecord::Base.connection.execute("SET CONSTRAINTS ALL DEFERRED")
-      [TenantManagement::AuditEvent, TenantManagement::Assignment, TenantManagement::Subscription,
+      [Platform::Invitation,TenantManagement::AuditEvent, TenantManagement::Assignment, TenantManagement::Subscription,
         TenantManagement::Branding, TenantManagement::Contact].each { |model| model.where(tenant_id: @ids).delete_all }
       TenantManagement::Tenant.where(id: @ids).delete_all
     end
@@ -64,7 +64,7 @@ class PlatformSecurityTest < ActionDispatch::IntegrationTest
   def fixture_tenant(label, assigned: nil)
     integration = FixtureIntegration.new
     record = TenantManagement::Writer.new(integration: integration, actor: @super, request_id: SecureRandom.uuid).create(
-      { "company_name" => label, "contacts" => [{ "primary" => true }], "responsible_admin_ids" => assigned ? [assigned.id] : [] })
+      { "user_limit" => 10, "primary_contact_role" => "tenant_admin", "company_name" => label, "contacts" => [{ "primary" => true }], "responsible_admin_ids" => assigned ? [assigned.id] : [] })
     @ids << record.id
     Platform::TenantContext.with(actor: @super, tenant_id: record.id) { TenantData::IsolationMarker.create!(value: label) }
     record
@@ -243,11 +243,39 @@ class PlatformSecurityTest < ActionDispatch::IntegrationTest
       private :audit!
     end.new(integration: FixtureIntegration.new, actor: @super, request_id: SecureRandom.uuid)
     assert_no_difference "TenantManagement::Tenant.count" do
-      assert_raises(RuntimeError) { failing.create({ "contacts" => [{ "primary" => true }] }) }
+      assert_raises(RuntimeError) { failing.create({ "user_limit"=>10,"contacts" => [{ "primary" => true }] }) }
     end
     assert key
     assert_not ActiveRecord::Base.connection.schema_exists?(key)
     assert_equal "public", Apartment::Tenant.current
+  end
+
+  test "concurrent invitations cannot reserve the same last seat" do
+    tenant=fixture_tenant("Seat concurrency")
+    tenant.update!(user_limit:1)
+    barrier=Queue.new
+    results=Queue.new
+    threads=2.times.map do |i|
+      Thread.new do
+        ActiveRecord::Base.connection_pool.with_connection do
+          barrier.pop
+          begin
+            Platform::Invitations.issue!(actor:Platform::Administrator.find(@super.id),kind:"tenant",email:"seat-#{i}@example.invalid",tenant:TenantManagement::Tenant.find(tenant.id))
+            results << :issued
+          rescue TenantManagement::Error => error
+            results << error.code
+          end
+        end
+      end
+    end
+    2.times {barrier << true}
+    threads.each { |thread| assert thread.join(15),"Concurrent capacity check did not finish" }
+    values=2.times.map {results.pop}
+    assert_equal 1,values.count(:issued)
+    assert_equal 1,values.count("seat_limit_exceeded")
+    assert_equal 1,TenantManagement::Seats.emails(tenant).length
+  ensure
+    threads&.each { |thread| thread.kill if thread.alive? }
   end
 
   test "forward tenant migration preserves existing data and rerun resumes safely" do

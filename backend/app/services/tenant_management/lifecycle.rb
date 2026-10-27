@@ -25,7 +25,17 @@ module TenantManagement
           BusinessRules.validate!(actor, {}, tenant)
           raise Error.new("tenant_unavailable", "Provisioning must be ready", status: 409) unless tenant.provisioning_status == "ready"
         end
-        tenant.update!(lifecycle_status: target)
+        changes = {lifecycle_status: target}
+        changes[:archived_at] = Time.current if action == "archive"
+        changes[:archived_at] = nil if action == "restore"
+        if %w[archive restore].include?(action)
+          changes.merge!(billing_resolved:nil,contracts_resolved:nil,retention_records_approved:nil)
+          changes[:legal_hold] = nil unless tenant.legal_hold == true
+        end
+        tenant.update!(changes)
+        if %w[archive restore].include?(action)
+          Platform::TenantRetentionEvent.create!(tenant_id: tenant.id, actor_id: actor.id, action: action, details: changes.except(:lifecycle_status), created_at: Time.current)
+        end
         tenant.audit_events.create!(actor_id: actor.id, action: action, request_id: request_id,
           changed_fields: ["lifecycle_status"], created_at: Time.current)
         tenant

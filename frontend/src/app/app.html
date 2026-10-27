@@ -4,8 +4,7 @@
     <aside class="sidebar">
       <div class="sidebar-heading">
         <a class="brand" routerLink="/tenants" aria-label="CPQ home"
-          ><span class="brand-symbol" aria-hidden="true">c<span>p</span>q</span
-          ><span>SELISE <b>CPQ</b><small>ADMINISTRATION</small></span></a
+          ><span>CPQ / CONSOLE<small>Organization workspace</small></span></a
         >
         <button
           class="menu-toggle"
@@ -18,10 +17,6 @@
           {{ menuOpen() ? 'Close menu' : 'Menu' }}
         </button>
       </div>
-      <div class="workspace-label">
-        <span class="workspace-avatar">S</span>
-        <div>Platform workspace<small>Tenant management</small></div>
-      </div>
       <nav
         id="workspace-nav"
         aria-label="Workspace navigation"
@@ -29,78 +24,60 @@
         [class.menu-open]="menuOpen()"
         (click)="menuOpen.set(false)"
       >
-        <p class="nav-caption">WORKSPACE</p>
+        <p class="nav-caption">ADMINISTRATION</p>
         <a
           routerLink="/tenants"
           aria-label="Tenant list"
-          [attr.aria-current]="
-            router.url.startsWith('/tenants') && !router.url.startsWith('/tenants/new')
-              ? 'page'
-              : null
-          "
-          [class.active]="
-            router.url.startsWith('/tenants') && !router.url.startsWith('/tenants/new')
-          "
-          ><svg viewBox="0 0 24 24" aria-hidden="true">
-            <rect x="3" y="3" width="7" height="7" rx="1.5" />
-            <rect x="14" y="3" width="7" height="7" rx="1.5" />
-            <rect x="3" y="14" width="7" height="7" rx="1.5" />
-            <rect x="14" y="14" width="7" height="7" rx="1.5" /></svg
-          >Tenants<span class="nav-chevron">›</span></a
+          [class.active]="router.url.startsWith('/tenants')"
+          [attr.aria-current]="router.url.startsWith('/tenants') ? 'page' : null"
+          >Tenant management</a
         >
         @if (session.actor()?.role === 'super_admin') {
-          <a
-            routerLink="/tenants/new"
-            [class.active]="router.url.startsWith('/tenants/new')"
-            [attr.aria-current]="router.url.startsWith('/tenants/new') ? 'page' : null"
-            ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>Create
-            tenant</a
-          >
-          <p class="nav-caption settings-caption">CONFIGURATION</p>
           <a
             routerLink="/administrators"
             [class.active]="router.url.startsWith('/administrators')"
             [attr.aria-current]="router.url.startsWith('/administrators') ? 'page' : null"
-            ><svg viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="9" cy="8" r="3" />
-              <path d="M3 21v-3a6 6 0 0 1 12 0v3M16 5a3 3 0 0 1 0 6M18 15a5 5 0 0 1 3 5" /></svg
-            >Administrators</a
+            >User management</a
           >
           <a
             routerLink="/reference-options"
             [class.active]="router.url.startsWith('/reference-options')"
             [attr.aria-current]="router.url.startsWith('/reference-options') ? 'page' : null"
-            ><svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M4 6h16M4 12h16M4 18h16" />
-              <circle cx="9" cy="6" r="2" />
-              <circle cx="15" cy="12" r="2" />
-              <circle cx="9" cy="18" r="2" /></svg
             >Reference options</a
           >
         }
       </nav>
       <div class="sidebar-bottom">
-        <span class="sidebar-mark" aria-hidden="true">S.</span>
-        <p>Built for your team.<br /><strong>Designed around your tenants.</strong></p>
-        <small>SELISE CPQ Platform</small>
+        <small>{{
+          session.actor()?.role === 'super_admin' ? 'CPQ SUPER ADMIN' : 'CPQ ADMIN'
+        }}</small>
+        <p>
+          {{
+            session.actor()?.role === 'super_admin' ? 'All organizations' : 'Assigned organizations'
+          }}
+        </p>
+        <small>Tenant management</small>
       </div>
     </aside>
   }
   <div class="content-shell">
     <header class="topbar">
       @if (isLogin) {
-        <a [routerLink]="isTenantArea ? '/workspaces' : '/'" class="login-wordmark"
-          >SELISE <strong>CPQ</strong></a
-        >
+        <a [routerLink]="isTenantArea ? '/workspaces' : '/'" class="login-wordmark">
+          @if (isTenantArea) {
+            Company workspace
+          } @else {
+            SELISE <strong>CPQ</strong>
+          }
+        </a>
       } @else {
-        <div class="topbar-location">
-          <span>Workspace</span><span class="divider">/</span><strong>{{ pageLabel }}</strong>
-        </div>
+        <div class="topbar-location"><strong>Platform administration</strong></div>
       }
       <div class="account">
         @if (isTenantArea) {
           @if (tenantSession.actor()) {
-            <span class="tenant-account-label">{{ tenantSession.actor()?.email }}</span
+            <a class="button" routerLink="/security/account">Account security</a
+            ><span class="tenant-account-label">{{ tenantSession.actor()?.email }}</span
             ><button (click)="tenantLogout()">Log out of workspace</button>
           } @else {
             <a class="button" routerLink="/tenant-login">Tenant sign in</a>
@@ -112,7 +89,8 @@
             }}</strong
             ><span>Platform administration</span>
           </div>
-          <span class="account-avatar" aria-hidden="true">{{
+          <a class="account-security-link" routerLink="/security/account">Account security</a
+          ><span class="account-avatar" aria-hidden="true">{{
             session.actor()?.role === 'super_admin' ? 'SA' : 'CA'
           }}</span
           ><button class="logout" (click)="logout()">Log out</button>
@@ -131,7 +109,7 @@
     </main>
     @if (!isLogin) {
       <footer class="workspace-footer">
-        <span>SELISE CPQ</span><span>Tenant administration workspace</span>
+        <span>CPQ Console</span><span>Tenant management</span>
       </footer>
     }
   </div>

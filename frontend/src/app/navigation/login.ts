@@ -53,7 +53,7 @@ import { finalize } from 'rxjs';
           </button>
         </form>
         <p class="access-note">Need access? Contact your platform administrator.</p>
-        <p><a routerLink="/tenant-login">Tenant workspace sign-in</a></p>
+        <p><a routerLink="/tenant-login">Tenant workspace sign-in</a><a routerLink="/security/microsoft">Microsoft sign-in</a></p>
         <div class="login-divider"></div>
         <p class="login-bottom">Your administration workspace.<br /><strong>SELISE CPQ</strong></p>
       </div>
@@ -303,7 +303,7 @@ export class Login {
         }),
       )
       .subscribe({
-        next: () => void this.router.navigateByUrl('/tenants'),
+        next: (r) => void this.router.navigateByUrl(r?.challenge ? '/security/verify' : '/tenants'),
         error: (e) =>
           this.error.set(
             e.status === 401

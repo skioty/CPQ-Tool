@@ -1,8 +1,16 @@
 # CPQ Tool
 
+> Current tenant setup and seat policy: [implemented contract and migration notes](docs/tenant-setup-and-capacity.md). User limits are now approved and enforced; older statements that seat limits are unavailable are superseded. Primary-contact access still requires explicit invitation acceptance.
+
+
+> Current design/account-security update: see [Figma integration and approved policy changes](docs/figma-integration.md). This supersedes historical statements below that exclude 2FA, Microsoft linking, or guarded development deletion. Microsoft credentials and production deletion approval remain pending.
+
+
 Four-student final-year SELISE project: a reusable multi-tenant CPQ SaaS adaptable to different industries. This semester targets a one-week tenant management prototype; the remaining CPQ modules extend this application next semester.
 
 ## Current status
+
+The [tenant-branded dashboard flow](docs/tenant-branding-dashboard.md) shares the real Tenant Admin renderer with draft/saved previews, adds interactive colour/HEX controls and contrast guidance, and includes desktop/tablet/mobile preview sizes. Previewing does not switch roles or grant tenant access.
 
 The [tenant experience redesign](docs/ui-experience.md) adds a professional administration shell, directory, organized forms and responsive preview. Its UI removes scaffold/prototype labels; project delivery status and acceptance requirements remain documented here.
 

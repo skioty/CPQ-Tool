@@ -1,0 +1,354 @@
+:host {
+  display: block;
+  min-width: 0;
+  container-type: inline-size;
+}
+.dashboard {
+  border: 1px solid #dce3eb;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f5f7fa;
+  color: #1b2b40;
+  font-size: 14px;
+}
+.dashboard * {
+  box-sizing: border-box;
+  font-family: inherit;
+}
+.demo-note {
+  padding: 12px 18px;
+  background: #eef3fa;
+  color: #334963;
+  font:
+    12px/1.6 system-ui,
+    sans-serif;
+}
+.browser-tab {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 16px;
+  background: #e9edf3;
+  font-size: 12px;
+  flex-wrap: wrap;
+}
+.browser-tab small {
+  margin-left: auto;
+  color: #536175;
+}
+.favicon-fallback {
+  background: var(--brand-secondary);
+  color: var(--brand-secondary-ink);
+  border-radius: 3px;
+  font-size: 9px;
+  padding: 2px;
+}
+.workspace-grid {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr);
+}
+.brand-sidebar {
+  background: #fff;
+  padding: 22px 14px;
+  border-right: 1px solid #dce3eb;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  overflow-wrap: anywhere;
+}
+.company-logo {
+  max-width: 112px;
+  max-height: 56px;
+  object-fit: contain;
+}
+.initials {
+  background: var(--brand-secondary);
+  color: var(--brand-secondary-ink);
+  padding: 10px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+.caption {
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  font-weight: 600;
+  color: #63758a;
+  margin: 0;
+}
+.brand-sidebar nav {
+  display: grid;
+  gap: 6px;
+}
+.dashboard button {
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid #bac5d3;
+  border-radius: 7px;
+  background: #fff;
+  color: #1b2b40;
+  cursor: pointer;
+  font-size: 13px;
+  transition: box-shadow 0.15s;
+}
+.brand-sidebar button {
+  text-align: left;
+}
+.brand-sidebar button.selected,
+.dashboard .brand-action {
+  background: var(--brand-primary);
+  color: var(--brand-ink);
+  border-color: currentColor;
+}
+.brand-sidebar > small {
+  margin-top: auto;
+  color: #536175;
+}
+.workspace-content {
+  min-width: 0;
+}
+.brand-header {
+  border-top: 4px solid var(--brand-primary);
+  padding: 18px 24px;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  border-bottom: 1px solid #dce3eb;
+  overflow-wrap: anywhere;
+}
+.brand-header strong,
+.brand-header small {
+  display: block;
+}
+.brand-header small {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: #63758a;
+  margin-bottom: 5px;
+}
+.role-badge {
+  background: #edf1f6;
+  color: #334963;
+  border-radius: 20px;
+  font-size: 11px;
+  padding: 6px 10px;
+  white-space: nowrap;
+}
+.dashboard-main {
+  padding: 24px;
+}
+.page-title h2 {
+  font-size: 24px;
+  line-height: 1.3;
+  margin: 10px 0;
+  overflow-wrap: anywhere;
+}
+.page-title p:not(.caption) {
+  color: #536175;
+  line-height: 1.6;
+}
+.tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid #dce3eb;
+  margin: 24px 0;
+  flex-wrap: wrap;
+}
+.tabs button {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  border-bottom: 3px solid transparent;
+}
+.tabs button.active {
+  border-bottom-color: var(--brand-primary);
+  font-weight: 600;
+}
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.brand-card {
+  background: #fff;
+  border: 1px solid #dce3eb;
+  border-radius: 9px;
+  padding: 22px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.brand-card h3 {
+  font-size: 16px;
+  margin: 0 0 12px;
+}
+.brand-card p {
+  line-height: 1.7;
+  color: #536175;
+}
+.section-accent {
+  display: block;
+  width: 30px;
+  height: 4px;
+  background: var(--brand-secondary);
+  margin-bottom: 16px;
+  border: 1px solid #63758a;
+}
+.dashboard .support-action {
+  box-shadow: inset 4px 0 var(--brand-secondary);
+}
+.scope-note {
+  margin-top: 18px;
+}
+.dashboard button:hover {
+  box-shadow: inset 0 0 0 2px currentColor;
+}
+.dashboard button:focus-visible,
+.dashboard input:focus-visible {
+  outline: 3px solid #111827;
+  outline-offset: 3px;
+}
+.dashboard button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.dashboard label {
+  display: block;
+  margin-bottom: 8px;
+}
+.dashboard input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #8997a8;
+  border-radius: 6px;
+  padding: 10px;
+  background: #f5f7fa;
+  color: #1b2b40;
+}
+.hint {
+  font-size: 12px;
+}
+.table-scroll {
+  overflow: auto;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  margin-top: 20px;
+  font-size: 13px;
+}
+caption {
+  text-align: left;
+  color: #63758a;
+  padding: 10px 0;
+}
+th,
+td {
+  padding: 12px 10px;
+  border-bottom: 1px solid #e2e8f0;
+}
+thead {
+  background: #f5f7fa;
+}
+.access-summary {
+  display: flex;
+  gap: 20px;
+  border-top: 1px solid #dce3eb;
+  padding-top: 16px;
+}
+.dashboard footer {
+  padding: 16px 24px;
+  color: #63758a;
+  font-size: 12px;
+}
+.mobile-menu,
+.mobile-nav {
+  display: none;
+}
+@container (max-width:760px) {
+  .workspace-grid {
+    grid-template-columns: 150px minmax(0, 1fr);
+  }
+  .card-grid {
+    grid-template-columns: 1fr;
+  }
+  .dashboard-main {
+    padding: 18px;
+  }
+  .brand-header {
+    padding: 16px;
+  }
+  .page-title h2 {
+    font-size: 21px;
+  }
+}
+@container (max-width:520px) {
+  .workspace-grid {
+    grid-template-columns: 1fr;
+  }
+  .brand-sidebar {
+    display: none;
+  }
+  .mobile-menu {
+    display: block;
+  }
+  .mobile-nav {
+    display: grid;
+    padding: 12px;
+    gap: 6px;
+    background: #fff;
+  }
+  .mobile-nav button[aria-current='page'] {
+    background: var(--brand-primary);
+    color: var(--brand-ink);
+  }
+  .brand-header {
+    flex-wrap: wrap;
+  }
+  .role-badge {
+    display: none;
+  }
+  .brand-card {
+    padding: 18px;
+  }
+  .dashboard-main {
+    padding: 16px;
+  }
+  .tabs {
+    gap: 0;
+  }
+  .tabs button {
+    padding: 10px 8px;
+    font-size: 12px;
+  }
+  .browser-tab small {
+    width: 100%;
+    margin: 0;
+  }
+  .dashboard footer {
+    padding: 16px;
+  }
+  .demo-note {
+    padding: 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dashboard button {
+    transition: none;
+  }
+}
+
+.dashboard {
+  overflow-wrap: anywhere;
+}
+.tabs button.active {
+  text-decoration: underline;
+  text-underline-offset: 5px;
+}

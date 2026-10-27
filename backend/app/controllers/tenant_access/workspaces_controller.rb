@@ -12,9 +12,10 @@ module TenantAccess
       render json: {data: TenantManagement::Tenant.where(id: ids).order(:company_name).map { |tenant| {id: tenant.id, company_name: tenant.company_name, status: tenant.lifecycle_status} }}
     end
     def show
+      response.set_header("Cache-Control","no-store")
       Platform::TenantContext.with_membership(user: @user, tenant_id: params[:id]) do |tenant|
         branding = tenant.branding
-        render json: {data: {id: tenant.id, company_name: tenant.company_name, description: tenant.description,
+        render json: {data: {id: tenant.id, company_name: tenant.company_name, display_name:tenant.display_name, description: tenant.description,
           company_name_display: tenant.company_name_display, role: "tenant_admin",
           branding: {primary_colour: branding.primary_colour, secondary_colour: branding.secondary_colour,
             typography: branding.typography, logo_attachment_id: branding.logo_attachment_id, favicon_attachment_id: branding.favicon_attachment_id}}}

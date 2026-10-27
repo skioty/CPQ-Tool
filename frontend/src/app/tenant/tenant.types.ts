@@ -20,6 +20,11 @@ export interface Branding {
 export interface Tenant {
   id?: string;
   company_name: string;
+  display_name?: string;
+  country?: string;
+  time_zone?: string;
+  user_limit?: number;
+  primary_contact_role?: string;
   company_name_display: boolean;
   description: string;
   industry_id: string;
@@ -42,6 +47,9 @@ export interface Choice {
   fontFamily?: string;
 }
 export interface FormOptions {
+  countries?: Choice[];
+  timeZones?: Choice[];
+  canManageIndustries?: boolean;
   // No fabricated reference lists. Supply approved values after contract review.
   industries: Choice[];
   currencies: Choice[];

@@ -1,18 +1,18 @@
 @charset "UTF-8";
 @use './app/navigation/directory-theme';
-@use './app/product-polish';
+@use './app/features/tenants/tenant-console';
 :root {
-  --ink: #17233a;
-  --muted: #536277;
-  --line: #dce2e9;
-  --canvas: #f5f7fb;
+  --ink: #1b2b40;
+  --muted: #63758a;
+  --line: #dce3eb;
+  --canvas: #f5f7fa;
   --surface: #fff;
-  --accent: #c54432;
-  --accent-hover: #bc3b2b;
-  --accent-soft: #fff0ec;
-  --nav: #152437;
-  --radius: 14px;
-  --success: #196344;
+  --accent: #2457a6;
+  --accent-hover: #1d478b;
+  --accent-soft: #eaf1fc;
+  --nav: #14263d;
+  --radius: 8px;
+  --success: #217451;
   --success-soft: #eaf6ef;
   --warning: #805014;
   --warning-soft: #fff3df;
@@ -36,6 +36,7 @@
   --radius-control: 8px;
   --shadow: 0 2px 3px #17233a02, 0 8px 28px #17233a04;
   font-family:
+    'Open Sans',
     Inter,
     ui-sans-serif,
     -apple-system,
@@ -46,6 +47,7 @@
   background: var(--canvas);
   font-synthesis: none;
 }
+@font-face { font-family: 'Open Sans'; src: url('/fonts/open-sans-variable.ttf') format('truetype'); font-weight: 300 800; font-stretch: 75% 100%; font-style: normal; font-display: swap; }
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 100px;
@@ -146,28 +148,28 @@ p {
   overflow-wrap: anywhere;
 }
 h1 {
-  font-size: clamp(27px, 2.8vw, 34px);
+  font-size: clamp(24px, 2.5vw, 28px);
   line-height: 1.22;
-  letter-spacing: -1px;
-  font-weight: 650;
+  letter-spacing: 0;
+  font-weight: 600;
   margin: 8px 0 10px;
 }
 h2 {
   font-size: 16px;
-  font-weight: 650;
+  font-weight: 600;
   letter-spacing: -0.3px;
   margin: 0 0 8px;
 }
 h3 {
   font-size: 14px;
-  font-weight: 650;
+  font-weight: 600;
 }
 p {
   margin: 0 0 12px;
 }
 .eyebrow {
   font-size: 12px;
-  font-weight: 650;
+  font-weight: 600;
   letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--muted);
@@ -188,7 +190,7 @@ p {
   padding: 4px 10px;
   border-radius: 100px;
   font-size: 12px;
-  font-weight: 650;
+  font-weight: 600;
   text-transform: capitalize;
   white-space: nowrap;
   background: #f0f2f5;

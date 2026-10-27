@@ -14,6 +14,8 @@ function savedTenant(): Tenant {
   return {
     ...t,
     id: 'tenant-1',
+    user_limit: 10,
+    primary_contact_role: 'tenant_admin',
     company_name: 'Saved company',
     description: 'Saved description',
     industry_id: 'saved-industry',
@@ -83,6 +85,7 @@ async function setup(
   vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
   const fixture = TestBed.createComponent(TenantForm);
   fixture.detectChanges();
+  if (!id) fixture.componentInstance.form.controls.fields.controls['user_limit'].setValue('10');
   return {
     fixture,
     form: fixture.componentInstance,
@@ -317,11 +320,26 @@ describe('tenant form', () => {
   });
 });
 
-it('opens the saved edit route after creation so reload cannot lose the tenant context', async () => {
+it('returns to the tenant home after successful creation', async () => {
   const { form } = await setup();
   form.choosePrimary(0);
   form.submit();
-  expect(TestBed.inject(Router).navigate).toHaveBeenCalledWith(['/tenants', 'created-1', 'edit'], {
+  expect(TestBed.inject(Router).navigate).toHaveBeenCalledWith(['/tenants'], {
     replaceUrl: true,
   });
+});
+
+it('compares saved branding with drafts and cancels only branding changes', async () => {
+  const { form } = await setup('tenant-1');
+  form.form.controls.fields.controls['company_name'].setValue('Keep this company draft');
+  form.previewSaved.set(true);
+  form.form.controls.fields.controls['primary_colour'].setValue('#ABCDEF');
+  expect(form.previewSaved()).toBe(false);
+  expect(form.saved()?.branding.primary_colour).toBe('#123456');
+  form.removeAsset('logo');
+  form.cancelBrandingChanges();
+  expect(form.draft().branding.primary_colour).toBe('#123456');
+  expect(form.draft().branding.logo_attachment_id).toBe('saved-logo');
+  expect(form.draft().company_name).toBe('Keep this company draft');
+  expect(form.contacts.at(0).controls.email.value).toBe('contact@example.invalid');
 });

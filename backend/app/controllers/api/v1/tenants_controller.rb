@@ -9,8 +9,8 @@ module Api
       rescue_from ActiveRecord::RecordNotFound do
         render_error("not_found", "Tenant was not found", 404)
       end
-      rescue_from ActiveRecord::RecordInvalid do
-        render_error("validation_failed", "Tenant data could not be saved", 422)
+      rescue_from ActiveRecord::RecordInvalid do |error|
+        render_error("validation_failed", "Review the highlighted fields", 422, error.record.errors.to_hash)
       end
       rescue_from ActiveRecord::StaleObjectError do
         render_error("stale_version", "Tenant changed; reload before saving", 409)
@@ -27,11 +27,16 @@ module Api
       def index
         authorize!(:list)
         tenants = authorized_scope
+        counts = tenants.group(:lifecycle_status).count
+        summary = {total: counts.values.sum, active: counts.fetch("active", 0), inactive: counts.fetch("inactive", 0), suspended: counts.fetch("suspended", 0), industries: tenants.distinct.count(:industry_id)}
+        if params[:industry].present?
+          tenants = tenants.where(industry_id: params[:industry].to_s)
+        end
         page = integer_param("page", 1)
         per_page = integer_param("per_page", 20, max: 100)
         if params[:q].present?
           query = ActiveRecord::Base.sanitize_sql_like(params[:q].to_s)
-          tenants = tenants.where("company_name ILIKE ?", "%#{query}%")
+          tenants = tenants.where("company_name ILIKE ? OR CAST(public.platform_tenants.id AS text) ILIKE ?", "%#{query}%", "%#{query}%")
         end
         if params[:status].present?
           approved!(@integration.filter_status!(params[:status].to_s))
@@ -41,7 +46,7 @@ module Api
         tenants = tenants.order(:created_at, :id).offset((page - 1) * per_page).limit(per_page)
         response.set_header("Cache-Control", "no-store")
         render json: { data: tenants.map { |tenant| TenantManagement::Serializer.detail(tenant).merge(permitted_actions: @integration.permitted_actions(@actor, tenant)) },
-          meta: { page: page, per_page: per_page, total_count: count, total_pages: (count.to_f / per_page).ceil } }
+          summary: summary, meta: { page: page, per_page: per_page, total_count: count, total_pages: (count.to_f / per_page).ceil } }
       end
 
       def show
@@ -59,7 +64,7 @@ module Api
         render json: {
           data: events.order(created_at: :desc, id: :desc).offset((page - 1) * per_page).limit(per_page).map { |event|
             { id: event.id, action: event.action, occurred_at: event.created_at.iso8601(6),
-              changed_fields: Array(event.changed_fields) & %w[company_name company_name_display description industry_id contacts responsible_admin_ids branding subscription lifecycle_status] }
+              changed_fields: Array(event.changed_fields) & %w[company_name company_name_display display_name country time_zone user_limit primary_contact_role description industry_id contacts responsible_admin_ids branding subscription lifecycle_status] }
           },
           meta: { page: page, per_page: per_page, total_count: count, total_pages: (count.to_f / per_page).ceil }
         }

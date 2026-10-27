@@ -5,8 +5,14 @@
 <div class="page-heading">
   <div>
     <p class="eyebrow">COMPANY ADMINISTRATION</p>
-    <h1>{{ edit ? 'Edit tenant' : 'Create tenant' }}</h1>
-    <p>Bring company details, people and workspace identity together.</p>
+    <h1>{{ edit ? 'Tenant settings' : step() === 2 ? 'Review tenant' : 'Create tenant' }}</h1>
+    <p>
+      {{
+        edit
+          ? 'Manage company details, contacts, branding and billing.'
+          : 'Set up a dedicated workspace for a new organization.'
+      }}
+    </p>
   </div>
   @if (saved()?.id) {
     <div class="save-buttons">
@@ -49,17 +55,48 @@
     <a routerLink="/reference-options">Reference options</a>, or refresh this page to try again.
   </aside>
 }
-<nav class="form-navigation" aria-label="Form sections">
-  @for (section of sections; track section; let i = $index) {
-    <a [routerLink]="[]" [fragment]="'section-' + section.toLowerCase()"
-      ><span>{{ i + 1 }}</span
-      >{{ section }}</a
-    >
-  }
-</nav>
-<div class="layout">
+@if (edit) {
+  <nav class="settings-tabs" aria-label="Tenant settings sections">
+    @for (section of sections; track section) {
+      <button
+        type="button"
+        [class.active]="activeSection() === section"
+        [attr.aria-current]="activeSection() === section ? 'page' : null"
+        (click)="activeSection.set(section)"
+      >
+        {{ sectionLabel(section) }}
+      </button>
+    }
+  </nav>
+} @else {
+  <nav class="registration-stepper" aria-label="Tenant registration steps">
+    @for (label of registrationSteps; track label; let i = $index) {
+      <button
+        type="button"
+        [class.active]="step() === i"
+        [class.complete]="step() > i"
+        [attr.aria-current]="step() === i ? 'step' : null"
+        (click)="goStep(i)"
+      >
+        <span class="step-index">
+          @if (step() > i) {
+            <img src="/design/check.svg" alt="" />
+          } @else {
+            {{ i + 1 }}
+          }
+        </span>
+        <span>{{ label }}</span>
+      </button>
+    }
+  </nav>
+}
+<div
+  class="layout"
+  [class.registration-layout]="!edit"
+  [class.review-layout]="!edit && step() === 2"
+>
   <form
-    (ngSubmit)="submit()"
+    (ngSubmit)="onFormSubmit()"
     [formGroup]="form"
     novalidate
     [attr.aria-busy]="status() === 'loading' || status() === 'saving'"
@@ -69,7 +106,13 @@
       [disabled]="status() === 'loading' || status() === 'saving' || !loaded"
     >
       @for (section of sections; track section) {
-        <section class="card" [id]="'section-' + section.toLowerCase()" [attr.aria-label]="section">
+        <section
+          class="card"
+          [hidden]="!visibleSection(section)"
+          tabindex="-1"
+          [id]="'section-' + section.toLowerCase()"
+          [attr.aria-label]="section"
+        >
           <fieldset [disabled]="edit && section === 'Subscription' && !commercialEditable">
             @if (section !== 'Contacts') {
               <div class="section-title">
@@ -92,6 +135,7 @@
               @for (field of fields; track field.key) {
                 @if (
                   field.section === section &&
+                  field.key !== 'primary_contact_role' &&
                   !(
                     field.key === 'payment_method_description' &&
                     form.controls.fields.controls['payment_method'].value !== 'other'
@@ -116,9 +160,39 @@
                     "
                     [control]="form.controls.fields.controls[field.key]"
                     [choices]="choices(field.key)"
-                    [required]="options.requiredFields.includes(field.path)"
+                    [required]="
+                      options.requiredFields.includes(field.path) ||
+                      field.key === 'user_limit' ||
+                      field.key === 'primary_contact_role'
+                    "
                     [serverErrors]="serverErrors()[field.path] || []"
                   />
+                  @if (field.key === 'industry_id' && creatingIndustry) {
+                    <div class="full-width">
+                      <label for="custom-industry-name">Industry name (required)</label>
+                      <input
+                        id="custom-industry-name"
+                        [formControl]="customIndustryName"
+                        maxlength="120"
+                        placeholder="Type your industry name"
+                        [attr.aria-invalid]="
+                          customIndustryName.touched && customIndustryName.invalid
+                        "
+                        aria-describedby="custom-industry-help"
+                      />
+                      <small id="custom-industry-help"
+                        >Your typed name will be saved and selected when you save this tenant. This
+                        is a shared platform catalog option; do not enter private tenant
+                        data.</small
+                      >
+                      @if (customIndustryName.touched && customIndustryName.invalid) {
+                        <p class="error" role="alert">
+                          Enter a unique industry name, up to 120 characters. Names are checked
+                          without case or surrounding spaces.
+                        </p>
+                      }
+                    </div>
+                  }
                 }
               }
             </div>
@@ -190,10 +264,29 @@
             }
             @if (section === 'Branding') {
               <button type="button" (click)="resetBranding()">Reset to default</button>
+              <button type="button" (click)="cancelBrandingChanges()">
+                Cancel branding changes
+              </button>
+              <p class="muted">
+                Choose colours → Apply to draft preview → Save changes → Open saved workspace
+                preview. Tenant Admin sign-in remains separate.
+              </p>
               <div class="asset-grid">
                 @for (kind of assetKinds; track kind) {
                   <div class="asset">
                     <label [for]="kind">{{ kind === 'logo' ? 'Company logo' : 'Favicon' }}</label>
+                    <div class="upload-preview" aria-hidden="true">
+                      @if (urls()[kind]) {
+                        <img [src]="urls()[kind]" alt="" class="selected-asset" />
+                      } @else {
+                        <img
+                          [src]="
+                            kind === 'logo' ? '/design/building.svg' : '/design/favicon-empty.svg'
+                          "
+                          alt=""
+                        />
+                      }
+                    </div>
                     <button type="button" (click)="removeAsset(kind)">Remove {{ kind }}</button>
                     <input
                       type="file"
@@ -243,13 +336,20 @@
                     </div>
                   </div>
                   <button #addContactButton type="button" (click)="addContact()">
-                    Add contact
+                    <img src="/design/plus.svg" alt="" /> Add contact
                   </button>
                 </div>
                 <p id="primary-help">
                   Select one primary contact for company correspondence. Adding a contact does not
                   grant account access.
                 </p>
+                <app-tenant-field
+                  [field]="primaryRoleField"
+                  [control]="form.controls.fields.controls['primary_contact_role']"
+                  [choices]="choices('primary_contact_role')"
+                  [required]="true"
+                  [serverErrors]="serverErrors()['primary_contact_role'] || []"
+                />
                 @if (contacts.hasError('primaryContact') && (contacts.touched || contacts.dirty)) {
                   <p class="error" id="primary-error">Select exactly one primary contact.</p>
                 }
@@ -365,6 +465,13 @@
           </fieldset>
         </section>
       }
+      @if (!edit && step() === 2) {
+        <app-tenant-review
+          [tenant]="draft()"
+          [options]="reviewOptions()"
+          (editSection)="reviewEdit($event)"
+        />
+      }
       <div class="actions">
         <span>{{
           status() === 'success' ? 'All changes saved' : 'Review your details before saving.'
@@ -377,20 +484,54 @@
               >Cancel</a
             >
           }
+          @if (!edit && step() > 0) {
+            <button type="button" (click)="goStep(step() - 1)">Back</button>
+          }
           <button
             class="primary"
             type="submit"
             [disabled]="!integrationReady || status() === 'saving'"
           >
-            {{ status() === 'saving' ? 'Saving…' : edit ? 'Save changes' : 'Create tenant' }}
+            {{
+              status() === 'saving'
+                ? 'Saving…'
+                : edit
+                  ? 'Save changes'
+                  : step() === 2
+                    ? 'Create tenant'
+                    : step() === 1
+                      ? 'Review tenant'
+                      : 'Continue'
+            }}
           </button>
         </div>
       </div>
     </fieldset>
   </form>
-  <aside class="preview-column">
+  <aside class="preview-column" [hidden]="edit ? activeSection() !== 'Branding' : step() !== 1">
     <div class="preview-topline"><span class="preview-dot"></span> LIVE PREVIEW</div>
     <h2>Workspace preview</h2>
+    <p role="status">
+      {{
+        previewSaved()
+          ? 'Saved settings preview'
+          : form.dirty || files().logo || files().favicon
+            ? 'Unsaved branding preview — not published'
+            : 'Current workspace appearance'
+      }}
+    </p>
+    <div class="actions">
+      <button type="button" [attr.aria-pressed]="!previewSaved()" (click)="previewSaved.set(false)">
+        Draft preview</button
+      ><button
+        type="button"
+        [disabled]="!saved()"
+        [attr.aria-pressed]="previewSaved()"
+        (click)="previewSaved.set(true)"
+      >
+        Saved settings
+      </button>
+    </div>
     <p>
       {{
         status() === 'success'
@@ -399,12 +540,13 @@
       }}
     </p>
     <app-branding-preview
-      [tenant]="status() === 'success' ? saved() : draft()"
-      [logo]="urls().logo || null"
-      [favicon]="urls().favicon || null"
+      [tenant]="previewSaved() ? saved() : draft()"
+      [logo]="previewSaved() ? null : urls().logo || null"
+      [favicon]="previewSaved() ? null : urls().favicon || null"
     />
     <p class="muted">
       A preview of your tenant’s workspace identity. Save your changes to apply this branding.
     </p>
+    @if(saved()?.id){<a [routerLink]="['/tenants',saved()?.id,'branding']">Open full dashboard demonstration</a>}
   </aside>
 </div>

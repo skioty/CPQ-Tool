@@ -1,5 +1,11 @@
 # Database design
 
+> Current tenant setup and seat policy: [implemented contract and migration notes](tenant-setup-and-capacity.md). User limits are now approved and enforced; older statements that seat limits are unavailable are superseded. Primary-contact access still requires explicit invitation acceptance.
+
+
+> Current design/account-security update: see [Figma integration and approved policy changes](figma-integration.md). This supersedes historical statements below that exclude 2FA, Microsoft linking, or guarded development deletion. Microsoft credentials and production deletion approval remain pending.
+
+
 ## Member 3 forward migration
 
 New migration 20261022000200 adds public.platform_administrators, public.platform_provisioning_failures and immutable unique server-generated platform_tenants.schema_key. Member 2's existing migration is unchanged. Administrator IDs are UUIDs; existing assignment string identifiers are not coerced or silently deleted. A database identity FK remains pending reconciliation; service-level eligibility uses real enabled CPQ Admin records. Public structure.sql excludes tenant schemas. Tenant-only db/tenant_migrate creates isolation_markers and tenant_schema_versions inside each schema; neither public management tables nor their constraint functions are cloned. See [Member 3 handoff](member3-auth-tenancy.md).

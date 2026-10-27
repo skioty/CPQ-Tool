@@ -16,6 +16,9 @@ module Platform
       unless account && account.active_for_authentication?
         return render json: { error: { code: "invalid_credentials", message: "Invalid email or password", fields: {} } }, status: 401
       end
+      if Platform::AccountSecurity.enforced?
+        return render json: Platform::AccountSecurity.begin!(self, "administrator", account), status: :accepted
+      end
       reset_session
       sign_in(:administrator, account, force: true)
       render json: { data: identity(account), csrf_token: form_authenticity_token }

@@ -128,6 +128,11 @@ CREATE TABLE public.platform_administrators (
     updated_at timestamp(6) without time zone NOT NULL,
     name character varying,
     activated_at timestamp(6) without time zone,
+    totp_secret_ciphertext text,
+    totp_last_used_at bigint,
+    totp_failed_attempts integer DEFAULT 0 NOT NULL,
+    totp_locked_until timestamp(6) without time zone,
+    recovery_code_digests jsonb DEFAULT '[]'::jsonb NOT NULL,
     CONSTRAINT platform_administrator_role CHECK (((role)::text = ANY (ARRAY[('super_admin'::character varying)::text, ('admin'::character varying)::text])))
 );
 
@@ -146,6 +151,21 @@ CREATE TABLE public.platform_brand_assets (
     storage_key character varying NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: platform_external_identities; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.platform_external_identities (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    issuer character varying NOT NULL,
+    subject character varying NOT NULL,
+    account_scope character varying NOT NULL,
+    account_id uuid NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT external_identity_scope CHECK (((account_scope)::text = ANY ((ARRAY['administrator'::character varying, 'tenant_user'::character varying])::text[])))
 );
 
 
@@ -262,6 +282,20 @@ CREATE TABLE public.platform_tenant_contacts (
 
 
 --
+-- Name: platform_tenant_retention_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.platform_tenant_retention_events (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    tenant_id uuid NOT NULL,
+    actor_id character varying NOT NULL,
+    action character varying NOT NULL,
+    details jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
 -- Name: platform_tenant_subscriptions; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -297,8 +331,21 @@ CREATE TABLE public.platform_tenants (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     schema_key character varying DEFAULT ('cpq_t_'::text || replace((gen_random_uuid())::text, '-'::text, ''::text)) NOT NULL,
+    display_name character varying,
+    country character varying,
+    time_zone character varying,
+    archived_at timestamp(6) without time zone,
+    legal_hold boolean,
+    billing_resolved boolean,
+    contracts_resolved boolean,
+    retention_records_approved boolean,
+    retention_policy_reference character varying,
+    user_limit integer NOT NULL,
+    primary_contact_role character varying DEFAULT 'tenant_admin'::character varying NOT NULL,
     CONSTRAINT platform_provisioning_status CHECK (((provisioning_status)::text = ANY (ARRAY[('pending'::character varying)::text, ('ready'::character varying)::text]))),
-    CONSTRAINT platform_schema_key_format CHECK (((schema_key)::text ~ '^cpq_t_[0-9a-f]{32}$'::text))
+    CONSTRAINT platform_schema_key_format CHECK (((schema_key)::text ~ '^cpq_t_[0-9a-f]{32}$'::text)),
+    CONSTRAINT positive_tenant_user_limit CHECK ((user_limit > 0)),
+    CONSTRAINT tenant_primary_contact_role CHECK (((primary_contact_role)::text = 'tenant_admin'::text))
 );
 
 
@@ -337,7 +384,12 @@ CREATE TABLE public.tenant_access_users (
     encrypted_password character varying NOT NULL,
     enabled boolean DEFAULT true NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    totp_secret_ciphertext text,
+    totp_last_used_at bigint,
+    totp_failed_attempts integer DEFAULT 0 NOT NULL,
+    totp_locked_until timestamp(6) without time zone,
+    recovery_code_digests jsonb DEFAULT '[]'::jsonb NOT NULL
 );
 
 
@@ -379,6 +431,14 @@ ALTER TABLE ONLY public.platform_administrators
 
 ALTER TABLE ONLY public.platform_brand_assets
     ADD CONSTRAINT platform_brand_assets_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: platform_external_identities platform_external_identities_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.platform_external_identities
+    ADD CONSTRAINT platform_external_identities_pkey PRIMARY KEY (id);
 
 
 --
@@ -435,6 +495,14 @@ ALTER TABLE ONLY public.platform_tenant_brandings
 
 ALTER TABLE ONLY public.platform_tenant_contacts
     ADD CONSTRAINT platform_tenant_contacts_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: platform_tenant_retention_events platform_tenant_retention_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.platform_tenant_retention_events
+    ADD CONSTRAINT platform_tenant_retention_events_pkey PRIMARY KEY (id);
 
 
 --
@@ -527,6 +595,13 @@ CREATE INDEX index_platform_tenant_contacts_on_tenant_id ON public.platform_tena
 
 
 --
+-- Name: index_platform_tenant_retention_events_on_tenant_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_platform_tenant_retention_events_on_tenant_id ON public.platform_tenant_retention_events USING btree (tenant_id);
+
+
+--
 -- Name: index_platform_tenant_subscriptions_on_tenant_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -548,10 +623,31 @@ CREATE UNIQUE INDEX one_platform_primary_contact ON public.platform_tenant_conta
 
 
 --
+-- Name: unique_industry_name; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX unique_industry_name ON public.platform_reference_options USING btree (lower(btrim((label)::text))) WHERE ((kind)::text = 'industry'::text);
+
+
+--
+-- Name: unique_platform_account_external_identity; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX unique_platform_account_external_identity ON public.platform_external_identities USING btree (account_scope, account_id);
+
+
+--
 -- Name: unique_platform_administrator_email; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX unique_platform_administrator_email ON public.platform_administrators USING btree (lower((email)::text));
+
+
+--
+-- Name: unique_platform_external_subject; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX unique_platform_external_subject ON public.platform_external_identities USING btree (issuer, subject);
 
 
 --
@@ -698,6 +794,9 @@ ALTER TABLE ONLY public.platform_invitations
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261026000300'),
+('20261026000200'),
+('20261026000100'),
 ('20261025000100'),
 ('20261023000100'),
 ('20261022000200'),

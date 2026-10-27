@@ -7,7 +7,10 @@ module Api
         options = options.where(enabled: true) unless @actor.super_admin? && params[:include_disabled] == "true"
         render json: { data: options.as_json(only: [:id, :kind, :code, :label, :enabled]),
           admins: Platform::Administrator.where(role: "admin", enabled: true).order(:email).map { |a| { id: a.id, label: a.email } },
-          typography: TenantManagement::BusinessRules::FONTS }
+          typography: TenantManagement::BusinessRules::FONTS,
+          countries: TZInfo::Country.all.map { |c| {id:c.code,label:c.name} }.sort_by { |c| c[:label] },
+          time_zones: TZInfo::Timezone.all_identifiers.map { |id| seconds=TZInfo::Timezone.get(id).current_period.observed_utc_offset; minutes=seconds.abs/60; {id:id,label:"#{id} (UTC#{seconds < 0 ? '-' : '+'}#{format('%02d:%02d',minutes/60,minutes%60)})"} },
+          can_manage_industries:@actor.super_admin? }
       end
       def create
         super_admin!
@@ -36,6 +39,9 @@ module Api
       end
       rescue_from ActiveRecord::RecordNotFound do
         render json: { error: { code: "not_found", message: "Option not found" } }, status: 404
+      end
+      rescue_from ActiveRecord::RecordNotUnique do
+        render json:{error:{code:"validation_failed",message:"An industry with this name already exists",fields:{label:["Already exists (case-insensitive)"]}}},status:422
       end
     end
   end

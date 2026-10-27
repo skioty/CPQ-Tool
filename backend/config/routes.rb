@@ -1,4 +1,14 @@
 Rails.application.routes.draw do
+  get "api/v1/microsoft/status", to: "platform/microsoft#status"
+  post "api/v1/microsoft/start", to: "platform/microsoft#start"
+  post "api/v1/microsoft/link", to: "platform/microsoft#link"
+  get "api/v1/microsoft/callback", to: "platform/microsoft#callback"
+  get "api/v1/tenants/:tenant_id/retention", to: "platform/retention#show"
+  patch "api/v1/tenants/:tenant_id/retention", to: "platform/retention#update"
+  delete "api/v1/tenants/:tenant_id/permanent_deletion", to: "platform/retention#destroy"
+  get "api/v1/factor", to: "platform/factors#show"
+  post "api/v1/factor", to: "platform/factors#create"
+  delete "api/v1/factor", to: "platform/factors#destroy"
   devise_for :administrators, class_name: "Platform::Administrator", skip: :all
   devise_for :tenant_users, class_name: "TenantAccess::User", skip: :all
   devise_scope :tenant_user do

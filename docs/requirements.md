@@ -1,5 +1,11 @@
 # Tenant prototype requirements
 
+> Current tenant setup and seat policy: [implemented contract and migration notes](tenant-setup-and-capacity.md). User limits are now approved and enforced; older statements that seat limits are unavailable are superseded. Primary-contact access still requires explicit invitation acceptance.
+
+
+> Current design/account-security update: see [Figma integration and approved policy changes](figma-integration.md). This supersedes historical statements below that exclude 2FA, Microsoft linking, or guarded development deletion. Microsoft credentials and production deletion approval remain pending.
+
+
 ## Confirmed
 
 The one-week semester prototype manages tenants for a reusable multi-tenant CPQ SaaS. Remaining CPQ modules are next-semester work. Angular, Rails REST, PostgreSQL schemas, Apartment, Devise and a modular monolith are agreed. Figma is the design tool; Scrum-style work uses one short sprint.

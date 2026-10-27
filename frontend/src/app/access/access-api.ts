@@ -49,12 +49,12 @@ export class TenantSession {
     this.actor.set(null);
     this.platform.clear();
     return this.http
-      .post<{ data: { id: string; email: string }; csrf_token: string }>('/api/v1/tenant_session', {
+      .post<{ data?: { id: string; email: string }; challenge?: boolean; csrf_token: string }>('/api/v1/tenant_session', {
         tenant_user: { email, password },
       })
       .pipe(
         tap((r) => {
-          this.actor.set(r.data);
+          this.actor.set(r.data || null);
           this.platform.token.set(r.csrf_token);
         }),
       );

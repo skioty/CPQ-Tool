@@ -19,7 +19,7 @@ class ApprovedTenantRulesTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
   def payload
-    {company_name: "Synthetic approved tenant", industry_id: "test-sector", company_name_display: true,
+    { user_limit:10, primary_contact_role: "tenant_admin", company_name: "Synthetic approved tenant", industry_id: "test-sector", company_name_display: true,
       responsible_admin_ids: [@admin.id], contacts: [{name: "Contact", email: "contact@example.invalid", phone: nil, primary: true}],
       subscription: {currency: "BTN", fee: "0", payment_method: nil, discount: {type: "percentage", value: "0", duration: nil}}}
   end
