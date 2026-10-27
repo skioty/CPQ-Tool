@@ -232,43 +232,6 @@ export class TenantForm implements OnInit {
           ),
       });
   }
-  removeIndustry(option: Choice) {
-    if (!this.http || !this.options.canManageIndustries || this.industryBusy()) return;
-    this.industryBusy.set(true);
-    this.industryMessage.set('');
-    this.http
-      .get<{ data: { id: string; kind: string; code: string }[] }>('/api/v1/reference_options')
-      .pipe(
-        switchMap((response) => {
-          const record = response.data.find(
-            (record) => record.kind === 'industry' && record.code === option.id,
-          );
-          if (!record) throw new Error('Industry is no longer available. Reload the form.');
-          return this.http!.patch('/api/v1/reference_options/' + encodeURIComponent(record.id), {
-            option: { enabled: false },
-          });
-        }),
-        takeUntilDestroyed(this.destroy),
-        finalize(() => this.industryBusy.set(false)),
-      )
-      .subscribe({
-        next: () => {
-          this.options.industries = this.options.industries.filter((item) => item.id !== option.id);
-          const control = this.form.controls.fields.controls['industry_id'];
-          if (control.value === option.id) {
-            control.setValue('');
-            control.markAsDirty();
-          }
-          this.industryMessage.set('Industry removed from available choices.');
-        },
-        error: (error) =>
-          this.industryMessage.set(
-            error?.error?.error?.message ||
-              error.message ||
-              'Could not remove industry. Please retry.',
-          ),
-      });
-  }
   reviewOptions() {
     return this.creatingIndustry
       ? {

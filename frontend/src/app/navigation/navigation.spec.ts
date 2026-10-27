@@ -1,3 +1,4 @@
+import { FORM_OPTIONS } from '../tenant/tenant.types';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
@@ -163,6 +164,51 @@ describe('tenant directory', () => {
     http = TestBed.inject(HttpTestingController);
   });
   afterEach(() => http.verify());
+  it('removes industries through the directory dropdown and clears a removed active filter', () => {
+    TestBed.inject(Session).actor.set({ id: 'actor', role: 'super_admin' });
+    TestBed.inject(FORM_OPTIONS).industries = [{ id: 'services', label: 'Services' }];
+    const fixture = TestBed.createComponent(TenantList);
+    fixture.detectChanges();
+    http.expectOne((r) => r.url === '/api/v1/tenants').flush(page);
+    fixture.componentInstance.industryControl.setValue('services');
+    fixture.componentInstance.search();
+    http.expectOne((r) => r.url === '/api/v1/tenants').flush(page);
+    fixture.detectChanges();
+    (
+      fixture.nativeElement.querySelector('app-industry-picker .trigger') as HTMLButtonElement
+    ).click();
+    fixture.detectChanges();
+    const removes = fixture.nativeElement.querySelectorAll('app-industry-picker .remove');
+    expect(removes.length).toBe(1); // All industries is never removable.
+    removes[0].click();
+    http
+      .expectOne('/api/v1/reference_options')
+      .flush({ data: [{ id: 'reference-id', kind: 'industry', code: 'services' }] });
+    const remove = http.expectOne('/api/v1/reference_options/reference-id');
+    expect(remove.request.method).toBe('PATCH');
+    expect(remove.request.body).toEqual({ option: { enabled: false } });
+    remove.flush({});
+    const refreshed = http.expectOne((r) => r.url === '/api/v1/tenants');
+    expect(refreshed.request.params.get('industry')).toBeNull();
+    refreshed.flush(page);
+    expect(fixture.componentInstance.industry).toBe('');
+    expect(fixture.componentInstance.options.industries.length).toBe(0);
+    expect(fixture.componentInstance.industryLabel('services')).toBe('Services');
+  });
+  it('keeps industry removal unavailable to ordinary CPQ Admins', () => {
+    TestBed.inject(Session).actor.set({id:'actor',role:'admin'});
+    TestBed.inject(FORM_OPTIONS).industries = [{ id: 'services', label: 'Services' }];
+    const fixture = TestBed.createComponent(TenantList);
+    fixture.detectChanges();
+    http.expectOne((r) => r.url === '/api/v1/tenants').flush(page);
+    (
+      fixture.nativeElement.querySelector('app-industry-picker .trigger') as HTMLButtonElement
+    ).click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('app-industry-picker .remove')).toBeNull();
+    fixture.componentInstance.removeIndustry({ id: 'services', label: 'Services' });
+    http.expectNone('/api/v1/reference_options');
+  });
   it('lists real API records and paginates with the submitted search', () => {
     const fixture = TestBed.createComponent(TenantList);
     fixture.detectChanges();

@@ -37,7 +37,7 @@ import { Choice } from './tenant.types';
             >
               {{ choice.label }}
             </button>
-            @if (allowRemove() && choice.id !== '__create_industry__') {
+            @if (allowRemove() && choice.id && choice.id !== '__create_industry__') {
               <button
                 type="button"
                 class="remove"

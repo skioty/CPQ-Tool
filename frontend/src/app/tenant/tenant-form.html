@@ -160,11 +160,6 @@
                     "
                     [control]="form.controls.fields.controls[field.key]"
                     [choices]="choices(field.key)"
-                    [allowIndustryRemoval]="
-                      field.key === 'industry_id' && options.canManageIndustries === true
-                    "
-                    [industryBusy]="industryBusy()"
-                    (removeIndustry)="removeIndustry($event)"
                     [required]="
                       options.requiredFields.includes(field.path) ||
                       field.key === 'user_limit' ||

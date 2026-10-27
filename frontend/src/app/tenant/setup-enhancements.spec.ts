@@ -149,45 +149,12 @@ it('rejects duplicate names and invalid limits and preserves inputs on a failed 
   ]);
 });
 
-it('removes an industry from choices using its per-row action without deleting tenant history', async () => {
-  const { f, form, http } = await formFixture();
+it('uses a regular industry select without removal controls in tenant setup', async () => {
+  const { f } = await formFixture();
   f.detectChanges();
-  expect(f.nativeElement.querySelector('.industry-actions').textContent).not.toContain(
-    'Delete industry',
-  );
-  const trigger = f.nativeElement.querySelector(
-    'app-industry-picker .trigger',
-  ) as HTMLButtonElement;
-  trigger.click();
-  f.detectChanges();
-  const minus = f.nativeElement.querySelector('app-industry-picker .remove') as HTMLButtonElement;
-  expect(minus.getAttribute('aria-label')).toContain('Services');
-  minus.click();
-  http
-    .expectOne('/api/v1/reference_options')
-    .flush({ data: [{ id: 'industry-record', kind: 'industry', code: 'services' }] });
-  const request = http.expectOne('/api/v1/reference_options/industry-record');
-  expect(request.request.method).toBe('PATCH');
-  expect(request.request.body).toEqual({ option: { enabled: false } });
-  request.flush({});
-  expect(form.options.industries).toEqual([]);
-  expect(form.form.controls.fields.controls['industry_id'].value).toBe('');
-  http.verify();
-});
-it('keeps industry choices when removal fails and never sends a permanent deletion request', async () => {
-  const { form, http } = await formFixture();
-  form.removeIndustry({ id: 'services', label: 'Services' });
-  http
-    .expectOne('/api/v1/reference_options')
-    .flush({ data: [{ id: 'industry-record', kind: 'industry', code: 'services' }] });
-  http
-    .expectOne('/api/v1/reference_options/industry-record')
-    .flush({ error: { message: 'Request failed' } }, { status: 503, statusText: 'Unavailable' });
-  expect(form.options.industries.length).toBe(1);
-  expect(form.form.controls.fields.controls['industry_id'].value).toBe('services');
-  expect(form.industryMessage()).toBe('Request failed');
-  http.expectNone((request) => request.method === 'DELETE');
-  http.verify();
+  expect(f.nativeElement.querySelector('select#industry_id')).toBeTruthy();
+  expect(f.nativeElement.querySelector('app-industry-picker')).toBeNull();
+  expect(f.nativeElement.querySelector('.industry-actions').textContent).not.toContain('Delete');
 });
 it('creates and selects an industry through its button without submitting the tenant', async () => {
   const { form, http, gateway } = await formFixture();

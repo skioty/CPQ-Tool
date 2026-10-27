@@ -1,17 +1,35 @@
+import { IndustryPicker } from '../tenant/industry-picker';
+import { FormControl } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
+import { Choice } from '../tenant/tenant.types';
 import { FORM_OPTIONS } from '../tenant/tenant.types';
 import { DatePipe } from '@angular/common';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { Subject, catchError, of, startWith, switchMap, tap } from 'rxjs';
+import { Subject, catchError, finalize, of, startWith, switchMap, tap } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DIRECTORY_POLICY, TenantDirectory, TenantPage, apiMessage } from './tenant-directory';
 import { Session } from './session';
 import { CreationNotice } from './creation-notice';
 
 @Component({
-  imports: [FormsModule, RouterLink, DatePipe],
+  imports: [FormsModule, RouterLink, DatePipe, IndustryPicker],
   host: { class: 'directory-page' },
+  styles: `
+    :host .directory-panel {
+      overflow: visible;
+    }
+    .industry-filter {
+      display: grid;
+      align-content: start;
+      gap: 8px;
+      min-width: 0;
+    }
+    .industry-feedback {
+      margin: 16px 24px;
+    }
+  `,
   template: `<div class="heading portfolio-heading">
       <div>
         <p class="eyebrow">TENANT DIRECTORY</p>
@@ -78,14 +96,18 @@ import { CreationNotice } from './creation-notice';
             }
           </select></label
         >
-        <label class="status-label"
-          >Industry<select name="industry" [(ngModel)]="industry">
-            <option value="">All industries</option>
-            @for (choice of options.industries; track choice.id) {
-              <option [value]="choice.id">{{ choice.label }}</option>
-            }
-          </select></label
-        >
+        <div class="status-label industry-filter">
+          <label for="directory-industry">Industry</label>
+          <app-industry-picker
+            id="directory-industry-picker"
+            [id]="'directory-industry'"
+            [control]="industryControl"
+            [choices]="industryChoices()"
+            [allowRemove]="session.actor()?.role === 'super_admin'"
+            [busy]="industryBusy()"
+            (remove)="removeIndustry($event)"
+          />
+        </div>
         <button class="filter-submit">Search</button>
         @if (hasFilters()) {
           <button class="clear-filters" type="button" (click)="clearFilters()">
@@ -93,6 +115,12 @@ import { CreationNotice } from './creation-notice';
           </button>
         }
       </form>
+      @if (industryMessage()) {
+        <p class="industry-feedback" role="status">{{ industryMessage() }}</p>
+      }
+      @if (industryError()) {
+        <p class="industry-feedback error-summary" role="alert">{{ industryError() }}</p>
+      }
       @if (loading()) {
         <div class="loading-state" role="status">
           <span class="loading-dot"></span>
@@ -209,8 +237,62 @@ export class TenantList {
   readonly created = inject(CreationNotice).consume();
   readonly session = inject(Session);
   readonly options = inject(FORM_OPTIONS);
+  private readonly http = inject(HttpClient);
+  private readonly destroy = inject(DestroyRef);
+  private readonly industryLabels = new Map(
+    this.options.industries.map((option) => [option.id, option.label]),
+  );
+  readonly industryBusy = signal(false);
+  readonly industryMessage = signal('');
+  readonly industryError = signal('');
+  industryChoices() {
+    return [{ id: '', label: 'All industries' }, ...this.options.industries];
+  }
+  removeIndustry(option: Choice) {
+    if (this.session.actor()?.role !== 'super_admin' || !option.id || this.industryBusy()) return;
+    this.industryBusy.set(true);
+    this.industryMessage.set('');
+    this.industryError.set('');
+    this.http
+      .get<{ data: { id: string; kind: string; code: string }[] }>('/api/v1/reference_options')
+      .pipe(
+        switchMap((response) => {
+          const record = response.data.find(
+            (item) => item.kind === 'industry' && item.code === option.id,
+          );
+          if (!record) throw new Error('Industry is no longer available. Reload the directory.');
+          return this.http.patch('/api/v1/reference_options/' + encodeURIComponent(record.id), {
+            option: { enabled: false },
+          });
+        }),
+        takeUntilDestroyed(this.destroy),
+        finalize(() => this.industryBusy.set(false)),
+      )
+      .subscribe({
+        next: () => {
+          this.industryLabels.set(option.id, option.label);
+          this.options.industries = this.options.industries.filter((item) => item.id !== option.id);
+          if (this.industry === option.id) {
+            this.industry = '';
+            this.industryControl.setValue('', { emitEvent: false });
+          }
+          if (this.activeIndustry === option.id) {
+            this.activeIndustry = '';
+            this.currentPage = 1;
+            this.reload();
+          }
+          this.industryMessage.set('Industry removed from available choices.');
+        },
+        error: (error) => this.industryError.set(apiMessage(error)),
+      });
+  }
   industryLabel(id: string | null) {
-    return this.options.industries.find((c) => c.id === id)?.label || id || 'Not set';
+    return (
+      this.options.industries.find((c) => c.id === id)?.label ||
+      (id && this.industryLabels.get(id)) ||
+      id ||
+      'Not set'
+    );
   }
   readonly policy = inject(DIRECTORY_POLICY);
   private api = inject(TenantDirectory);
@@ -230,6 +312,7 @@ export class TenantList {
   status = this.api.view().status;
   perPage = this.api.view().perPage;
   industry = this.api.view().industry || '';
+  readonly industryControl = new FormControl(this.industry, { nonNullable: true });
   private activeIndustry = this.industry;
   private activeQuery = this.query;
   private activeStatus = this.status;
@@ -239,6 +322,9 @@ export class TenantList {
   readonly result = signal<TenantPage | null>(null);
   private changes = new Subject<void>();
   constructor() {
+    this.industryControl.valueChanges
+      .pipe(takeUntilDestroyed(this.destroy))
+      .subscribe((value) => (this.industry = value));
     this.changes
       .pipe(
         startWith(undefined),
@@ -280,6 +366,7 @@ export class TenantList {
     this.search();
   }
   search() {
+    this.industryControl.setValue(this.industry, { emitEvent: false });
     this.activeQuery = this.query.trim();
     this.activeStatus = this.status;
     this.activeIndustry = this.industry;
