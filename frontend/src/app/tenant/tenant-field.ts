@@ -1,4 +1,5 @@
-import { Component, input } from '@angular/core';
+import { IndustryPicker } from './industry-picker';
+import { Component, input, output } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { Choice } from './tenant.types';
 import { SearchChoice } from './search-choice';
@@ -14,7 +15,7 @@ export interface Field {
 }
 @Component({
   selector: 'app-tenant-field',
-  imports: [ReactiveFormsModule, SearchChoice, BrandColourPicker],
+  imports: [ReactiveFormsModule, SearchChoice, BrandColourPicker, IndustryPicker],
   template: `
     <label [for]="field().key"
       >{{ field().label }}
@@ -45,6 +46,16 @@ export interface Field {
         [control]="control()"
         [choices]="choices()"
         [required]="required()"
+      />
+    } @else if (field().key === 'industry_id') {
+      <app-industry-picker
+        [id]="field().key"
+        [control]="control()"
+        [choices]="choices()"
+        [allowRemove]="allowIndustryRemoval()"
+        [busy]="industryBusy()"
+        [description]="describedBy()"
+        (remove)="removeIndustry.emit($event)"
       />
     } @else if (field().kind === 'select') {
       <select
@@ -135,6 +146,9 @@ export class TenantField {
   readonly control = input.required<FormControl<string>>();
   readonly choices = input<Choice[]>([]);
   readonly required = input(false);
+  readonly allowIndustryRemoval = input(false);
+  readonly industryBusy = input(false);
+  readonly removeIndustry = output<Choice>();
   readonly serverErrors = input<string[]>([]);
   invalid() {
     return (this.control().touched && this.control().invalid) || this.serverErrors().length > 0;

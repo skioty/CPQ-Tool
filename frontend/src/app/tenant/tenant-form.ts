@@ -198,7 +198,7 @@ export class TenantForm implements OnInit {
   }
   readonly industryBusy = signal(false);
   readonly industryMessage = signal('');
-  readonly industryToDelete = signal<Choice | null>(null);
+
   selectedIndustry() {
     return (
       this.options.industries.find(
@@ -232,14 +232,8 @@ export class TenantForm implements OnInit {
           ),
       });
   }
-  confirmIndustryDeletion() {
-    if (!this.options.canManageIndustries || this.industryBusy()) return;
-    this.industryMessage.set('');
-    this.industryToDelete.set(this.selectedIndustry());
-  }
-  deleteIndustry() {
-    const option = this.industryToDelete();
-    if (!option || !this.http || !this.options.canManageIndustries || this.industryBusy()) return;
+  removeIndustry(option: Choice) {
+    if (!this.http || !this.options.canManageIndustries || this.industryBusy()) return;
     this.industryBusy.set(true);
     this.industryMessage.set('');
     this.http
@@ -250,7 +244,9 @@ export class TenantForm implements OnInit {
             (record) => record.kind === 'industry' && record.code === option.id,
           );
           if (!record) throw new Error('Industry is no longer available. Reload the form.');
-          return this.http!.delete('/api/v1/reference_options/' + encodeURIComponent(record.id));
+          return this.http!.patch('/api/v1/reference_options/' + encodeURIComponent(record.id), {
+            option: { enabled: false },
+          });
         }),
         takeUntilDestroyed(this.destroy),
         finalize(() => this.industryBusy.set(false)),
@@ -263,14 +259,13 @@ export class TenantForm implements OnInit {
             control.setValue('');
             control.markAsDirty();
           }
-          this.industryToDelete.set(null);
-          this.industryMessage.set('Industry deleted permanently. Select another industry.');
+          this.industryMessage.set('Industry removed from available choices.');
         },
         error: (error) =>
           this.industryMessage.set(
             error?.error?.error?.message ||
               error.message ||
-              'Could not delete industry. Please retry.',
+              'Could not remove industry. Please retry.',
           ),
       });
   }

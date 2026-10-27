@@ -149,58 +149,55 @@ it('rejects duplicate names and invalid limits and preserves inputs on a failed 
   ]);
 });
 
-it('keeps create and delete industry actions visible and removes a successful deletion from the selector', async () => {
+it('removes an industry from choices using its per-row action without deleting tenant history', async () => {
   const { f, form, http } = await formFixture();
   f.detectChanges();
-  const actions = f.nativeElement.querySelector('.industry-actions');
-  expect(actions.textContent).toContain('Create industry');
-  expect(actions.textContent).toContain('Delete industry');
-  form.confirmIndustryDeletion();
-  expect(form.industryToDelete()?.label).toBe('Services');
-  form.deleteIndustry();
+  expect(f.nativeElement.querySelector('.industry-actions').textContent).not.toContain(
+    'Delete industry',
+  );
+  const trigger = f.nativeElement.querySelector(
+    'app-industry-picker .trigger',
+  ) as HTMLButtonElement;
+  trigger.click();
+  f.detectChanges();
+  const minus = f.nativeElement.querySelector('app-industry-picker .remove') as HTMLButtonElement;
+  expect(minus.getAttribute('aria-label')).toContain('Services');
+  minus.click();
   http
     .expectOne('/api/v1/reference_options')
     .flush({ data: [{ id: 'industry-record', kind: 'industry', code: 'services' }] });
   const request = http.expectOne('/api/v1/reference_options/industry-record');
-  expect(request.request.method).toBe('DELETE');
-  request.flush(null);
+  expect(request.request.method).toBe('PATCH');
+  expect(request.request.body).toEqual({ option: { enabled: false } });
+  request.flush({});
   expect(form.options.industries).toEqual([]);
   expect(form.form.controls.fields.controls['industry_id'].value).toBe('');
-  f.detectChanges();
-  expect(f.nativeElement.querySelector('.industry-actions').textContent).toContain(
-    'Delete industry',
-  );
   http.verify();
 });
-it('retains industry choices and the draft when the backend blocks deletion of a referenced industry', async () => {
+it('keeps industry choices when removal fails and never sends a permanent deletion request', async () => {
   const { form, http } = await formFixture();
-  form.confirmIndustryDeletion();
-  form.deleteIndustry();
+  form.removeIndustry({ id: 'services', label: 'Services' });
   http
     .expectOne('/api/v1/reference_options')
     .flush({ data: [{ id: 'industry-record', kind: 'industry', code: 'services' }] });
   http
     .expectOne('/api/v1/reference_options/industry-record')
-    .flush(
-      { error: { message: 'Industry is referenced by a tenant. Deactivate it instead.' } },
-      { status: 409, statusText: 'Conflict' },
-    );
-  expect(form.form.controls.fields.controls['industry_id'].value).toBe('services');
+    .flush({ error: { message: 'Request failed' } }, { status: 503, statusText: 'Unavailable' });
   expect(form.options.industries.length).toBe(1);
-  expect(form.industryMessage()).toContain('Deactivate');
-  expect(form.form.controls.fields.controls['company_name'].value).toBe('New company');
+  expect(form.form.controls.fields.controls['industry_id'].value).toBe('services');
+  expect(form.industryMessage()).toBe('Request failed');
+  http.expectNone((request) => request.method === 'DELETE');
   http.verify();
 });
-
 it('creates and selects an industry through its button without submitting the tenant', async () => {
-  const {form,http,gateway}=await formFixture();
+  const { form, http, gateway } = await formFixture();
   form.createIndustry();
   expect(form.creatingIndustry).toBe(true);
   form.customIndustryName.setValue('  Aviation  ');
   form.createIndustry();
-  const request=http.expectOne('/api/v1/reference_options');
+  const request = http.expectOne('/api/v1/reference_options');
   expect(request.request.body.option.label).toBe('Aviation');
-  request.flush({data:{code:'custom_aviation',label:'Aviation'}});
+  request.flush({ data: { code: 'custom_aviation', label: 'Aviation' } });
   expect(form.form.controls.fields.controls['industry_id'].value).toBe('custom_aviation');
   expect(form.industryBusy()).toBe(false);
   expect(gateway.save).not.toHaveBeenCalled();
