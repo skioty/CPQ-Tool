@@ -423,3 +423,15 @@ nav svg {
     transition: none;
   }
 }
+
+// Authentication and invitation pages have no platform sidebar. Keep this more
+// specific than every responsive/compact navigation rule, including at tablet widths.
+.workspace.auth-layout {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto;
+}
+.auth-layout .content-shell .login-main {
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  padding: clamp(16px, 4vw, 40px);
+}

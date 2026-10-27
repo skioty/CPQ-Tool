@@ -1,5 +1,5 @@
 <a class="skip" href="#main">Skip to main content</a>
-<div class="workspace" [class.auth-layout]="isLogin" [class.nav-collapsed]="collapsed()">
+<div class="workspace" [class.auth-layout]="isLogin" [class.nav-collapsed]="!isLogin && collapsed()">
   @if (!isLogin) {
     <aside class="sidebar">
       <div class="sidebar-heading">

@@ -110,12 +110,15 @@ import { accessError } from './access-api';
       display: block;
       width: 100%;
       max-width: 560px;
+      min-width: 0;
     }
     .acceptance {
       background: var(--surface);
       border: 1px solid var(--line);
       border-radius: var(--radius);
       padding: 32px;
+      min-width: 0;
+      overflow-wrap: anywhere;
     }
     form {
       display: grid;
@@ -128,6 +131,12 @@ import { accessError } from './access-api';
     }
     button {
       margin-top: 12px;
+    }
+    input,
+    button {
+      width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
     }
     dl {
       display: grid;
@@ -146,7 +155,14 @@ import { accessError } from './access-api';
     }
     @media (max-width: 450px) {
       .acceptance {
-        padding: 24px;
+        padding: 20px;
+      }
+      dl {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 4px;
+      }
+      dd {
+        margin-bottom: 12px;
       }
     }
   `,

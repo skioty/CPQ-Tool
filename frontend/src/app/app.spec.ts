@@ -5,6 +5,7 @@ import { provideRouter } from '@angular/router';
 import { Session } from './navigation/session';
 import { signal } from '@angular/core';
 import { of, throwError } from 'rxjs';
+import { vi } from 'vitest';
 
 describe('App', () => {
   beforeEach(async () => {
@@ -77,6 +78,18 @@ describe('App', () => {
     ).toBe('Reference options');
     expect(fixture.nativeElement.querySelector('.sidebar-bottom')).toBeNull();
     localStorage.removeItem('cpq-sidebar-collapsed');
+  });
+  it('keeps invitation pages full width even with a saved collapsed navigation preference', () => {
+    const fixture = TestBed.createComponent(App);
+    vi.spyOn(fixture.componentInstance.router, 'url', 'get').mockReturnValue('/invitations/accept');
+    fixture.componentInstance.collapsed.set(true);
+    fixture.detectChanges();
+    const workspace = fixture.nativeElement.querySelector('.workspace') as HTMLElement;
+    expect(workspace.classList.contains('auth-layout')).toBe(true);
+    expect(workspace.classList.contains('nav-collapsed')).toBe(false);
+    expect(fixture.nativeElement.querySelector('.sidebar')).toBeNull();
+    expect(getComputedStyle(workspace).gridTemplateColumns).toBe('minmax(0, 1fr)');
+    vi.restoreAllMocks();
   });
   it('should create the app', () => {
     const fixture = TestBed.createComponent(App);
