@@ -88,6 +88,7 @@ describe('session integration', () => {
   });
   it('login prevents duplicate submits and clears password after API failure', () => {
     const fixture = TestBed.createComponent(Login);
+    http.expectOne('/api/v1/microsoft/status').flush({ data: { configured: false } });
     fixture.detectChanges();
     fixture.componentInstance.form.setValue({
       email: 'user@example.invalid',
@@ -100,6 +101,42 @@ describe('session integration', () => {
     expect(fixture.componentInstance.busy()).toBe(false);
     expect(fixture.componentInstance.form.controls.password.value).toBe('');
     expect(fixture.componentInstance.error()).toContain('Invalid email');
+  });
+  it('keeps sign-in focused, labels validation and toggles password visibility without submitting', () => {
+    const fixture = TestBed.createComponent(Login);
+    http.expectOne('/api/v1/microsoft/status').flush({ data: { configured: false } });
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('h1').textContent).toBe('Sign in to CPQ console');
+    expect(fixture.nativeElement.querySelector('.story-monogram')).toBeNull();
+    expect(fixture.nativeElement.querySelector('a[href="/security/microsoft"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('a[href="/tenant-login"]')).toBeTruthy();
+    const toggle = fixture.nativeElement.querySelector('.password-toggle') as HTMLButtonElement;
+    expect(toggle.type).toBe('button');
+    toggle.click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('#login-password').type).toBe('text');
+    expect(toggle.getAttribute('aria-label')).toBe('Hide password');
+    toggle.click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('#login-password').type).toBe('password');
+    fixture.componentInstance.form.controls.email.setValue('invalid');
+    fixture.componentInstance.form.controls.email.markAsTouched();
+    fixture.detectChanges();
+    expect(
+      fixture.nativeElement.querySelector('#login-email').getAttribute('aria-describedby'),
+    ).toBe('login-email-error');
+    expect(fixture.nativeElement.querySelector('#login-email-error').textContent).toContain(
+      'valid email',
+    );
+    http.expectNone((request) => request.method === 'POST');
+  });
+  it('offers Microsoft sign-in only when the existing provider reports it is configured', () => {
+    const fixture = TestBed.createComponent(Login);
+    http.expectOne('/api/v1/microsoft/status').flush({ data: { configured: true } });
+    fixture.detectChanges();
+    expect(
+      fixture.nativeElement.querySelector('a[href="/security/microsoft"]').textContent,
+    ).toContain('Sign in with Microsoft');
   });
 });
 
