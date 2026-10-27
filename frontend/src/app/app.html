@@ -1,7 +1,17 @@
 <a class="skip" href="#main">Skip to main content</a>
-<div class="workspace" [class.auth-layout]="isLogin" [class.nav-collapsed]="!isLogin && collapsed()">
+<div
+  class="workspace"
+  [class.auth-layout]="isLogin"
+  [class.nav-collapsed]="!isLogin && collapsed()"
+>
   @if (!isLogin) {
-    <aside class="sidebar">
+    <aside
+      class="sidebar"
+      (pointerenter)="sidebarPointer($event, true)"
+      (pointerleave)="sidebarPointer($event, false)"
+      (focusin)="sidebarFocus($event, true)"
+      (focusout)="sidebarFocus($event, false)"
+    >
       <div class="sidebar-heading">
         <a class="brand" routerLink="/tenants" aria-label="CPQ home"><span>CPQ console</span></a>
         <button
@@ -15,17 +25,6 @@
           {{ menuOpen() ? 'Close menu' : 'Menu' }}
         </button>
       </div>
-      <button
-        class="collapse-toggle"
-        type="button"
-        (click)="toggleSidebar()"
-        [attr.aria-expanded]="!collapsed()"
-        aria-controls="workspace-nav"
-        [attr.aria-label]="collapsed() ? 'Expand navigation' : 'Collapse navigation'"
-        [title]="collapsed() ? 'Expand navigation' : 'Collapse navigation'"
-      >
-        {{ collapsed() ? '→' : '←' }}
-      </button>
       <nav
         id="workspace-nav"
         aria-label="Workspace navigation"

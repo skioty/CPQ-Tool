@@ -48,21 +48,20 @@ export class App {
   }
   readonly message = signal('');
   readonly menuOpen = signal(false);
-  readonly collapsed = signal(this.savedSidebar());
-  private savedSidebar() {
-    try {
-      return localStorage.getItem('cpq-sidebar-collapsed') === 'true';
-    } catch {
-      return false;
-    }
+  readonly collapsed = signal(true);
+  private pointerInside = false;
+  private focusInside = false;
+  sidebarPointer(event: PointerEvent, inside: boolean) {
+    if (event.pointerType !== 'mouse' && event.pointerType !== 'pen') return;
+    this.pointerInside = inside;
+    this.collapsed.set(!this.pointerInside && !this.focusInside);
   }
-  toggleSidebar() {
-    this.collapsed.update((value) => !value);
-    try {
-      localStorage.setItem('cpq-sidebar-collapsed', String(this.collapsed()));
-    } catch {
-      /* optional preference */
-    }
+  sidebarFocus(event: FocusEvent, inside: boolean) {
+    const sidebar = event.currentTarget as HTMLElement;
+    if (!inside && event.relatedTarget instanceof Node && sidebar.contains(event.relatedTarget))
+      return;
+    this.focusInside = inside;
+    this.collapsed.set(!this.pointerInside && !this.focusInside);
   }
   private readonly main = viewChild<ElementRef<HTMLElement>>('mainContent');
   private readonly injector = inject(Injector);

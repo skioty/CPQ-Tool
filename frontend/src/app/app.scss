@@ -376,13 +376,6 @@ nav svg {
   }
 }
 
-.collapse-toggle {
-  color: white;
-  background: transparent;
-  border: 1px solid #65758b;
-  min-height: 44px;
-  margin: 16px 0;
-}
 @media (min-width: 761px) {
   .workspace.nav-collapsed {
     grid-template-columns: 80px minmax(0, 1fr);
@@ -402,9 +395,6 @@ nav svg {
   }
 }
 @media (max-width: 760px) {
-  .collapse-toggle {
-    display: none;
-  }
   .sidebar nav.menu-open {
     position: absolute;
     z-index: 30;
@@ -434,4 +424,31 @@ nav svg {
   grid-template-columns: minmax(0, 1fr);
   align-content: start;
   padding: clamp(16px, 4vw, 40px);
+}
+
+@media (min-width: 761px) {
+  .workspace:not(.auth-layout) {
+    grid-template-columns: 80px minmax(0, 1fr);
+  }
+  .workspace:not(.auth-layout) .sidebar {
+    width: 240px;
+    z-index: 40;
+    box-sizing: border-box;
+    box-shadow: 8px 0 20px #0002;
+  }
+  .workspace.nav-collapsed .sidebar {
+    width: 80px;
+    box-shadow: none;
+  }
+  .sidebar .brand,
+  .sidebar .nav-label {
+    white-space: nowrap;
+  }
+}
+@media (prefers-reduced-motion: no-preference) and (min-width: 761px) {
+  .sidebar {
+    transition:
+      width 160ms ease,
+      box-shadow 160ms ease;
+  }
 }

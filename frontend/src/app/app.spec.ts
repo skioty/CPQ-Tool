@@ -58,26 +58,46 @@ describe('App', () => {
     await fixture.whenStable();
     expect(fixture.componentInstance.message()).toBe('');
   });
-  it('persists sidebar collapse and keeps icon links labelled', () => {
-    localStorage.removeItem('cpq-sidebar-collapsed');
+  it('expands on pointer entry and collapses on exit without a manual arrow', () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
-    const toggle = fixture.nativeElement.querySelector('.collapse-toggle');
-    toggle.click();
+    expect(fixture.componentInstance.collapsed()).toBe(true);
+    fixture.componentInstance.sidebarPointer({ pointerType: 'mouse' } as PointerEvent, true);
+    fixture.detectChanges();
+    expect(fixture.componentInstance.collapsed()).toBe(false);
+    fixture.componentInstance.sidebarPointer({ pointerType: 'mouse' } as PointerEvent, false);
     fixture.detectChanges();
     expect(fixture.componentInstance.collapsed()).toBe(true);
-    expect(localStorage.getItem('cpq-sidebar-collapsed')).toBe('true');
-    expect(
-      fixture.nativeElement.querySelector('.workspace').classList.contains('nav-collapsed'),
-    ).toBe(true);
-    expect(toggle.getAttribute('aria-label')).toBe('Expand navigation');
+    fixture.componentInstance.sidebarPointer({ pointerType: 'touch' } as PointerEvent, true);
+    expect(fixture.componentInstance.collapsed()).toBe(true);
+    expect(fixture.nativeElement.querySelector('.collapse-toggle')).toBeNull();
     expect(
       fixture.nativeElement
         .querySelector('a[title="Reference options"]')
         .getAttribute('aria-label'),
     ).toBe('Reference options');
-    expect(fixture.nativeElement.querySelector('.sidebar-bottom')).toBeNull();
-    localStorage.removeItem('cpq-sidebar-collapsed');
+  });
+  it('keeps navigation expanded while keyboard focus remains inside', () => {
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    const sidebar = fixture.nativeElement.querySelector('.sidebar') as HTMLElement;
+    const link = sidebar.querySelector('a')!;
+    fixture.componentInstance.sidebarFocus(
+      { currentTarget: sidebar } as unknown as FocusEvent,
+      true,
+    );
+    fixture.componentInstance.sidebarPointer({ pointerType: 'mouse' } as PointerEvent, false);
+    expect(fixture.componentInstance.collapsed()).toBe(false);
+    fixture.componentInstance.sidebarFocus(
+      { currentTarget: sidebar, relatedTarget: link } as unknown as FocusEvent,
+      false,
+    );
+    expect(fixture.componentInstance.collapsed()).toBe(false);
+    fixture.componentInstance.sidebarFocus(
+      { currentTarget: sidebar, relatedTarget: document.body } as unknown as FocusEvent,
+      false,
+    );
+    expect(fixture.componentInstance.collapsed()).toBe(true);
   });
   it('keeps invitation pages full width even with a saved collapsed navigation preference', () => {
     const fixture = TestBed.createComponent(App);
