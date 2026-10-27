@@ -16,7 +16,10 @@ import { EMPTY, Subject, catchError, distinctUntilChanged, map, startWith, switc
     </div>
     <p class="eyebrow">COMPANY IDENTITY</p>
     <h1>Branding preview</h1>
-    <p class="subheading">A closer look at your company’s saved workspace identity.</p>
+    <p class="subheading">
+      Saved settings → Tenant Admin dashboard demonstration. This preview does not switch roles or
+      grant tenant access.
+    </p>
     @if (loading()) {
       <p role="status">Loading saved branding…</p>
     }
@@ -27,7 +30,28 @@ import { EMPTY, Subject, catchError, distinctUntilChanged, map, startWith, switc
       </div>
     }
     @if (tenant(); as t) {
-      <div class="preview-frame">
+      <div class="actions" aria-label="Dashboard preview size">
+        <button
+          type="button"
+          [attr.aria-pressed]="viewport() === '100%'"
+          (click)="viewport.set('100%')"
+        >
+          Desktop</button
+        ><button
+          type="button"
+          [attr.aria-pressed]="viewport() === '760px'"
+          (click)="viewport.set('760px')"
+        >
+          Tablet</button
+        ><button
+          type="button"
+          [attr.aria-pressed]="viewport() === '375px'"
+          (click)="viewport.set('375px')"
+        >
+          Mobile
+        </button>
+      </div>
+      <div class="preview-frame" [style.max-width]="viewport()">
         <div class="browser-bar">
           <span></span><span></span><span></span>
           <div>{{ t.company_name || 'Company workspace' }}</div>
@@ -37,7 +61,18 @@ import { EMPTY, Subject, catchError, distinctUntilChanged, map, startWith, switc
       @if (t.branding.logo_attachment_id || t.branding.favicon_attachment_id) {
         <p>Your saved company images are shown above.</p>
       }
-      <p><a [routerLink]="['/tenants', t.id, 'edit']">Edit branding settings</a></p>
+      <p>
+        <a [routerLink]="['/tenants', t.id, 'edit']" fragment="section-branding"
+          >Edit branding settings</a
+        >
+      </p>
+      <p>
+        After saving, an invited Tenant Admin can sign in separately to view the same dashboard with
+        saved branding.
+      </p>
+      <a routerLink="/tenant-login"
+        >Tenant Admin sign-in — separate authenticated session required</a
+      >
     }
   `,
   styles: `
@@ -107,6 +142,7 @@ export class SavedBranding {
   private readonly route = inject(ActivatedRoute);
   private readonly destroy = inject(DestroyRef);
   readonly tenant = signal<Tenant | null>(null);
+  readonly viewport = signal('100%');
   readonly loading = signal(false);
   readonly error = signal('');
   private readonly retry = new Subject<void>();

@@ -1,0 +1,94 @@
+import { TestBed } from '@angular/core/testing';
+import { FormControl } from '@angular/forms';
+import { BrandColourPicker } from './brand-colour-picker';
+import { TenantDashboard } from './tenant-dashboard';
+import { brandingInk, colourContrast } from './branding-colour';
+import { emptyTenant } from './tenant.types';
+
+it('keeps colour selection separate until Apply and supports Cancel and default selection', () => {
+  const f = TestBed.createComponent(BrandColourPicker);
+  const control = new FormControl('#17365D', { nonNullable: true });
+  f.componentRef.setInput('control', control);
+  f.componentRef.setInput('id', 'brand-colour');
+  f.componentRef.setInput('label', 'Primary colour');
+  f.detectChanges();
+  const picker = f.componentInstance;
+  picker.start();
+  picker.candidate.set('#abcdef');
+  expect(control.value).toBe('#17365D');
+  picker.cancel();
+  expect(control.value).toBe('#17365D');
+  picker.start();
+  picker.candidate.set('invalid');
+  picker.apply();
+  expect(control.value).toBe('#17365D');
+  expect(picker.editing()).toBe(true);
+  picker.candidate.set('#abcdef');
+  picker.apply();
+  expect(control.value).toBe('#ABCDEF');
+  expect(control.dirty).toBe(true);
+  expect(picker.editing()).toBe(false);
+  picker.start();
+  picker.candidate.set(picker.defaultColour());
+  picker.apply();
+  expect(control.value).toBe('#17365D');
+});
+it('warns about white text on light colours and maintains readable automatic foreground colours', () => {
+  const f = TestBed.createComponent(BrandColourPicker);
+  f.componentRef.setInput('control', new FormControl('#ffffff', { nonNullable: true }));
+  f.componentRef.setInput('id', 'light');
+  f.componentRef.setInput('label', 'Secondary colour');
+  f.detectChanges();
+  f.componentInstance.start();
+  f.detectChanges();
+  expect(f.nativeElement.textContent).toContain('Below 4.5:1');
+  expect(f.nativeElement.textContent).toContain('Preview accessible alternative');
+  for (const colour of ['#ffffff', '#000000', '#ffff00', '#777777', '#17365D', '#2563EB'])
+    expect(colourContrast(colour, brandingInk(colour))).toBeGreaterThanOrEqual(4.5);
+});
+it('uses tenant branding in the shared dashboard without simulated metrics or role switching', () => {
+  const f = TestBed.createComponent(TenantDashboard);
+  const tenant = emptyTenant();
+  tenant.company_name = 'Registered company';
+  tenant.display_name = 'Brand name';
+  tenant.company_name_display = true;
+  tenant.branding.primary_colour = '#FFFFFF';
+  tenant.branding.secondary_colour = '#FFE000';
+  f.componentRef.setInput('identity', tenant);
+  f.componentRef.setInput('demo', true);
+  f.componentRef.setInput('font', "'Open Sans', sans-serif");
+  f.detectChanges();
+  const root = f.nativeElement.querySelector('.dashboard') as HTMLElement;
+  expect(root.style.getPropertyValue('--brand-primary')).toBe('#FFFFFF');
+  expect(root.style.getPropertyValue('--brand-ink')).toBe('#000000');
+  expect(f.nativeElement.textContent).toContain('Brand name');
+  expect(f.nativeElement.textContent).toContain('Demonstration only');
+  expect(f.nativeElement.querySelectorAll('a[href]').length).toBe(0);
+  expect(f.nativeElement.textContent).not.toContain('Revenue');
+  f.componentInstance.tab.set('Company details');
+  f.detectChanges();
+  expect(f.nativeElement.querySelector('input').readOnly).toBe(true);
+  expect(f.nativeElement.querySelector('table').textContent).toContain('#FFE000');
+});
+it('provides image fallbacks, browser-tab favicon preview and mobile navigation state', () => {
+  const f = TestBed.createComponent(TenantDashboard);
+  const t = emptyTenant();
+  t.company_name = 'Visible company';
+  t.company_name_display = true;
+  f.componentRef.setInput('identity', t);
+  f.componentRef.setInput('logo', '/saved-logo');
+  f.componentRef.setInput('favicon', '/saved-favicon');
+  f.detectChanges();
+  expect(f.nativeElement.querySelector('.browser-tab img').getAttribute('src')).toBe(
+    '/saved-favicon',
+  );
+  f.nativeElement.querySelector('.company-logo').dispatchEvent(new Event('error'));
+  f.detectChanges();
+  expect(f.nativeElement.querySelector('.initials').textContent).toContain('VC');
+  f.componentInstance.menuOpen.set(true);
+  f.detectChanges();
+  expect(f.nativeElement.querySelector('[aria-label="Mobile tenant navigation"]')).not.toBeNull();
+  f.componentRef.setInput('logo', '/new-logo');
+  f.detectChanges();
+  expect(f.nativeElement.querySelector('.company-logo').getAttribute('src')).toBe('/new-logo');
+});

@@ -328,3 +328,18 @@ it('returns to the tenant home after successful creation', async () => {
     replaceUrl: true,
   });
 });
+
+it('compares saved branding with drafts and cancels only branding changes', async () => {
+  const { form } = await setup('tenant-1');
+  form.form.controls.fields.controls['company_name'].setValue('Keep this company draft');
+  form.previewSaved.set(true);
+  form.form.controls.fields.controls['primary_colour'].setValue('#ABCDEF');
+  expect(form.previewSaved()).toBe(false);
+  expect(form.saved()?.branding.primary_colour).toBe('#123456');
+  form.removeAsset('logo');
+  form.cancelBrandingChanges();
+  expect(form.draft().branding.primary_colour).toBe('#123456');
+  expect(form.draft().branding.logo_attachment_id).toBe('saved-logo');
+  expect(form.draft().company_name).toBe('Keep this company draft');
+  expect(form.contacts.at(0).controls.email.value).toBe('contact@example.invalid');
+});

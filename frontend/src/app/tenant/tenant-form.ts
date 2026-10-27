@@ -155,6 +155,7 @@ export const FIELDS: Field[] = [
     key: 'primary_colour',
     path: 'branding.primary_colour',
     label: 'Primary colour',
+    kind: 'colour',
     section: 'Branding',
     help: 'Six-digit colour code, for example #17365D.',
   },
@@ -162,6 +163,7 @@ export const FIELDS: Field[] = [
     key: 'secondary_colour',
     path: 'branding.secondary_colour',
     label: 'Secondary colour',
+    kind: 'colour',
     section: 'Branding',
   },
   {
@@ -235,6 +237,7 @@ export class TenantForm implements OnInit {
   readonly errors = signal<string[]>([]);
   readonly saved = signal<Tenant | null>(null);
   readonly previewVersion = signal(0);
+  readonly previewSaved = signal(false);
   readonly files = signal<Partial<Record<AssetKind, File>>>({});
   readonly urls = signal<Partial<Record<AssetKind, string>>>({});
   readonly sections = ['Company', 'Contacts', 'Branding', 'Subscription'];
@@ -382,9 +385,11 @@ export class TenantForm implements OnInit {
                   ]
                 : f.key === 'primary_contact_role'
                   ? [Validators.required, Validators.pattern(/^tenant_admin$/)]
-                  : this.options.requiredFields.includes(f.path)
-                    ? [Validators.required]
-                    : [],
+                  : f.kind === 'colour'
+                    ? [Validators.pattern(/^#[0-9a-f]{6}$/i)]
+                    : this.options.requiredFields.includes(f.path)
+                      ? [Validators.required]
+                      : [],
           }),
         ]),
       ),
@@ -426,13 +431,16 @@ export class TenantForm implements OnInit {
       .pipe(takeUntilDestroyed(this.destroy))
       .subscribe((value) => {
         if (value === '__create_industry__')
-          afterNextRender(() => {
-            const field=document.getElementById('custom-industry-name');
-            field?.focus();
-            field?.scrollIntoView?.({block:'center'});
-          }, {
-            injector: this.injector,
-          });
+          afterNextRender(
+            () => {
+              const field = document.getElementById('custom-industry-name');
+              field?.focus();
+              field?.scrollIntoView?.({ block: 'center' });
+            },
+            {
+              injector: this.injector,
+            },
+          );
         this.customIndustryName.setValidators(
           value === '__create_industry__'
             ? [
@@ -455,6 +463,7 @@ export class TenantForm implements OnInit {
       Object.values(this.urls()).forEach((url) => URL.revokeObjectURL(url)),
     );
     this.form.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => {
+      this.previewSaved.set(false);
       this.previewVersion.update((v) => v + 1);
       this.serverErrors.set({});
       if (this.status() === 'success') this.status.set('ready');
@@ -670,6 +679,7 @@ export class TenantForm implements OnInit {
     this.previewVersion.update((v) => v + 1);
   }
   resetBranding() {
+    this.previewSaved.set(false);
     this.form.controls.fields.patchValue({
       primary_colour: '#17365D',
       secondary_colour: '#2563EB',
@@ -677,7 +687,20 @@ export class TenantForm implements OnInit {
     });
     this.form.markAsDirty();
   }
+  cancelBrandingChanges() {
+    const branding = this.saved()?.branding;
+    this.form.controls.fields.patchValue({
+      primary_colour: branding?.primary_colour || '#17365D',
+      secondary_colour: branding?.secondary_colour || '#2563EB',
+      typography: branding?.typography || 'system',
+    });
+    this.original.branding = { ...(branding || emptyTenant().branding) };
+    this.assetKinds.forEach((kind) => this.cancelFile(kind));
+    this.previewSaved.set(false);
+    this.previewVersion.update((v) => v + 1);
+  }
   selectFile(kind: AssetKind, event: Event) {
+    this.previewSaved.set(false);
     const input = event.target as HTMLInputElement,
       file = input.files?.[0];
     if (!file) return;

@@ -3,7 +3,9 @@
   @if (!isLogin) {
     <aside class="sidebar">
       <div class="sidebar-heading">
-        <a class="brand" routerLink="/tenants" aria-label="CPQ home"><span>CPQ / CONSOLE<small>Organization workspace</small></span></a>
+        <a class="brand" routerLink="/tenants" aria-label="CPQ home"
+          ><span>CPQ / CONSOLE<small>Organization workspace</small></span></a
+        >
         <button
           class="menu-toggle"
           #menuButton
@@ -23,28 +25,59 @@
         (click)="menuOpen.set(false)"
       >
         <p class="nav-caption">ADMINISTRATION</p>
-        <a routerLink="/tenants" aria-label="Tenant list" [class.active]="router.url.startsWith('/tenants')" [attr.aria-current]="router.url.startsWith('/tenants') ? 'page' : null">Tenant management</a>
+        <a
+          routerLink="/tenants"
+          aria-label="Tenant list"
+          [class.active]="router.url.startsWith('/tenants')"
+          [attr.aria-current]="router.url.startsWith('/tenants') ? 'page' : null"
+          >Tenant management</a
+        >
         @if (session.actor()?.role === 'super_admin') {
-          <a routerLink="/administrators" [class.active]="router.url.startsWith('/administrators')" [attr.aria-current]="router.url.startsWith('/administrators') ? 'page' : null">User management</a>
-          <a routerLink="/reference-options" [class.active]="router.url.startsWith('/reference-options')" [attr.aria-current]="router.url.startsWith('/reference-options') ? 'page' : null">Reference options</a>
+          <a
+            routerLink="/administrators"
+            [class.active]="router.url.startsWith('/administrators')"
+            [attr.aria-current]="router.url.startsWith('/administrators') ? 'page' : null"
+            >User management</a
+          >
+          <a
+            routerLink="/reference-options"
+            [class.active]="router.url.startsWith('/reference-options')"
+            [attr.aria-current]="router.url.startsWith('/reference-options') ? 'page' : null"
+            >Reference options</a
+          >
         }
       </nav>
-      <div class="sidebar-bottom"><small>{{session.actor()?.role === 'super_admin' ? 'CPQ SUPER ADMIN' : 'CPQ ADMIN'}}</small><p>{{session.actor()?.role === 'super_admin' ? 'All organizations' : 'Assigned organizations'}}</p><small>Tenant management</small></div>
+      <div class="sidebar-bottom">
+        <small>{{
+          session.actor()?.role === 'super_admin' ? 'CPQ SUPER ADMIN' : 'CPQ ADMIN'
+        }}</small>
+        <p>
+          {{
+            session.actor()?.role === 'super_admin' ? 'All organizations' : 'Assigned organizations'
+          }}
+        </p>
+        <small>Tenant management</small>
+      </div>
     </aside>
   }
   <div class="content-shell">
     <header class="topbar">
       @if (isLogin) {
-        <a [routerLink]="isTenantArea ? '/workspaces' : '/'" class="login-wordmark"
-          >SELISE <strong>CPQ</strong></a
-        >
+        <a [routerLink]="isTenantArea ? '/workspaces' : '/'" class="login-wordmark">
+          @if (isTenantArea) {
+            Company workspace
+          } @else {
+            SELISE <strong>CPQ</strong>
+          }
+        </a>
       } @else {
         <div class="topbar-location"><strong>Platform administration</strong></div>
       }
       <div class="account">
         @if (isTenantArea) {
           @if (tenantSession.actor()) {
-            <a class="button" routerLink="/security/account">Account security</a><span class="tenant-account-label">{{ tenantSession.actor()?.email }}</span
+            <a class="button" routerLink="/security/account">Account security</a
+            ><span class="tenant-account-label">{{ tenantSession.actor()?.email }}</span
             ><button (click)="tenantLogout()">Log out of workspace</button>
           } @else {
             <a class="button" routerLink="/tenant-login">Tenant sign in</a>
@@ -56,7 +89,8 @@
             }}</strong
             ><span>Platform administration</span>
           </div>
-          <a class="account-security-link" routerLink="/security/account">Account security</a><span class="account-avatar" aria-hidden="true">{{
+          <a class="account-security-link" routerLink="/security/account">Account security</a
+          ><span class="account-avatar" aria-hidden="true">{{
             session.actor()?.role === 'super_admin' ? 'SA' : 'CA'
           }}</span
           ><button class="logout" (click)="logout()">Log out</button>

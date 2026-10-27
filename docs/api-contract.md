@@ -1,5 +1,7 @@
 # API contract
 
+Tenant workspace branding refinement: the existing authenticated `/api/v1/my_workspaces/:id` response additionally includes optional saved `display_name` and uses `Cache-Control: no-store`. Tenant membership, Active-status and asset authorization remain unchanged. See [tenant dashboard branding](tenant-branding-dashboard.md).
+
 > Current tenant setup and seat policy: [implemented contract and migration notes](tenant-setup-and-capacity.md). User limits are now approved and enforced; older statements that seat limits are unavailable are superseded. Primary-contact access still requires explicit invitation acceptance.
 
 

@@ -180,8 +180,14 @@ class AccountOnboardingTest < ActionDispatch::IntegrationTest
       assert_equal "public",Apartment::Tenant.current
     end
     @tenant.update_column(:lifecycle_status,"active")
+    @tenant.update!(display_name:"Tenant display identity")
+    @tenant.branding.update!(primary_colour:"#FFFFFF",secondary_colour:"#FFCC00",typography:"open_sans")
     get "/api/v1/my_workspaces/#{@tenant.id}"
     assert_response :success
+    assert_equal "no-store",response.headers["Cache-Control"]
+    assert_equal "Tenant display identity",response.parsed_body.dig("data","display_name")
+    assert_equal "#FFFFFF",response.parsed_body.dig("data","branding","primary_colour")
+    assert_equal "open_sans",response.parsed_body.dig("data","branding","typography")
     assert_equal @tenant.company_name,response.parsed_body.dig("data","company_name")
     assert_nil response.parsed_body.dig("data","subscription")
     get "/api/v1/my_workspaces/#{SecureRandom.uuid}"

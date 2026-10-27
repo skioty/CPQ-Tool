@@ -2,18 +2,19 @@ import { Component, input } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { Choice } from './tenant.types';
 import { SearchChoice } from './search-choice';
+import { BrandColourPicker } from './brand-colour-picker';
 
 export interface Field {
   key: string;
   path: string;
   label: string;
   section: string;
-  kind?: 'select' | 'textarea' | 'search';
+  kind?: 'select' | 'textarea' | 'search' | 'colour';
   help?: string;
 }
 @Component({
   selector: 'app-tenant-field',
-  imports: [ReactiveFormsModule, SearchChoice],
+  imports: [ReactiveFormsModule, SearchChoice, BrandColourPicker],
   template: `
     <label [for]="field().key"
       >{{ field().label }}
@@ -21,7 +22,15 @@ export interface Field {
         <span> (required)</span>
       }
     </label>
-    @if (field().kind === 'textarea') {
+    @if (field().kind === 'colour') {
+      <app-brand-colour-picker
+        [id]="field().key"
+        [label]="field().label"
+        [control]="control()"
+        [description]="describedBy()"
+        [defaultColour]="field().key === 'primary_colour' ? '#17365D' : '#2563EB'"
+      />
+    } @else if (field().kind === 'textarea') {
       <textarea
         [id]="field().key"
         [formControl]="control()"

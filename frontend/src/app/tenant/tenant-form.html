@@ -264,6 +264,13 @@
             }
             @if (section === 'Branding') {
               <button type="button" (click)="resetBranding()">Reset to default</button>
+              <button type="button" (click)="cancelBrandingChanges()">
+                Cancel branding changes
+              </button>
+              <p class="muted">
+                Choose colours → Apply to draft preview → Save changes → Open saved workspace
+                preview. Tenant Admin sign-in remains separate.
+              </p>
               <div class="asset-grid">
                 @for (kind of assetKinds; track kind) {
                   <div class="asset">
@@ -501,9 +508,30 @@
       </div>
     </fieldset>
   </form>
-  <aside class="preview-column" [hidden]="!edit || activeSection() !== 'Branding'">
+  <aside class="preview-column" [hidden]="edit ? activeSection() !== 'Branding' : step() !== 1">
     <div class="preview-topline"><span class="preview-dot"></span> LIVE PREVIEW</div>
     <h2>Workspace preview</h2>
+    <p role="status">
+      {{
+        previewSaved()
+          ? 'Saved settings preview'
+          : form.dirty || files().logo || files().favicon
+            ? 'Unsaved branding preview — not published'
+            : 'Current workspace appearance'
+      }}
+    </p>
+    <div class="actions">
+      <button type="button" [attr.aria-pressed]="!previewSaved()" (click)="previewSaved.set(false)">
+        Draft preview</button
+      ><button
+        type="button"
+        [disabled]="!saved()"
+        [attr.aria-pressed]="previewSaved()"
+        (click)="previewSaved.set(true)"
+      >
+        Saved settings
+      </button>
+    </div>
     <p>
       {{
         status() === 'success'
@@ -512,12 +540,13 @@
       }}
     </p>
     <app-branding-preview
-      [tenant]="status() === 'success' ? saved() : draft()"
-      [logo]="urls().logo || null"
-      [favicon]="urls().favicon || null"
+      [tenant]="previewSaved() ? saved() : draft()"
+      [logo]="previewSaved() ? null : urls().logo || null"
+      [favicon]="previewSaved() ? null : urls().favicon || null"
     />
     <p class="muted">
       A preview of your tenant’s workspace identity. Save your changes to apply this branding.
     </p>
+    @if(saved()?.id){<a [routerLink]="['/tenants',saved()?.id,'branding']">Open full dashboard demonstration</a>}
   </aside>
 </div>

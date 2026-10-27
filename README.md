@@ -10,6 +10,8 @@ Four-student final-year SELISE project: a reusable multi-tenant CPQ SaaS adaptab
 
 ## Current status
 
+The [tenant-branded dashboard flow](docs/tenant-branding-dashboard.md) shares the real Tenant Admin renderer with draft/saved previews, adds interactive colour/HEX controls and contrast guidance, and includes desktop/tablet/mobile preview sizes. Previewing does not switch roles or grant tenant access.
+
 The [tenant experience redesign](docs/ui-experience.md) adds a professional administration shell, directory, organized forms and responsive preview. Its UI removes scaffold/prototype labels; project delivery status and acceptance requirements remain documented here.
 
 This approved-rules branch builds on the combined Member 1–4 increment. It implements tenant create/edit validation, one responsible CPQ Admin, monthly subscription settings, reference-list management, branding upload/removal and the approved lifecycle matrix. Read and write access remains enforced by Rails. Contacts never become user accounts automatically. See [approved-rule handoff](docs/approved-rules.md) for verification, setup and limits; older member handoffs record historical implementation states.
