@@ -1,3 +1,4 @@
+import { InvitationContinuation } from './invitation-continuation';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -70,6 +71,7 @@ import { TenantSession, accessError } from './access-api';
 })
 export class TenantLogin {
   private session = inject(TenantSession);
+  private continuation = inject(InvitationContinuation);
   private router = inject(Router);
   email = '';
   password = '';
@@ -83,7 +85,15 @@ export class TenantLogin {
       next: (r) => {
         this.password = '';
         this.busy.set(false);
-        void this.router.navigateByUrl(r?.challenge ? '/security/verify' : '/workspaces');
+        void this.router.navigateByUrl(
+          r?.challenge
+            ? '/security/verify'
+            : this.continuation.token
+              ? '/invitations/accept'
+              : this.continuation.tenantId
+                ? '/workspaces/' + encodeURIComponent(this.continuation.tenantId)
+                : '/workspaces',
+        );
       },
       error: (e) => {
         this.password = '';

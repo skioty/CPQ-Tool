@@ -20,6 +20,25 @@ import { switchMap } from 'rxjs';
     @if (message()) {
       <p class="notice" role="status">{{ message() }}</p>
     }
+    @if (deleting(); as option) {
+      <section
+        class="card"
+        role="dialog"
+        aria-modal="false"
+        aria-labelledby="delete-industry-title"
+        (keydown.escape)="deleting.set(null)"
+      >
+        <h2 id="delete-industry-title">Delete {{ option.label }}?</h2>
+        <p>
+          Permanent deletion is available only if no tenant uses this industry. Otherwise,
+          deactivate it instead.
+        </p>
+        <button type="button" [disabled]="busy()" (click)="remove(option)">
+          Confirm permanent deletion
+        </button>
+        <button type="button" [disabled]="busy()" (click)="deleting.set(null)">Cancel</button>
+      </section>
+    }
     @if (session.actor()?.role === 'super_admin') {
       <div class="reference-layout">
         <section class="card">
@@ -87,6 +106,16 @@ import { switchMap } from 'rxjs';
                 >
                   {{ o.enabled ? 'Disable' : 'Enable' }}
                 </button>
+                @if (o.kind === 'industry') {
+                  <button
+                    type="button"
+                    [disabled]="busy()"
+                    (click)="deleting.set(o)"
+                    [attr.aria-label]="'Delete ' + o.label"
+                  >
+                    Delete
+                  </button>
+                }
               </li>
             } @empty {
               @if (!loading()) {
@@ -210,6 +239,7 @@ export class ReferenceManager {
   readonly session = inject(Session);
   options = signal<ReferenceOption[]>([]);
   message = signal('');
+  deleting = signal<ReferenceOption | null>(null);
   busy = signal(false);
   loading = signal(true);
   kind = 'industry';
@@ -250,6 +280,25 @@ export class ReferenceManager {
         error: () => {
           this.busy.set(false);
           this.message.set('Could not save. Check permissions and use a unique nonblank code.');
+        },
+      });
+  }
+  remove(option: ReferenceOption) {
+    if (this.busy()) return;
+    this.busy.set(true);
+    this.session
+      .csrf()
+      .pipe(switchMap(() => this.http.delete('/api/v1/reference_options/' + option.id)))
+      .subscribe({
+        next: () => {
+          this.busy.set(false);
+          this.deleting.set(null);
+          this.message.set('Industry deleted.');
+          this.load();
+        },
+        error: (e) => {
+          this.busy.set(false);
+          this.message.set(e?.error?.error?.message || 'Could not delete industry. Please retry.');
         },
       });
   }

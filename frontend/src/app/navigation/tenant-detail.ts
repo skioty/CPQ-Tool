@@ -59,7 +59,7 @@ import { LifecycleDialog } from './lifecycle-dialog';
         </div>
         <div class="actions">
           <a class="button" [routerLink]="['/tenants', t.id, 'setup']">Review setup</a
-          ><a class="button" [routerLink]="['/tenants', t.id, 'access']">Tenant access</a>
+          ><a class="button" [routerLink]="['/tenants', t.id, 'access']">Invite Tenant Admin</a>
           <a class="button" [routerLink]="['/tenants', t.id, 'branding']">Branding preview</a
           ><a class="button primary" [routerLink]="['/tenants', t.id, 'edit']"
             >Edit tenant <span aria-hidden="true">↗</span></a

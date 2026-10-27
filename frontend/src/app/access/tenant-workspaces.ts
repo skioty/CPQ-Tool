@@ -1,4 +1,6 @@
 import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
+import { Title } from '@angular/platform-browser';
 import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute, RouterLink, Router } from '@angular/router';
 import { catchError, EMPTY, switchMap, Subscription } from 'rxjs';
@@ -13,6 +15,9 @@ interface Workspace {
   description: string | null;
   company_name_display: boolean;
   role: string;
+  country?: string;
+  time_zone?: string;
+  currency?: string;
   branding: {
     primary_colour: string;
     secondary_colour: string;
@@ -38,6 +43,10 @@ interface Workspace {
       <button type="button" (click)="load()">Refresh saved branding</button>
       <p class="muted">
         Saved company settings · Changes made by your platform administrator appear after refresh.
+      </p>
+      <p class="muted">
+        Country: {{ countryName(w.country) }} · Time zone: {{ w.time_zone || 'Not specified' }} ·
+        Currency: {{ w.currency || 'Not specified' }}
       </p>
       <app-tenant-dashboard
         [identity]="w"
@@ -145,6 +154,18 @@ interface Workspace {
 })
 export class TenantWorkspaces {
   private session = inject(TenantSession);
+  private document = inject(DOCUMENT);
+  private title = inject(Title);
+  private originalTitle = this.title.getTitle();
+  private icon = this.document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+  private originalIcon = this.icon?.getAttribute('href') || '/favicon.ico';
+  private originalIconType = this.icon?.getAttribute('type');
+  private faviconFailed = () => this.icon?.setAttribute('href', this.originalIcon);
+  private clearBrowserBrand() {
+    this.title.setTitle(this.originalTitle);
+    this.icon?.setAttribute('href', this.originalIcon);
+    if (this.originalIconType) this.icon?.setAttribute('type', this.originalIconType);
+  }
   private http = inject(HttpClient);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -157,7 +178,12 @@ export class TenantWorkspaces {
   readonly loading = signal(true);
   readonly ink = brandingInk;
   constructor() {
-    this.destroy.onDestroy(() => this.request?.unsubscribe());
+    this.icon?.addEventListener('error', this.faviconFailed);
+    this.destroy.onDestroy(() => {
+      this.request?.unsubscribe();
+      this.clearBrowserBrand();
+      this.icon?.removeEventListener('error', this.faviconFailed);
+    });
     this.route.paramMap.pipe(takeUntilDestroyed(inject(DestroyRef))).subscribe((p) => {
       this.id = p.get('id');
       this.load();
@@ -168,6 +194,7 @@ export class TenantWorkspaces {
     this.loading.set(true);
     this.error.set('');
     this.workspace.set(null);
+    this.clearBrowserBrand();
     this.workspaces.set([]);
     const id = this.id;
     this.request = this.session
@@ -192,10 +219,29 @@ export class TenantWorkspaces {
       )
       .subscribe((r) => {
         if (id !== this.id) return;
-        if (id) this.workspace.set(r.data);
-        else this.workspaces.set(r.data);
+        if (id) {
+          this.workspace.set(r.data);
+          this.title.setTitle(
+            (r.data.company_name_display
+              ? r.data.display_name || r.data.company_name
+              : 'Company workspace') + ' · Workspace',
+          );
+          const asset = r.data.branding?.favicon_attachment_id;
+          if (asset) {
+            this.icon?.removeAttribute('type');
+            this.icon?.setAttribute('href', this.asset(id, asset));
+          }
+        } else this.workspaces.set(r.data);
         this.loading.set(false);
       });
+  }
+  countryName(code?: string) {
+    if (!code) return 'Not specified';
+    try {
+      return new Intl.DisplayNames(['en'], { type: 'region' }).of(code) || code;
+    } catch {
+      return code;
+    }
   }
   font(w: Workspace) {
     return w.branding.typography === 'open_sans'

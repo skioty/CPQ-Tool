@@ -187,7 +187,10 @@ CREATE TABLE public.platform_invitations (
     revoked_at timestamp(6) without time zone,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
+    email_delivery_status character varying DEFAULT 'not_requested'::character varying NOT NULL,
+    recipient_name character varying,
     CONSTRAINT invitation_delivery_status CHECK (((delivery_status)::text = ANY ((ARRAY['pending'::character varying, 'sent'::character varying, 'failed'::character varying])::text[]))),
+    CONSTRAINT invitation_email_delivery_status CHECK (((email_delivery_status)::text = ANY ((ARRAY['not_requested'::character varying, 'sending'::character varying, 'sent'::character varying, 'failed'::character varying, 'unconfigured'::character varying])::text[]))),
     CONSTRAINT invitation_target_kind CHECK (((((kind)::text = 'staff'::text) AND (administrator_id IS NOT NULL) AND (tenant_id IS NULL)) OR (((kind)::text = 'tenant'::text) AND (tenant_id IS NOT NULL) AND (administrator_id IS NULL))))
 );
 
@@ -389,7 +392,8 @@ CREATE TABLE public.tenant_access_users (
     totp_last_used_at bigint,
     totp_failed_attempts integer DEFAULT 0 NOT NULL,
     totp_locked_until timestamp(6) without time zone,
-    recovery_code_digests jsonb DEFAULT '[]'::jsonb NOT NULL
+    recovery_code_digests jsonb DEFAULT '[]'::jsonb NOT NULL,
+    name character varying
 );
 
 
@@ -794,6 +798,7 @@ ALTER TABLE ONLY public.platform_invitations
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261027000100'),
 ('20261026000300'),
 ('20261026000200'),
 ('20261026000100'),

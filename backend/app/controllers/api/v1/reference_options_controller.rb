@@ -20,8 +20,26 @@ module Api
       def update
         super_admin!
         record = TenantManagement::ReferenceOption.find(params[:id])
-        record.update!(params.require(:option).permit(:label, :enabled))
+        record.with_lock do
+          record.update!(params.require(:option).permit(:label, :enabled))
+          Platform::AccountEvent.create!(actor_id: @actor.id, subject_id: record.id, action: record.enabled? ? "reference_option_enabled" : "reference_option_deactivated", created_at: Time.current)
+        end
         render json: { data: record.as_json(only: [:id, :kind, :code, :label, :enabled]) }
+      end
+      def destroy
+        super_admin!
+        record = TenantManagement::ReferenceOption.find(params[:id])
+        record.with_lock do
+          unless record.kind == "industry"
+            raise TenantManagement::Error.new("forbidden", "Only industries support deletion", status: 403)
+          end
+          if TenantManagement::Tenant.where(industry_id: record.code).exists?
+            raise TenantManagement::Error.new("industry_in_use", "This industry is referenced by a tenant. Deactivate it to prevent new selections while retaining existing records.", status: 409)
+          end
+          Platform::AccountEvent.create!(actor_id: @actor.id, subject_id: record.id, action: "industry_deleted", created_at: Time.current)
+          record.destroy!
+        end
+        head :no_content
       end
       private
       def authenticate!

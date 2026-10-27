@@ -250,9 +250,38 @@ class PlatformSecurityTest < ActionDispatch::IntegrationTest
     assert_equal "public", Apartment::Tenant.current
   end
 
+  test "industry removal waits for a selecting transaction and then retains the referenced option" do
+    tenant=fixture_tenant("Industry concurrency")
+    option=TenantManagement::ReferenceOption.create!(kind:"industry",code:SecureRandom.hex(8),label:"Concurrent synthetic industry")
+    started=Queue.new
+    result=Queue.new
+    worker=nil
+    TenantManagement::ReferenceOption.transaction do
+      TenantManagement::ReferenceOption.where(id:option.id).lock("FOR SHARE").first!
+      worker=Thread.new do
+        ActiveRecord::Base.connection_pool.with_connection do
+          started << true
+          record=TenantManagement::ReferenceOption.find(option.id)
+          record.with_lock { result << record.destroy }
+        end
+      end
+      started.pop
+      assert_nil worker.join(0.1),"Deletion should wait for catalogue selection lock"
+      tenant.update!(industry_id:option.code)
+    end
+    assert worker.join(15),"Deletion did not finish"
+    assert_equal false,result.pop
+    assert TenantManagement::ReferenceOption.exists?(option.id)
+    assert_equal option.code,tenant.reload.industry_id
+  ensure
+    worker&.kill if worker&.alive?
+    tenant&.update!(industry_id:nil)
+    option&.reload&.destroy!
+  end
+
   test "concurrent invitations cannot reserve the same last seat" do
     tenant=fixture_tenant("Seat concurrency")
-    tenant.update!(user_limit:1)
+    tenant.update!(user_limit:1,lifecycle_status:"active")
     barrier=Queue.new
     results=Queue.new
     threads=2.times.map do |i|

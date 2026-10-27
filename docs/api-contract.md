@@ -141,3 +141,14 @@ Same-origin cookie sessions and CSRF apply to all writes, including invitation p
 | GET `/api/v1/my_workspaces/:id/assets/:asset_id` | Same access plus asset ownership; binary content, private/no-store and nosniff |
 
 Invitation summaries contain `{id,kind,email,expires_at,state,delivery_status}`; never token or digest. Errors use `{error:{code,message,fields}}`: 401 unauthenticated/invalid credentials, 403 forbidden, 404 inaccessible record, 409 conflicting state, 410 unusable invitation, 422 validation. Delivery is `manual_link`; no SMTP request is made. Raw tokens appear only on create/replace and are absent from history. A lost response requires replacing the link, not creating another account. Acceptance is transactional and single-use under concurrent requests. See [account onboarding](account-onboarding.md) for private sharing, transaction boundaries and verification limits.
+
+
+## Access and catalogue extension (implemented)
+
+- `DELETE /api/v1/reference_options/:id`: MFA-verified Super Admin only, industry only; 204 if unused, 409 `industry_in_use` if referenced (deactivate via existing PATCH). Deletes and option state changes are audited. Catalogue locks serialize tenant selection with removal/deactivation.
+- Tenant invitation create accepts `{email, delivery: "email" | "manual"}`. Duplicate pending creation returns 409; explicit resend replaces the link. Create/resend return existing one-time issuer token and invitation `email_delivery_status`: `not_requested`, `sending`, `sent`, `failed`, `unconfigured`. `sent` means SMTP submission accepted, not inbox receipt; invitation state and enabled account/membership are separate. No persistent queue is claimed.
+- Invitation history additionally returns `company_name`, while retaining primary-contact prefill and seat counts. Recipient preview additionally returns `tenant_id`. New recipient acceptance includes `name`, password and password_confirmation; name is trimmed, nonblank, max120 characters. Existing recipient acceptance requires a matching MFA-verified tenant-user session plus existing password and preserves credentials/MFA.
+- Token errors distinguish `invalid_invitation`, `invitation_expired`, `invitation_revoked`, and `invitation_already_used` (410). Token fragments and request parameters are never logged; links are single-use, 72hours as previously agreed. Active/Inactive ready tenants can onboard; workspace access still requires Active.
+- Authorized workspace response adds country, IANA time_zone and currency metadata. It intentionally excludes commercial subscription and platform-only administrative settings.
+
+Full local configuration and recipient walkthrough: [access and persistence](invitation-delivery-and-persistence.md).

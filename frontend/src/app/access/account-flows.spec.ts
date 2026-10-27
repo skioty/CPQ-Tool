@@ -87,12 +87,10 @@ describe('account management and guided setup', () => {
       .flush({ data: [], invitation_delivery: 'manual_link' });
     f.componentInstance.email = 'staff@example.invalid';
     f.componentInstance.create();
-    http
-      .expectOne('/api/v1/administrators')
-      .flush({
-        invitation_token: 'synthetic-secret-token',
-        invitation: { email: 'staff@example.invalid' },
-      });
+    http.expectOne('/api/v1/administrators').flush({
+      invitation_token: 'synthetic-secret-token',
+      invitation: { email: 'staff@example.invalid' },
+    });
     http
       .expectOne('/api/v1/administrators')
       .flush({ data: [], invitation_delivery: 'manual_link' });
@@ -143,6 +141,30 @@ describe('account management and guided setup', () => {
       .expectOne('/api/v1/tenants/two/invitations')
       .flush({ data: [], members: [], invitation_delivery: 'manual_link' });
   });
+  it('distinguishes failed email delivery from invitation creation and offers replacement retry', () => {
+    const f = TestBed.createComponent(TenantInvitations);
+    f.detectChanges();
+    http
+      .expectOne('/api/v1/tenants/one/invitations')
+      .flush({ data: [], members: [], company_name: 'Synthetic company' });
+    f.componentInstance.email = 'recipient@example.invalid';
+    f.componentInstance.confirmedSend();
+    http
+      .expectOne('/api/v1/tenants/one/invitations')
+      .flush({
+        data: { email_delivery_status: 'failed', email: 'recipient@example.invalid' },
+        invitation_token: 'synthetic-private-link',
+      });
+    http.expectOne('/api/v1/tenants/one/invitations').flush({ data: [], members: [] });
+    expect(f.componentInstance.message()).toContain('email delivery failed');
+    expect(f.componentInstance.message()).not.toContain('email accepted');
+    f.componentInstance.resend('failed');
+    const retry = http.expectOne('/api/v1/invitations/failed/resend');
+    expect(retry.request.body.delivery).toBe('email');
+    retry.flush({ data: { email_delivery_status: 'sent' } });
+    http.expectOne('/api/v1/tenants/one/invitations').flush({ data: [], members: [] });
+    expect(f.componentInstance.message()).toContain('Inbox delivery is not confirmed');
+  });
   it('sends no staff password and preserves API failure without claiming success', () => {
     const f = TestBed.createComponent(AdministratorManager);
     f.detectChanges();
@@ -179,9 +201,12 @@ describe('account management and guided setup', () => {
     http.expectNone((r) => r.method === 'POST');
     f.componentInstance.email = 'contact@example.invalid';
     f.componentInstance.send();
-    f.componentInstance.send();
+    expect(f.componentInstance.confirmation()).toBe(true);
+    http.expectNone((r) => r.method === 'POST');
+    f.componentInstance.confirmedSend();
+    f.componentInstance.confirmedSend();
     const r = http.expectOne('/api/v1/tenants/one/invitations');
-    expect(r.request.body).toEqual({ email: 'contact@example.invalid' });
+    expect(r.request.body).toEqual({ email: 'contact@example.invalid', delivery: 'email' });
     r.flush({});
     http
       .expectOne('/api/v1/tenants/one/invitations')
@@ -243,6 +268,9 @@ describe('account management and guided setup', () => {
     vi.spyOn(TestBed.inject(TenantSession), 'refresh').mockReturnValue(
       of({ data: { id: 'user', email: 'user@example.invalid' } }),
     );
+    const icon = document.createElement('link');
+    icon.rel = 'icon'; icon.href = '/favicon.svg'; icon.type = 'image/svg+xml';
+    document.head.append(icon);
     const f = TestBed.createComponent(TenantWorkspaces);
     f.detectChanges();
     const old = http.expectOne('/api/v1/my_workspaces/one');
@@ -260,11 +288,20 @@ describe('account management and guided setup', () => {
           secondary_colour: '#000000',
           typography: 'system',
           logo_attachment_id: null,
+          favicon_attachment_id: 'saved-favicon',
         },
       },
     });
     f.detectChanges();
     expect(f.componentInstance.workspace()?.id).toBe('two');
-    expect(f.nativeElement.textContent).toContain('Second workspace');
+    expect(document.title).toBe('Second workspace · Workspace');
+    expect(icon.getAttribute('href')).toBe('/api/v1/my_workspaces/two/assets/saved-favicon');
+    expect(icon.hasAttribute('type')).toBe(false);
+    params.next(convertToParamMap({}));
+    expect(document.title).not.toContain('Second workspace');
+    expect(icon.getAttribute('href')).toBe('/favicon.svg');
+    expect(icon.getAttribute('type')).toBe('image/svg+xml');
+    http.expectOne('/api/v1/my_workspaces').flush({ data: [] });
+    f.destroy(); icon.remove();
   });
 });

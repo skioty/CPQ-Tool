@@ -375,3 +375,51 @@ nav svg {
     display: none;
   }
 }
+
+.collapse-toggle {
+  color: white;
+  background: transparent;
+  border: 1px solid #65758b;
+  min-height: 44px;
+  margin: 16px 0;
+}
+@media (min-width: 761px) {
+  .workspace.nav-collapsed {
+    grid-template-columns: 80px minmax(0, 1fr);
+  }
+  .nav-collapsed .sidebar {
+    padding-inline: 12px;
+    overflow: visible;
+  }
+  .nav-collapsed .brand,
+  .nav-collapsed .nav-caption,
+  .nav-collapsed .nav-label {
+    display: none;
+  }
+  .nav-collapsed nav a {
+    justify-content: center;
+    padding-inline: 8px;
+  }
+}
+@media (max-width: 760px) {
+  .collapse-toggle {
+    display: none;
+  }
+  .sidebar nav.menu-open {
+    position: absolute;
+    z-index: 30;
+    top: 76px;
+    left: 12px;
+    right: 12px;
+    padding: 20px;
+    background: var(--nav);
+    border-radius: 8px;
+    box-shadow: 0 12px 24px #0003;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .workspace,
+  .sidebar {
+    transition: none;
+  }
+}

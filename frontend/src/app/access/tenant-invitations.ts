@@ -19,7 +19,8 @@ import { Invitation, accessError } from './access-api';
     <div class="heading">
       <div>
         <p class="eyebrow">EXPLICIT ACCOUNT ACCESS</p>
-        <h1>Tenant invitations</h1>
+        <h1>Invite Tenant Admin</h1>
+        <p>{{ companyName() }}</p>
         <p class="subheading">
           Give the right people access to this workspace. Contacts remain separate from user
           accounts.
@@ -43,10 +44,10 @@ import { Invitation, accessError } from './access-api';
         (dismissed)="issuedToken.set('')"
       />
     }
-      <p role="status">
-        {{ occupiedSeats() }} / {{ userLimit() ?? '—' }} seats occupied. Active users, pending
-        invitations and the reserved primary contact count once per email.
-      </p>
+    <p role="status">
+      {{ occupiedSeats() }} / {{ userLimit() ?? '—' }} seats occupied. Active users, pending
+      invitations and the reserved primary contact count once per email.
+    </p>
     <div class="access-layout">
       <section class="card">
         <p class="eyebrow">NEW WORKSPACE MEMBER</p>
@@ -60,6 +61,23 @@ import { Invitation, accessError } from './access-api';
             Use primary contact · Tenant Admin
           </button>
         }
+        <p>Role: Tenant Admin · Tenant: {{ companyName() }}</p>
+        <label for="invitation-delivery">Delivery</label>
+        <select id="invitation-delivery" [(ngModel)]="delivery" [disabled]="busy()">
+          <option value="email">Send invitation email</option>
+          <option value="manual">Create private link for manual sharing</option>
+        </select>
+        @if (confirmation()) {
+          <section role="dialog" aria-modal="false" aria-label="Confirm invitation">
+            <p>Invite {{ email }} as Tenant Admin to {{ companyName() }}?</p>
+            <button type="button" (click)="confirmedSend()" [disabled]="busy()">
+              Confirm invitation
+            </button>
+            <button type="button" (click)="confirmation.set(false)" [disabled]="busy()">
+              Cancel
+            </button>
+          </section>
+        }
         <form #invite="ngForm" (ngSubmit)="send()">
           <label for="invite-email">Email (required)</label
           ><input
@@ -72,7 +90,7 @@ import { Invitation, accessError } from './access-api';
             [disabled]="busy()"
             autocomplete="email"
           /><button class="primary" [disabled]="busy() || loading() || invite.invalid">
-            {{ busy() ? 'Working…' : 'Generate invitation link' }}
+            {{ busy() ? 'Working…' : 'Review invitation' }}
           </button>
         </form>
       </section>
@@ -117,10 +135,15 @@ import { Invitation, accessError } from './access-api';
               <strong>{{ inv.email }}</strong
               ><span class="badge">{{ inv.state }}</span>
             </div>
-            <p>Expires {{ inv.expires_at | date: 'medium' }}</p>
+            <p>
+              Expires {{ inv.expires_at | date: 'medium' }} · Email:
+              {{ inv.email_delivery_status || 'not requested' }}
+            </p>
             @if (inv.state !== 'accepted') {
               <div class="row-actions">
-                <button (click)="resend(inv.id)" [disabled]="busy()">Replace link</button>
+                <button (click)="resend(inv.id)" [disabled]="busy()">
+                  Resend / retry (replaces link)
+                </button>
                 @if (inv.state !== 'revoked') {
                   <button (click)="revoke(inv.id)" [disabled]="busy()">Revoke invitation</button>
                 }
@@ -146,6 +169,9 @@ export class TenantInvitations {
   private readonly destroy = inject(DestroyRef);
   id = '';
   email = '';
+  delivery = 'email';
+  readonly confirmation = signal(false);
+  readonly companyName = signal('');
   readonly primaryEmail = signal('');
   readonly occupiedSeats = signal(0);
   readonly userLimit = signal<number | null>(null);
@@ -180,6 +206,7 @@ export class TenantInvitations {
         data: Invitation[];
         members: { id: string; email: string; enabled: boolean }[];
         invitation_delivery: string;
+        company_name?: string;
         user_limit?: number;
         occupied_seats?: number;
         primary_contact?: { email: string } | null;
@@ -188,6 +215,7 @@ export class TenantInvitations {
         next: (r) => {
           if (id !== this.id) return;
           this.invitations.set(r.data);
+          this.companyName.set(r.company_name || 'Selected tenant');
           this.members.set(r.members);
           this.primaryEmail.set(r.primary_contact?.email || '');
           this.occupiedSeats.set(r.occupied_seats ?? 0);
@@ -216,7 +244,16 @@ export class TenantInvitations {
         next: (result: any) => {
           this.busy.set(false);
           if (id !== this.id) return;
-          this.message.set(message);
+          const outcome = result?.data?.email_delivery_status;
+          this.message.set(
+            outcome === 'sent'
+              ? 'Invitation email accepted by the configured SMTP server. Inbox delivery is not confirmed.'
+              : outcome === 'unconfigured'
+                ? 'Invitation created, but email was not sent: SMTP is not configured. Configure SMTP and retry, or share the private link.'
+                : outcome === 'failed'
+                  ? 'Invitation created, but email delivery failed. Retry with a replacement link.'
+                  : message,
+          );
           if (result?.invitation_token) {
             this.issuedToken.set(result.invitation_token);
             this.issuedEmail.set(result.data?.email || result.invitation?.email || this.email);
@@ -233,16 +270,20 @@ export class TenantInvitations {
       });
   }
   send() {
+    this.confirmation.set(true);
+  }
+  confirmedSend() {
+    this.confirmation.set(false);
     this.run(
       '/api/v1/tenants/' + this.id + '/invitations',
-      { email: this.email },
+      { email: this.email, delivery: this.delivery },
       'Invitation link created. No account access is granted until the recipient accepts.',
     );
   }
   resend(id: string) {
     this.run(
       '/api/v1/invitations/' + id + '/resend',
-      {},
+      { delivery: this.delivery },
       'Replacement invitation link created. Previous links are no longer valid.',
     );
   }

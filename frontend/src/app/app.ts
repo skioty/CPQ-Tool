@@ -24,7 +24,11 @@ export class App {
   readonly tenantSession = inject(TenantSession);
   readonly router = inject(Router);
   get isLogin() {
-    return this.router.url.startsWith('/login') || this.router.url.startsWith('/security') || this.isTenantArea;
+    return (
+      this.router.url.startsWith('/login') ||
+      this.router.url.startsWith('/security') ||
+      this.isTenantArea
+    );
   }
   get isTenantArea() {
     return ['/tenant-login', '/workspaces', '/invitations/accept'].some((path) =>
@@ -44,6 +48,22 @@ export class App {
   }
   readonly message = signal('');
   readonly menuOpen = signal(false);
+  readonly collapsed = signal(this.savedSidebar());
+  private savedSidebar() {
+    try {
+      return localStorage.getItem('cpq-sidebar-collapsed') === 'true';
+    } catch {
+      return false;
+    }
+  }
+  toggleSidebar() {
+    this.collapsed.update((value) => !value);
+    try {
+      localStorage.setItem('cpq-sidebar-collapsed', String(this.collapsed()));
+    } catch {
+      /* optional preference */
+    }
+  }
   private readonly main = viewChild<ElementRef<HTMLElement>>('mainContent');
   private readonly injector = inject(Injector);
   constructor() {

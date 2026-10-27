@@ -57,6 +57,27 @@ describe('App', () => {
     await fixture.whenStable();
     expect(fixture.componentInstance.message()).toBe('');
   });
+  it('persists sidebar collapse and keeps icon links labelled', () => {
+    localStorage.removeItem('cpq-sidebar-collapsed');
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    const toggle = fixture.nativeElement.querySelector('.collapse-toggle');
+    toggle.click();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.collapsed()).toBe(true);
+    expect(localStorage.getItem('cpq-sidebar-collapsed')).toBe('true');
+    expect(
+      fixture.nativeElement.querySelector('.workspace').classList.contains('nav-collapsed'),
+    ).toBe(true);
+    expect(toggle.getAttribute('aria-label')).toBe('Expand navigation');
+    expect(
+      fixture.nativeElement
+        .querySelector('a[title="Reference options"]')
+        .getAttribute('aria-label'),
+    ).toBe('Reference options');
+    expect(fixture.nativeElement.querySelector('.sidebar-bottom')).toBeNull();
+    localStorage.removeItem('cpq-sidebar-collapsed');
+  });
   it('should create the app', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;

@@ -67,7 +67,7 @@ class TenantSetupAndSeatsTest < ActionDispatch::IntegrationTest
     assert_raises(TenantManagement::Error){Platform::Invitations.issue!(actor:@super,kind:"tenant",email:"extra@example.invalid",tenant:tenant)}
     fresh=Platform::Invitations.issue!(actor:@super,kind:"tenant",email:"PRIMARY@example.invalid",tenant:tenant)
     assert record.reload.revoked_at
-    Platform::Invitations.accept!(token:fresh.issued_token,password:@password,confirmation:@password)
+    Platform::Invitations.accept!(token:fresh.issued_token,password:@password,confirmation:@password,name:"Synthetic recipient")
     assert_equal 1,TenantManagement::Seats.emails(tenant).length
     user=TenantAccess::User.find_by!(email:"primary@example.invalid")
     assert_equal "tenant_admin",TenantAccess::Membership.find_by!(tenant_id:tenant.id,user_id:user.id).role
@@ -94,7 +94,7 @@ class TenantSetupAndSeatsTest < ActionDispatch::IntegrationTest
     pending.update!(expires_at:1.second.ago)
     assert_equal 1,TenantManagement::Seats.emails(tenant).length
     fresh=Platform::Invitations.issue!(actor:@super,kind:"tenant",email:"invited@example.invalid",tenant:tenant)
-    Platform::Invitations.accept!(token:fresh.issued_token,password:@password,confirmation:@password)
+    Platform::Invitations.accept!(token:fresh.issued_token,password:@password,confirmation:@password,name:"Synthetic recipient")
     assert_equal 2,TenantManagement::Seats.emails(tenant).length
     user=TenantAccess::User.find_by!(email:"invited@example.invalid")
     first=TenantAccess::Membership.find_by!(tenant_id:tenant.id,user_id:user.id)

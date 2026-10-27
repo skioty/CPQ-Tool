@@ -38,7 +38,96 @@ class AccountOnboardingTest < ActionDispatch::IntegrationTest
     [response.parsed_body.dig("data","id"), token]
   end
   def accept(raw, password = @password)
-    post "/api/v1/invitation_acceptance", params: {token:raw,password:password,password_confirmation:password}, as: :json
+    post "/api/v1/invitation_acceptance", params: {token:raw,password:password,password_confirmation:password,name:"Synthetic recipient"}, as: :json
+  end
+  test "industry deletion is Super Admin only audited and blocked when referenced" do
+    used = TenantManagement::ReferenceOption.find_by!(kind:"industry",code:@tenant.industry_id)
+    login(@admin)
+    delete "/api/v1/reference_options/#{used.id}"
+    assert_response :forbidden
+    login(@super)
+    delete "/api/v1/reference_options/#{used.id}"
+    assert_response :conflict
+    patch "/api/v1/reference_options/#{used.id}",params:{option:{enabled:false}},as: :json
+    assert_response :success
+    assert_not used.reload.enabled?
+    assert_equal used.code,@tenant.reload.industry_id
+    unused=TenantManagement::ReferenceOption.create!(kind:"industry",code:SecureRandom.hex(8),label:"Unused synthetic industry")
+    delete "/api/v1/reference_options/#{unused.id}"
+    assert_response :no_content
+    assert_not TenantManagement::ReferenceOption.exists?(unused.id)
+    assert Platform::AccountEvent.exists?(subject_id:unused.id,action:"industry_deleted")
+  end
+  test "invitation email uses controlled test delivery with an explicit outcome and replacement" do
+    post "/api/v1/tenants/#{@tenant.id}/invitations",params:{email:"delivery@example.invalid",delivery:"email"},as: :json
+    assert_response :created
+    assert_equal "sent",response.parsed_body.dig("data","email_delivery_status")
+    original = token
+    id=response.parsed_body.dig("data","id")
+    assert_equal 1,ActionMailer::Base.deliveries.length
+    assert_includes ActionMailer::Base.deliveries.last.body.decoded,original
+    assert_includes ActionMailer::Base.deliveries.last.body.decoded,@tenant.company_name
+    post "/api/v1/invitations/#{id}/resend",params:{delivery:"email"},as: :json
+    assert_response :success
+    assert_equal 2,ActionMailer::Base.deliveries.length
+    post "/api/v1/invitation_preview",params:{token:original},as: :json
+    assert_response :gone
+    assert_equal "invitation_revoked",response.parsed_body.dig("error","code")
+  end
+  test "missing SMTP reports unconfigured and never claims email delivery" do
+    Platform::InvitationDelivery.stub(:configured?,false) do
+      post "/api/v1/tenants/#{@tenant.id}/invitations",params:{email:"no-mail@example.invalid",delivery:"email"},as: :json
+    end
+    assert_response :created
+    assert_equal "unconfigured",response.parsed_body.dig("data","email_delivery_status")
+    assert_equal 0,ActionMailer::Base.deliveries.length
+    assert token.present?
+  end
+  test "email failure is reported and can be retried without persisting a token" do
+    InvitationMailer.stub(:tenant_invitation, ->(*) {raise IOError,"synthetic delivery failure"}) do
+      post "/api/v1/tenants/#{@tenant.id}/invitations",params:{email:"failed@example.invalid",delivery:"email"},as: :json
+    end
+    assert_response :created
+    assert_equal "failed",response.parsed_body.dig("data","email_delivery_status")
+    id=response.parsed_body.dig("data","id")
+    assert_not Platform::Invitation.find(id).attributes.values.include?(token)
+    post "/api/v1/invitations/#{id}/resend",params:{delivery:"email"},as: :json
+    assert_response :success
+    assert_equal "sent",response.parsed_body.dig("data","email_delivery_status")
+  end
+  test "existing recipient must verify matching account MFA and keeps credentials" do
+    user=TenantAccess::User.create!(email:"existing-mfa@example.invalid",password:@password)
+    secret=ROTP::Base32.random_base32
+    user.update!(totp_secret_ciphertext:Platform::AccountSecurity.encryptor.encrypt_and_sign(secret))
+    record=Platform::Invitations.issue!(actor:@super,kind:"tenant",email:user.email,tenant:@tenant)
+    previous=Rails.application.config.x.account_security.enforce
+    Rails.application.config.x.account_security.enforce=true
+    accept(record.issued_token)
+    assert_response :unauthorized
+    assert_not TenantAccess::Membership.exists?(user_id:user.id,tenant_id:@tenant.id)
+    post "/api/v1/tenant_session",params:{tenant_user:{email:user.email,password:@password}},as: :json
+    assert_response :accepted
+    post "/api/v1/factor",params:{code:ROTP::TOTP.new(secret).now},as: :json
+    assert_response :success
+    digest=user.reload.encrypted_password
+    accept(record.issued_token)
+    assert_response :success
+    assert TenantAccess::Membership.exists?(user_id:user.id,tenant_id:@tenant.id,enabled:true)
+    assert_equal digest,user.reload.encrypted_password
+    assert_equal secret,Platform::AccountSecurity.secret(user)
+    accept(record.issued_token)
+    assert_response :gone
+  ensure
+    Rails.application.config.x.account_security.enforce=previous
+  end
+  test "new recipient requires a name and pending invitations cannot grant workspace access" do
+    record=Platform::Invitations.issue!(actor:@super,kind:"tenant",email:"new-name@example.invalid",tenant:@tenant)
+    post "/api/v1/invitation_acceptance",params:{token:record.issued_token,password:@password,password_confirmation:@password},as: :json
+    assert_response :unprocessable_entity
+    assert_not TenantAccess::User.exists?(email:record.email)
+    accept(record.issued_token)
+    assert_response :success
+    assert_equal "Synthetic recipient",TenantAccess::User.find_by!(email:record.email).name
   end
   test "setup review uses the existing required rules and authorized tenant scope" do
     get "/api/v1/tenants/#{@tenant.id}/setup_review"
@@ -153,7 +242,7 @@ class AccountOnboardingTest < ActionDispatch::IntegrationTest
     assert_nil record.issued_token
     get "/api/v1/tenants/#{@tenant.id}/invitations"
     assert_response :success
-    assert_equal "manual_link", response.parsed_body["invitation_delivery"]
+    assert_equal "email_or_manual", response.parsed_body["invitation_delivery"]
     assert_not response.body.include?(raw)
     assert_nil response.parsed_body["invitation_token"]
     login(@other)

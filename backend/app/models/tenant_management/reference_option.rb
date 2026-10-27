@@ -6,7 +6,12 @@ module TenantManagement
     validates :code, uniqueness: { scope: :kind }
     before_validation { self.label = label.strip if label.is_a?(String) }
     validates :label, length:{maximum:120}, uniqueness:{scope: :kind,case_sensitive:false}, if: -> {kind == "industry"}
-    before_destroy { throw :abort }
+    before_destroy do
+      if kind != "industry" || Tenant.where(industry_id: code).exists?
+        errors.add(:base, "Only unused industries can be deleted. Deactivate an industry in use instead.")
+        throw :abort
+      end
+    end
     def self.seed_defaults!
       transaction do
         { "industry" => [["raw_materials","Raw Materials"],["services","Services"],["manufacturing","Manufacturing"]], "currency" => %w[BTN INR USD EUR].map { |v| [v, v] },

@@ -52,7 +52,9 @@ module TenantManagement
         "payment_method" => [sub["payment_method"], old_sub["payment_method"], "subscription.payment_method"] }.each do |kind, (value, old, path)|
         next if kind == "payment_method" && value.blank? && sub["fee"].to_f == 0
         next if tenant.persisted? && value.present? && value == old
-        errors[path] = ["Select an enabled option"] unless ReferenceOption.exists?(kind: kind, code: value, enabled: true)
+        # Hold the catalogue row until the writer commits: deletion/deactivation must
+        # serialize with a tenant selecting the option, not race an existence check.
+        errors[path] = ["Select an enabled option"] unless ReferenceOption.where(kind: kind, code: value, enabled: true).lock("FOR SHARE").first
       end
       branding = data["branding"] || {}
       %w[primary_colour secondary_colour].each do |key|

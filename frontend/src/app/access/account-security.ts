@@ -1,3 +1,4 @@
+import { InvitationContinuation } from './invitation-continuation';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -16,7 +17,7 @@ interface FactorState {
   imports: [FormsModule],
   template: `<div class="security-layout">
     <aside class="security-story">
-      <span class="security-brand">CPQ / CONSOLE</span><small>Organization workspace</small>
+      <span class="security-brand">CPQ console</span>
       <div>
         <h2>Your workspace.<br />By invitation only.</h2>
         <p>Your password and authenticator protect access to your authorized workspaces.</p>
@@ -55,6 +56,18 @@ interface FactorState {
           <p>
             Add an account in your authenticator app using this setup key. Enter the six-digit code
             to confirm enrollment.
+          </p>
+          @if (qrCode()) {
+            <img
+              [src]="qrCode()"
+              alt="Authenticator enrollment QR code. Keep this private."
+              width="224"
+              height="224"
+            />
+          }
+          <p>
+            In Microsoft Authenticator choose Other account, then scan the QR code. For manual entry
+            use a time-based code and the key below.
           </p>
           <label for="setup-key">Authenticator setup key</label>
           <div class="setup-key">
@@ -112,10 +125,12 @@ export class FactorVerification {
   readonly busy = signal(false);
   readonly error = signal('');
   readonly showKey = signal(false);
+  readonly qrCode = signal('');
   readonly recoveryCodes = signal<string[]>([]);
   code = '';
   savedCodes = false;
   private scope = 'administrator';
+  private continuation = inject(InvitationContinuation);
   constructor() {
     this.http
       .get<{ data: FactorState }>('/api/v1/factor')
@@ -123,6 +138,22 @@ export class FactorVerification {
       .subscribe({
         next: (r) => {
           this.state.set(r.data);
+          if (r.data.enrollment && r.data.setup_key) {
+            const uri =
+              'otpauth://totp/' +
+              encodeURIComponent('CPQ console:' + r.data.email) +
+              '?secret=' +
+              encodeURIComponent(r.data.setup_key) +
+              '&issuer=CPQ%20console&algorithm=SHA1&digits=6&period=30';
+            void import('qrcode')
+              .then((qr) => qr.toDataURL(uri, { width: 224, margin: 4 }))
+              .then((image) => {
+                if (!this.destroy.destroyed && this.state()?.enrollment) this.qrCode.set(image);
+              })
+              .catch(() => {
+                /* The manual key remains available. */
+              });
+          }
           this.scope = r.data.account_scope;
           this.loading.set(false);
         },
@@ -148,6 +179,7 @@ export class FactorVerification {
           this.code = '';
           this.busy.set(false);
           this.state.set(null);
+          this.qrCode.set('');
           this.session.token.set(r.csrf_token);
           this.scope = r.data.account_scope;
           if (r.recovery_codes?.length) this.recoveryCodes.set(r.recovery_codes);
@@ -176,7 +208,14 @@ export class FactorVerification {
         .refresh()
         .pipe(takeUntilDestroyed(this.destroy))
         .subscribe({
-          next: () => void this.router.navigateByUrl('/workspaces'),
+          next: () =>
+            void this.router.navigateByUrl(
+              this.continuation.token
+                ? '/invitations/accept'
+                : this.continuation.tenantId
+                  ? '/workspaces/' + encodeURIComponent(this.continuation.tenantId)
+                  : '/workspaces',
+            ),
           error: (e) => this.error.set(accessError(e)),
         });
   }
@@ -187,6 +226,7 @@ export class FactorVerification {
       .subscribe({
         next: () => {
           this.state.set(null);
+          this.qrCode.set('');
           this.recoveryCodes.set([]);
           this.session.clear();
           globalThis.location.assign('/login');

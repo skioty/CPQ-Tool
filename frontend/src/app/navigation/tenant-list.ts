@@ -14,7 +14,7 @@ import { CreationNotice } from './creation-notice';
   host: { class: 'directory-page' },
   template: `<div class="heading portfolio-heading">
       <div>
-        <p class="eyebrow">ORGANIZATION WORKSPACES</p>
+        <p class="eyebrow">TENANT DIRECTORY</p>
         <h1>Tenant management</h1>
         <p class="subheading">
           Manage company workspaces, contacts and subscriptions in one place.
