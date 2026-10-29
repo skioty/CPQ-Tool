@@ -6,7 +6,7 @@ Apartment.configure do |config|
   config.persistent_schemas = []
   config.excluded_models = %w[Platform::ExternalIdentity Platform::TenantRetentionEvent Platform::Invitation Platform::AccountEvent TenantAccess::User TenantAccess::Membership Platform::Administrator Platform::ProvisioningFailure
     TenantManagement::Tenant TenantManagement::Contact TenantManagement::Branding
-    TenantManagement::Subscription TenantManagement::Assignment TenantManagement::AuditEvent
+    TenantManagement::ExchangeRateBook TenantManagement::SubscriptionPricing TenantManagement::Subscription TenantManagement::Assignment TenantManagement::AuditEvent
     TenantManagement::ReferenceOption TenantManagement::BrandAsset]
   config.database_schema_file = nil # Never clone public management tables into tenants.
   config.seed_after_create = false

@@ -123,7 +123,7 @@ import { Tenant, FormOptions } from '../../tenant/tenant.types';
         <div class="price">
           {{ fee() | number: '1.2-2' }} <small>{{ tenant().subscription.currency }}</small>
         </div>
-        <p class="muted">per month</p>
+        <p class="muted">per month · {{ tenant().subscription.pricing_mode === 'automatic' ? 'Automatic' : 'Custom' }} · {{ tenant().user_limit }} users</p>
         <dl>
           <dt>Payment method</dt>
           <dd>{{ label('paymentMethods', tenant().subscription.payment_method) }}</dd>

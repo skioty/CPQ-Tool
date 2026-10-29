@@ -4,7 +4,6 @@
 </div>
 <div class="page-heading">
   <div>
-    <p class="eyebrow">COMPANY ADMINISTRATION</p>
     <h1>{{ edit ? 'Tenant settings' : step() === 2 ? 'Review tenant' : 'Create tenant' }}</h1>
     <p>
       {{
@@ -116,7 +115,6 @@
           <fieldset [disabled]="edit && section === 'Subscription' && !commercialEditable">
             @if (section !== 'Contacts') {
               <div class="section-title">
-                <span class="section-number">0{{ sections.indexOf(section) + 1 }}</span>
                 <div>
                   <h2>
                     {{
@@ -151,22 +149,86 @@
                     !form.controls.fields.controls['discount_duration'].value
                   )
                 ) {
-                  <app-tenant-field
-                    [field]="field"
-                    [class.full-width]="
-                      field.kind === 'textarea' ||
-                      field.key === 'typography' ||
-                      field.key === 'payment_method_description'
-                    "
-                    [control]="form.controls.fields.controls[field.key]"
-                    [choices]="choices(field.key)"
-                    [required]="
-                      options.requiredFields.includes(field.path) ||
-                      field.key === 'user_limit' ||
-                      field.key === 'primary_contact_role'
-                    "
-                    [serverErrors]="serverErrors()[field.path] || []"
-                  />
+                  @if (field.key === 'fee' && automaticPricing()) {
+                    <div class="calculated-fee">
+                      <label for="calculated-fee">Subscription fee (calculated)</label>
+                      <output id="calculated-fee" class="calculated-amount" aria-live="polite">
+                        {{
+                          pricingLoading()
+                            ? 'Calculating…'
+                            : pricingUnavailable()
+                              ? 'Not configured'
+                              : form.controls.fields.controls['fee'].value +
+                                ' ' +
+                                form.controls.fields.controls['currency'].value +
+                                ' / month'
+                        }}
+                      </output>
+                      <small>{{
+                        pricingMessage() || 'Calculated from the saved user-limit tier.'
+                      }}</small>
+                      @if (commercialEditable) {
+                        <div class="pricing-actions">
+                          <a
+                            class="button"
+                            routerLink="/reference-options"
+                            target="_blank"
+                            rel="noopener"
+                            >Configure pricing tiers (new tab)</a
+                          >
+                          <button
+                            type="button"
+                            (click)="reloadPricing()"
+                            [disabled]="pricingLoading()"
+                          >
+                            {{ pricingLoading() ? 'Refreshing…' : 'Refresh pricing' }}
+                          </button>
+                        </div>
+                        <small
+                          >After saving a tier, refresh pricing here. Your form entries will be
+                          kept.</small
+                        >
+                      }
+                      @if (pricingLoadError()) {
+                        <p class="error" role="alert">{{ pricingLoadError() }}</p>
+                      }
+                      @if (
+                        serverErrors()['subscription.pricing_mode']?.length ||
+                        serverErrors()['subscription.fee']?.length
+                      ) {
+                        <p class="error" role="alert">
+                          {{
+                            (
+                              serverErrors()['subscription.pricing_mode'] ||
+                              serverErrors()['subscription.fee']
+                            )?.join(' ')
+                          }}
+                        </p>
+                      }
+                    </div>
+                  } @else {
+                    <app-tenant-field
+                      [field]="field"
+                      [readonly]="
+                        field.key === 'fee' &&
+                        (form.controls.fields.controls['pricing_mode'].value === 'automatic' ||
+                          pricingLoading())
+                      "
+                      [class.full-width]="
+                        field.kind === 'textarea' ||
+                        field.key === 'typography' ||
+                        field.key === 'payment_method_description'
+                      "
+                      [control]="form.controls.fields.controls[field.key]"
+                      [choices]="choices(field.key)"
+                      [required]="
+                        options.requiredFields.includes(field.path) ||
+                        field.key === 'user_limit' ||
+                        field.key === 'primary_contact_role'
+                      "
+                      [serverErrors]="serverErrors()[field.path] || []"
+                    />
+                  }
                   @if (field.key === 'industry_id' && options.canManageIndustries) {
                     <div class="industry-actions full-width" aria-label="Manage industries">
                       <button type="button" (click)="createIndustry()" [disabled]="industryBusy()">
@@ -270,7 +332,37 @@
               }
             }
             @if (section === 'Subscription') {
-              <p class="muted">These settings describe the monthly subscription arrangement.</p>
+              <div class="pricing-summary" aria-live="polite">
+                <strong>{{ automaticPricing() ? 'Automatic pricing' : 'Custom pricing' }}</strong>
+                <p>
+                  {{ form.controls.fields.controls['user_limit'].value || '—' }} users ·
+                  {{ form.controls.fields.controls['fee'].value || '—' }}
+                  {{ form.controls.fields.controls['currency'].value }} / month
+                </p>
+                @if (pricingLoading()) {
+                  <p>Calculating fee…</p>
+                } @else if (
+                  !pricingUnavailable() &&
+                  +form.controls.fields.controls['discount_value'].value > 0
+                ) {
+                  <p>
+                    With {{ form.controls.fields.controls['discount_value'].value }}% discount:
+                    <strong
+                      >{{ discountedFee() }} {{ form.controls.fields.controls['currency'].value }} /
+                      month</strong
+                    >
+                    for {{ form.controls.fields.controls['discount_duration'].value }} monthly
+                    cycles.
+                  </p>
+                }
+                @if (conversionNote()) {
+                  <small
+                    ><a href="https://www.exchangerate-api.com" target="_blank" rel="noopener"
+                      >Rates By Exchange Rate API</a
+                    ></small
+                  >
+                }
+              </div>
             }
             @if (section === 'Branding') {
               <button type="button" (click)="resetBranding()">Reset to default</button>
@@ -339,7 +431,6 @@
               <div class="contacts-content">
                 <div class="section-heading">
                   <div class="section-title">
-                    <span class="section-number">02</span>
                     <div>
                       <h2 id="contacts-heading">Company contacts</h2>
                       <p>The people to reach for this company.</p>
@@ -500,7 +591,7 @@
           <button
             class="primary"
             type="submit"
-            [disabled]="!integrationReady || status() === 'saving'"
+            [disabled]="!integrationReady || status() === 'saving' || pricingLoading()"
           >
             {{
               status() === 'saving'
@@ -517,6 +608,14 @@
         </div>
       </div>
     </fieldset>
+    @if (conversionNote() && step() === 2) {
+      <p class="muted">
+        {{ conversionNote() }}
+        <a href="https://www.exchangerate-api.com" target="_blank" rel="noopener"
+          >Rates By Exchange Rate API</a
+        >
+      </p>
+    }
   </form>
   <aside class="preview-column" [hidden]="edit ? activeSection() !== 'Branding' : step() !== 1">
     <div class="preview-topline"><span class="preview-dot"></span> LIVE PREVIEW</div>

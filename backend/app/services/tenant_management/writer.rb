@@ -90,6 +90,7 @@ module TenantManagement
       end
       if attributes.key?("subscription")
         changes = attributes["subscription"].except("discount")
+        changes["pricing_conversion"] = nil if changes["pricing_mode"] == "custom"
         if attributes["subscription"].key?("discount")
           attributes["subscription"]["discount"].each { |key, value| changes["discount_#{key}"] = value }
         end

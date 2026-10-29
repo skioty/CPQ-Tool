@@ -170,3 +170,171 @@ it('creates and selects an industry through its button without submitting the te
   expect(gateway.save).not.toHaveBeenCalled();
   http.verify();
 });
+
+it('selects a sole country zone and restricts multi-zone choices without overwriting saved edits', async () => {
+  const { form } = await formFixture();
+  form.options.countryTimeZones = {
+    BT: ['Asia/Thimphu'],
+    US: ['America/New_York', 'America/Chicago'],
+  };
+  form.options.timeZones = [
+    ...form.options.timeZones!,
+    { id: 'America/New_York', label: 'New York' },
+    { id: 'America/Chicago', label: 'Chicago' },
+  ];
+  const c = form.form.controls.fields.controls;
+  c['country'].setValue('BT');
+  expect(c['time_zone'].value).toBe('Asia/Thimphu');
+  c['country'].setValue('US');
+  expect(c['time_zone'].value).toBe('');
+  expect(form.choices('time_zone').map((z) => z.id)).toEqual([
+    'America/New_York',
+    'America/Chicago',
+  ]);
+  const saved = { ...form.draft(), country: 'US', time_zone: 'America/Chicago' };
+  form.patch(saved);
+  expect(c['time_zone'].value).toBe('America/Chicago');
+});
+it('previews automatic tiers, preserves a negotiated custom fee and reports missing tiers', async () => {
+  const { form } = await formFixture();
+  form.options.pricingTiers = [
+    { currency: 'BTN', min_users: 1, max_users: 25, fee: '100.00' },
+    { currency: 'BTN', min_users: 26, max_users: 50, fee: '180.00' },
+  ];
+  const c = form.form.controls.fields.controls;
+  c['fee'].setValue('321.45');
+  c['user_limit'].setValue('30');
+  expect(c['fee'].value).toBe('321.45');
+  c['pricing_mode'].setValue('automatic');
+  expect(c['fee'].value).toBe('180.00');
+  c['user_limit'].setValue('25');
+  expect(c['fee'].value).toBe('100.00');
+  c['discount_value'].setValue('10');
+  expect(form.discountedFee()).toBe('90.00');
+  c['user_limit'].setValue('51');
+  expect(c['fee'].value).toBe('');
+  expect(form.pricingMessage()).toContain('No automatic price is configured');
+  c['pricing_mode'].setValue('custom');
+  expect(c['fee'].value).toBe('321.45');
+});
+
+it('shows missing automatic configuration rather than a required editable fee, and refreshes the 50-user boundary without losing inputs', async () => {
+  const { f, form, http, gateway } = await formFixture();
+  const c = form.form.controls.fields.controls;
+  c['user_limit'].setValue('50');
+  c['pricing_mode'].setValue('automatic');
+  form.step.set(1);
+  form.form.markAllAsTouched();
+  f.detectChanges();
+  expect(f.nativeElement.querySelector('input#fee')).toBeNull();
+  expect(f.nativeElement.querySelector('#calculated-fee').textContent).toContain('Not configured');
+  expect(f.nativeElement.textContent).not.toContain('Subscription fee is required.');
+  expect(f.nativeElement.textContent).not.toContain('After discount: Not available');
+  expect(form.pricingMessage()).toContain('50 users in BTN');
+  form.submit();
+  expect(gateway.save).not.toHaveBeenCalled();
+  expect(form.errors().join(' ')).toContain('Configure a tier');
+  form.reloadPricing();
+  http
+    .expectOne('/api/v1/reference_options')
+    .flush({ pricing_tiers: [{ currency: 'BTN', min_users: 26, max_users: 50, fee: '4500.00' }] });
+  f.detectChanges();
+  expect(c['fee'].value).toBe('4500.00');
+  expect(f.nativeElement.querySelector('#calculated-fee').textContent).toContain(
+    '4500.00 BTN / month',
+  );
+  c['discount_value'].setValue('15');
+  c['discount_duration'].setValue('3');
+  expect(form.discountedFee()).toBe('3825.00');
+  expect(form.errors()).toEqual([]);
+  expect(c['company_name'].value).toBe('New company');
+  expect(c['user_limit'].value).toBe('50');
+  c['pricing_mode'].setValue('custom');
+  f.detectChanges();
+  expect(f.nativeElement.querySelector('input#fee')).toBeTruthy();
+  expect(c['fee'].value).toBe('0');
+  http.verify();
+});
+it('retains the tenant draft and explains a failed pricing refresh', async () => {
+  const { form, http } = await formFixture();
+  form.reloadPricing();
+  http.expectOne('/api/v1/reference_options').flush({}, { status: 503, statusText: 'Unavailable' });
+  expect(form.pricingLoading()).toBe(false);
+  expect(form.pricingLoadError()).toContain('Your tenant details are retained');
+  expect(form.form.controls.fields.controls['company_name'].value).toBe('New company');
+  http.verify();
+});
+
+it('defaults currency from country, converts the automatic BTN tier, and ignores older quotes', async () => {
+  const { form, http } = await formFixture();
+  form.options.countryCurrencies = { BT: ['BTN', 'INR'], US: ['USD'], DE: ['EUR'] };
+  form.options.currencies = [
+    { id: 'BTN', label: 'BTN' },
+    { id: 'USD', label: 'USD' },
+    { id: 'EUR', label: 'EUR' },
+  ];
+  form.options.pricingTiers = [{ currency: 'BTN', min_users: 26, max_users: 50, fee: '4500.00' }];
+  const c = form.form.controls.fields.controls;
+  c['user_limit'].setValue('50');
+  c['pricing_mode'].setValue('automatic');
+  c['country'].setValue('US');
+  expect(c['currency'].value).toBe('USD');
+  const older = http.expectOne(
+    (r) => r.url === '/api/v1/subscription_quote' && r.params.get('currency') === 'USD',
+  );
+  c['country'].setValue('DE');
+  expect(older.cancelled).toBe(true);
+  http
+    .expectOne((r) => r.url === '/api/v1/subscription_quote' && r.params.get('currency') === 'EUR')
+    .flush({
+      data: {
+        fee: '45.00',
+        currency: 'EUR',
+        converted: true,
+        source_fee: '4500.00',
+        source_currency: 'BTN',
+        rate: '0.01',
+        rate_time: '2026-10-28T00:00:00Z',
+      },
+    });
+  expect(c['fee'].value).toBe('45.00');
+  expect(form.pricingLoading()).toBe(false);
+  expect(form.conversionNote()).toContain('2026-10-28');
+  c['discount_value'].setValue('15');
+  expect(form.discountedFee()).toBe('38.25');
+  c['time_zone'].setValue('Europe/Berlin');
+  expect(c['currency'].value).toBe('EUR');
+  c['country'].setValue('BT');
+  expect(c['currency'].value).toBe('BTN');
+  expect(c['fee'].value).toBe('4500.00');
+  http.verify();
+});
+it('converts a negotiated Custom fee on currency change but preserves it on capacity changes and loading', async () => {
+  const { form, http } = await formFixture();
+  const c = form.form.controls.fields.controls;
+  c['fee'].setValue('4500');
+  c['currency'].setValue('USD');
+  const request = http.expectOne(
+    (r) => r.url === '/api/v1/subscription_quote' && r.params.get('source_currency') === 'BTN',
+  );
+  expect(request.request.params.get('amount')).toBe('4500');
+  request.flush({
+    data: {
+      fee: '50.00',
+      currency: 'USD',
+      converted: true,
+      source_fee: '4500',
+      source_currency: 'BTN',
+      rate: '0.011111111',
+      rate_time: '2026-10-28T00:00:00Z',
+    },
+  });
+  c['user_limit'].setValue('100');
+  expect(c['fee'].value).toBe('50.00');
+  expect(form.conversionNote()).toContain('2026-10-28');
+  form.patch(form.draft());
+  expect(c['currency'].value).toBe('USD');
+  expect(c['fee'].value).toBe('50.00');
+  http.expectNone('/api/v1/subscription_quote');
+  http.verify();
+});

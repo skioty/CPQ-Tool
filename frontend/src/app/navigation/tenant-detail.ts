@@ -1,7 +1,7 @@
 import { TenantRetention } from '../features/tenants/tenant-retention';
 import { TenantActivity } from './tenant-activity';
 import { brandingInk } from '../tenant/branding-colour';
-import { DecimalPipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -27,7 +27,7 @@ import { FORM_OPTIONS, ASSET_URL } from '../tenant/tenant.types';
 import { LifecycleDialog } from './lifecycle-dialog';
 
 @Component({
-  imports: [RouterLink, LifecycleDialog, DecimalPipe, TenantActivity, TenantRetention],
+  imports: [RouterLink, LifecycleDialog, DatePipe, DecimalPipe, TenantActivity, TenantRetention],
   host: { class: 'directory-page' },
   template: `<div class="breadcrumb">
       <a routerLink="/tenants">Tenants</a><span>/</span><span>Company overview</span>
@@ -225,7 +225,23 @@ import { LifecycleDialog } from './lifecycle-dialog';
             <span>{{ t.subscription.currency || '' }} / month</span>
           </div>
           <p class="muted">Subscription configuration</p>
+          @if (t.subscription.pricing_conversion?.converted) {
+            <p class="muted">
+              Converted from {{ t.subscription.pricing_conversion?.source_fee }}
+              {{ t.subscription.pricing_conversion?.source_currency }} using the saved rate dated
+              {{ t.subscription.pricing_conversion?.rate_time | date: 'mediumDate' }}.
+              <a href="https://www.exchangerate-api.com" target="_blank" rel="noopener"
+                >Rates By Exchange Rate API</a
+              >
+            </p>
+          }
           <dl>
+            <dt>Pricing mode</dt>
+            <dd>{{ t.subscription.pricing_mode === 'automatic' ? 'Automatic' : 'Custom' }}</dd>
+            <dt>User limit</dt>
+            <dd>{{ t.user_limit }}</dd>
+            <dt>Billing interval</dt>
+            <dd>Monthly</dd>
             <dt>Billing currency</dt>
             <dd>{{ t.subscription.currency || 'Not specified' }}</dd>
             <dt>Payment method</dt>

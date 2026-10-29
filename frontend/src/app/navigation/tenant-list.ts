@@ -39,9 +39,7 @@ import { CreationNotice } from './creation-notice';
         </p>
       </div>
       @if (session.actor()?.role === 'super_admin') {
-        <a class="button primary" routerLink="/tenants/new"
-          ><span aria-hidden="true">＋</span> Create tenant</a
-        >
+        <a class="button primary" routerLink="/tenants/new">Create tenant</a>
       }
     </div>
     @if (created) {
@@ -204,7 +202,7 @@ import { CreationNotice } from './creation-notice';
                   class="row-open"
                   [routerLink]="['/tenants', t.id]"
                   [attr.aria-label]="'View ' + t.company_name"
-                  ><span aria-hidden="true">↗</span></a
+                  >View</a
                 >
               </li>
             }

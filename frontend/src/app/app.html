@@ -84,7 +84,9 @@
           }
         </a>
       } @else {
-        <div class="topbar-location"><strong>Platform administration</strong></div>
+        <div class="topbar-location">
+          <strong>{{ pageLabel }}</strong>
+        </div>
       }
       <div class="account">
         @if (isTenantArea) {

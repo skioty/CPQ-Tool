@@ -1,108 +1,72 @@
 :host {
   display: block;
-  min-height: 100vh;
+  min-height: 100dvh;
 }
 .workspace {
   display: grid;
-  grid-template-columns: 224px minmax(0, 1fr);
-  min-height: 100vh;
+  grid-template-columns: 72px minmax(0, 1fr);
+  min-height: 100dvh;
 }
 .sidebar {
-  background: var(--nav);
-  color: #d2dae5;
-  display: flex;
-  flex-direction: column;
-  padding: 24px 16px;
   position: sticky;
   top: 0;
-  height: 100vh;
-  overflow-y: auto;
+  height: 100dvh;
+  width: 232px;
+  z-index: 40;
+  background: var(--nav);
+  color: var(--nav-muted);
+  padding: 24px 12px;
+  overflow: hidden;
+  border-right: 1px solid #ffffff14;
+}
+.sidebar-heading {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
 }
 .brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
   color: white;
-  text-decoration: none;
-  padding: 0 8px;
   font-size: 18px;
+  font-weight: 650;
+  text-decoration: none;
+  white-space: nowrap;
 }
-.brand b {
-  font-weight: 400;
-  color: #c5cfdd;
+.sidebar nav {
+  margin-top: 32px;
 }
-.brand small {
-  display: block;
-  font-size: 10px;
-  letter-spacing: 1.2px;
-  color: #a6b5c8;
-  margin-top: 2px;
+.nav-caption {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--nav-muted);
+  padding: 0 12px;
+  margin: 0 0 12px;
 }
-.brand-symbol {
-  display: grid;
-  place-content: center;
-  grid-template-columns: auto auto auto;
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  background: var(--accent);
-  font-size: 17px;
-  letter-spacing: -2px;
-  font-weight: 800;
-}
-.brand-symbol span {
-  position: relative;
-  top: 3px;
-}
-.workspace-label {
-  border: 1px solid #ffffff24;
-  border-radius: 6px;
-  margin: 28px 0;
-  padding: 12px;
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  font-size: 12px;
-}
-.workspace-label small {
-  display: block;
-  color: #adbbce;
-  font-size: 12px;
-  margin-top: 2px;
-}
-.workspace-avatar {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: 30px;
-  height: 30px;
-  background: #ffffff12;
-  border-radius: 5px;
-}
-nav a {
+.sidebar nav a {
   display: flex;
   align-items: center;
   gap: 12px;
-  color: #c1cddd;
-  font-size: 14px;
-  text-decoration: none;
   min-height: 44px;
   padding: 10px 12px;
-  border-radius: 6px;
   margin: 4px 0;
+  border-radius: 5px;
+  color: var(--nav-muted);
+  text-decoration: none;
+  font-size: 13px;
+  white-space: nowrap;
 }
-nav a:hover {
-  background: #ffffff0d;
+.sidebar nav a:hover {
+  background: #ffffff0c;
   color: white;
 }
-nav a.active {
-  background: #ffffff14;
+.sidebar nav a.active {
+  background: var(--nav-selected);
   color: white;
-  box-shadow: inset 3px 0 #f48c78;
 }
-nav svg {
-  width: 18px;
-  height: 18px;
+.sidebar nav svg {
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
   fill: none;
   stroke: currentColor;
@@ -110,281 +74,144 @@ nav svg {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-.nav-caption {
-  font-size: 11px;
-  letter-spacing: 1px;
-  color: #adbbce;
-  padding: 0 12px;
-  margin: 0 0 8px;
+.sidebar :is(a, button):focus-visible {
+  outline-color: #cce4d4;
 }
-.settings-caption {
-  margin-top: 28px;
-}
-.nav-chevron {
-  margin-left: auto;
-  font-size: 20px;
-}
-.sidebar-bottom {
-  margin-top: auto;
-  padding: 32px 12px 0;
-}
-.sidebar-bottom p {
-  font-size: 12px;
-  line-height: 1.8;
-  color: #c1cddd;
-  margin: 12px 0;
-}
-.sidebar-bottom strong {
-  font-weight: 400;
-}
-.sidebar-bottom small {
-  font-size: 11px;
-  color: #a6b5c8;
-}
-.sidebar-mark {
-  color: #f48c78;
-  font-weight: 700;
+.menu-toggle {
+  display: none;
 }
 .content-shell {
-  min-width: 0;
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 .topbar {
-  min-height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  min-height: 64px;
+  padding: 10px 32px;
   background: var(--surface);
   border-bottom: 1px solid var(--line);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 32px;
-  gap: 16px;
 }
 .topbar-location {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  font-size: 13px;
   color: var(--muted);
+  font-size: 13px;
 }
 .topbar-location strong {
-  font-weight: 600;
-  color: var(--ink);
+  font-weight: 550;
 }
 .account {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-left: auto;
+  gap: 16px;
+  min-width: 0;
 }
 .account-description {
-  text-align: right;
   font-size: 12px;
+  text-align: right;
 }
 .account-description strong {
   font-weight: 600;
 }
 .account-description span {
   display: block;
-  color: var(--muted);
   font-size: 11px;
+  color: var(--muted);
+}
+.account-security-link {
+  font-size: 12px;
+  color: var(--muted);
+  text-decoration: none;
 }
 .account-avatar {
-  width: 34px;
-  height: 34px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
   border-radius: 50%;
   background: var(--accent-soft);
-  color: #993527;
-  display: grid;
-  place-content: center;
+  color: var(--accent);
   font-size: 11px;
   font-weight: 700;
-  flex-shrink: 0;
 }
 .logout {
   font-size: 12px;
   padding: 8px 12px;
-  min-height: 44px;
 }
 .content-shell main {
   width: 100%;
-  max-width: calc(var(--content-width) + 64px);
-  margin-inline: auto;
-  padding: 28px 32px 40px;
-  min-width: 0;
   flex: 1;
+  min-width: 0;
+  padding: 32px 40px 48px;
+}
+main:focus {
+  outline: none;
 }
 .workspace-footer {
-  padding: 16px 32px;
-  border-top: 1px solid var(--line);
-  color: var(--muted);
   display: flex;
   justify-content: space-between;
-  font-size: 12px;
+  padding: 16px 40px;
+  font-size: 11px;
+  color: var(--muted);
+  border-top: 1px solid var(--line);
 }
 .skip {
   position: fixed;
-  top: -100px;
   left: 16px;
-  background: white;
-  padding: 12px;
+  top: -80px;
   z-index: 100;
+  padding: 12px 20px;
+  background: var(--surface);
+  border: 2px solid var(--accent);
+  border-radius: 4px;
 }
 .skip:focus {
   top: 12px;
 }
-.auth-layout {
-  grid-template-columns: 1fr;
-}
 .login-wordmark {
-  font-size: 20px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--nav);
   text-decoration: none;
-  color: var(--ink);
-}
-.login-wordmark strong {
-  color: var(--accent);
 }
 .login-context {
+  font-size: 12px;
   color: var(--muted);
-  font-size: 13px;
 }
-.content-shell .login-main {
+.workspace.auth-layout {
+  grid-template-columns: minmax(0, 1fr);
+}
+.auth-layout .content-shell .login-main {
   display: grid;
-  place-items: center;
-  padding: 32px;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  align-content: start;
+  padding: clamp(24px, 6vh, 64px) 24px;
 }
-.menu-toggle {
-  display: none;
-}
-@media (max-width: 1100px) {
-  .workspace {
-    grid-template-columns: 204px minmax(0, 1fr);
-  }
-  .topbar {
-    padding-inline: 24px;
-  }
-  .content-shell main {
-    padding: 24px;
-  }
-  .topbar-location > span,
-  .topbar-location .divider {
-    display: none;
-  }
-}
-@media (max-width: 760px) {
-  .workspace {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto minmax(0, 1fr);
-  }
-  .sidebar {
-    position: static;
-    height: auto;
-    padding: 16px 20px;
-    gap: 12px;
-  }
-  .brand {
-    padding: 0;
-    font-size: 17px;
-  }
-  .brand small,
-  .workspace-label,
-  .sidebar-bottom,
-  .nav-caption,
-  .nav-chevron {
-    display: none;
-  }
-  .sidebar-heading {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .menu-toggle {
-    display: inline-flex;
-    background: transparent;
-    border-color: #65758b;
-    color: white;
-  }
-  .sidebar nav {
-    display: none;
-  }
-  .sidebar nav.menu-open {
-    display: grid;
-    gap: 4px;
-  }
-  .sidebar nav a {
-    margin: 0;
-  }
-  .topbar {
-    min-height: 60px;
-    padding: 8px 20px;
-  }
-  .topbar-location {
-    font-size: 12px;
-  }
-  .account-description {
-    display: none;
-  }
-  .account {
-    gap: 8px;
-  }
-  .content-shell main {
-    padding: 24px 20px;
-  }
-  .workspace-footer {
-    padding: 16px 20px;
-    font-size: 11px;
-    gap: 16px;
-  }
-  .content-shell .login-main {
-    padding: 20px;
-  }
-  .login-context {
-    display: none;
-  }
-}
-@media (max-width: 400px) {
-  .account-avatar {
-    display: none;
-  }
-  .topbar-location {
-    font-size: 11px;
-  }
-  .logout {
-    padding: 8px;
-  }
-  .workspace-footer span:last-child {
-    display: none;
-  }
-}
-
-.sidebar :is(a, button):focus-visible {
-  outline-color: #ffc9ad;
-}
-.content-shell main:focus {
-  outline: none;
-}
-
 .tenant-account-label {
-  font-size: 13px;
+  font-size: 12px;
   overflow-wrap: anywhere;
-  min-width: 0;
-  max-width: 260px;
+  max-width: 240px;
 }
-@media (max-width: 600px) {
-  .tenant-account-label {
-    display: none;
-  }
-}
-
 @media (min-width: 761px) {
-  .workspace.nav-collapsed {
-    grid-template-columns: 80px minmax(0, 1fr);
+  .workspace.nav-collapsed .sidebar {
+    width: 72px;
   }
-  .nav-collapsed .sidebar {
-    padding-inline: 12px;
-    overflow: visible;
+  .nav-collapsed .brand {
+    font-size: 0;
   }
-  .nav-collapsed .brand,
+  .nav-collapsed .brand::after {
+    content: 'CPQ';
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+  }
+  .nav-collapsed .sidebar-heading {
+    padding: 0 7px;
+  }
   .nav-collapsed .nav-caption,
   .nav-collapsed .nav-label {
     display: none;
@@ -393,62 +220,90 @@ nav svg {
     justify-content: center;
     padding-inline: 8px;
   }
-}
-@media (max-width: 760px) {
-  .sidebar nav.menu-open {
-    position: absolute;
-    z-index: 30;
-    top: 76px;
-    left: 12px;
-    right: 12px;
-    padding: 20px;
-    background: var(--nav);
-    border-radius: 8px;
-    box-shadow: 0 12px 24px #0003;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .workspace,
-  .sidebar {
-    transition: none;
-  }
-}
-
-// Authentication and invitation pages have no platform sidebar. Keep this more
-// specific than every responsive/compact navigation rule, including at tablet widths.
-.workspace.auth-layout {
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto;
-}
-.auth-layout .content-shell .login-main {
-  grid-template-columns: minmax(0, 1fr);
-  align-content: start;
-  padding: clamp(16px, 4vw, 40px);
-}
-
-@media (min-width: 761px) {
-  .workspace:not(.auth-layout) {
-    grid-template-columns: 80px minmax(0, 1fr);
-  }
-  .workspace:not(.auth-layout) .sidebar {
-    width: 240px;
-    z-index: 40;
-    box-sizing: border-box;
-    box-shadow: 8px 0 20px #0002;
-  }
-  .workspace.nav-collapsed .sidebar {
-    width: 80px;
+  .sidebar:not(:hover):not(:focus-within) {
     box-shadow: none;
   }
-  .sidebar .brand,
-  .sidebar .nav-label {
-    white-space: nowrap;
+  .sidebar:hover,
+  .sidebar:focus-within {
+    box-shadow: 10px 0 24px #242d2912;
+  }
+}
+@media (max-width: 1050px) {
+  .content-shell main {
+    padding: 28px 24px;
+  }
+  .account-description {
+    display: none;
+  }
+}
+@media (max-width: 760px) {
+  .workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sidebar {
+    position: relative;
+    height: auto;
+    width: 100%;
+    padding: 10px 16px;
+    overflow: visible;
+  }
+  .sidebar-heading {
+    justify-content: space-between;
+    padding: 0;
+  }
+  .menu-toggle {
+    display: inline-flex;
+    background: transparent;
+    color: white;
+    border-color: #889b8c;
+  }
+  .nav-caption {
+    display: none;
+  }
+  .sidebar nav {
+    display: none;
+    margin-top: 0;
+  }
+  .sidebar nav.menu-open {
+    display: grid;
+    position: absolute;
+    top: 72px;
+    left: 12px;
+    right: 12px;
+    padding: 12px;
+    background: var(--nav);
+    border: 1px solid #596d5e;
+    border-radius: 6px;
+    box-shadow: 0 12px 24px #242d2926;
+  }
+  .topbar {
+    min-height: 60px;
+    padding: 8px 16px;
+    gap: 8px;
+  }
+  .account {
+    gap: 8px;
+  }
+  .account-avatar,
+  .login-context,
+  .tenant-account-label {
+    display: none;
+  }
+  .account-security-link {
+    font-size: 11px;
+  }
+  .content-shell main {
+    padding: 24px 16px 32px;
+  }
+  .workspace-footer {
+    padding: 12px 16px;
+  }
+  .auth-layout .content-shell .login-main {
+    padding: 24px 16px;
   }
 }
 @media (prefers-reduced-motion: no-preference) and (min-width: 761px) {
   .sidebar {
-    transition:
-      width 160ms ease,
-      box-shadow 160ms ease;
+    transition: width 160ms ease;
   }
 }

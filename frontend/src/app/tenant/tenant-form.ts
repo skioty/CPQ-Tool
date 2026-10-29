@@ -44,6 +44,7 @@ import {
   Tenant,
   emptyTenant,
 } from './tenant.types';
+import { ReferenceResponse } from './reference-data';
 import { commercialErrors } from './approved-validation';
 import { Session } from '../navigation/session';
 import { TenantGateway } from './tenant.gateway';
@@ -51,6 +52,14 @@ import { Field, TenantField } from './tenant-field';
 import { BrandingPreview } from './branding-preview';
 
 export const FIELDS: Field[] = [
+  {
+    key: 'pricing_mode',
+    path: 'subscription.pricing_mode',
+    label: 'Pricing mode',
+    section: 'Subscription',
+    kind: 'select',
+    help: 'Automatic uses the configured user-limit tier. Custom preserves your negotiated fee.',
+  },
   {
     key: 'display_name',
     path: 'display_name',
@@ -113,6 +122,7 @@ export const FIELDS: Field[] = [
     key: 'currency',
     path: 'subscription.currency',
     label: 'Currency',
+    help: 'Defaults from the selected country. Time zone controls date and time display. Currency changes convert the draft fee; you can review it before saving.',
     section: 'Subscription',
     kind: 'select',
   },
@@ -287,7 +297,7 @@ export class TenantForm implements OnInit {
       : this.step() === (['Company', 'Contacts'].includes(section) ? 0 : 1);
   }
   onFormSubmit() {
-    if (this.industryBusy()) return;
+    if (this.industryBusy() || this.pricingLoading()) return;
     if (this.edit || this.step() === 2) this.submit();
     else this.advance();
   }
@@ -302,6 +312,7 @@ export class TenantForm implements OnInit {
     }
   }
   advance() {
+    if (this.pricingLoading()) return false;
     this.errors.set([]);
     this.customIndustryName.markAsTouched();
     if (this.step() === 0) {
@@ -328,6 +339,10 @@ export class TenantForm implements OnInit {
         return false;
       }
     } else {
+      if (this.pricingUnavailable()) {
+        this.fail(new Error(this.pricingMessage()));
+        return false;
+      }
       this.form.markAllAsTouched();
       const errors =
         this.commercialEditable && this.options.contractApproved
@@ -397,6 +412,7 @@ export class TenantForm implements OnInit {
       'secondary_colour',
       'typography',
       'currency',
+      'pricing_mode',
       'fee',
       'payment_method',
       'payment_method_description',
@@ -463,7 +479,209 @@ export class TenantForm implements OnInit {
     );
   }
 
+  private patching = false;
+  private customFee = '';
+  private customFeeCurrency = '';
+  private lastCurrency = '';
+  private quoteRequest?: Subscription;
+  readonly conversionNote = signal('');
+  pricingMessage = signal('');
+  readonly pricingLoading = signal(false);
+  readonly pricingLoadError = signal('');
+  automaticPricing() {
+    return this.form.controls.fields.controls['pricing_mode'].value === 'automatic';
+  }
+  pricingUnavailable() {
+    return this.automaticPricing() && !this.form.controls.fields.controls['fee'].value;
+  }
+  reloadPricing() {
+    if (!this.http || this.pricingLoading()) return;
+    this.pricingLoading.set(true);
+    this.pricingLoadError.set('');
+    this.http
+      .get<ReferenceResponse>('/api/v1/reference_options')
+      .pipe(
+        takeUntilDestroyed(this.destroy),
+        finalize(() => {
+          if (!this.quoteRequest || this.quoteRequest.closed) this.pricingLoading.set(false);
+        }),
+      )
+      .subscribe({
+        next: (response) => {
+          const previousFee = this.form.controls.fields.controls['fee'].value;
+          this.options.pricingTiers = response.pricing_tiers || [];
+          this.refreshPricing();
+          if (previousFee !== this.form.controls.fields.controls['fee'].value) {
+            this.form.markAsDirty();
+            this.previewVersion.update((version) => version + 1);
+          }
+          if (!this.pricingUnavailable()) {
+            this.errors.update((messages) =>
+              messages.filter(
+                (message) =>
+                  !message.includes('No automatic price is configured') &&
+                  !message.includes('Configure an automatic pricing tier'),
+              ),
+            );
+            this.serverErrors.update((fields) =>
+              Object.fromEntries(
+                Object.entries(fields).filter(
+                  ([key]) => !['subscription.fee', 'subscription.pricing_mode'].includes(key),
+                ),
+              ),
+            );
+          }
+        },
+        error: () =>
+          this.pricingLoadError.set(
+            'Could not refresh pricing. Your tenant details are retained. Please retry.',
+          ),
+      });
+  }
+  private requestConversion(currency: string, sourceCurrency?: string, amount?: string) {
+    this.quoteRequest?.unsubscribe();
+    if (!this.http) return;
+    this.pricingLoading.set(true);
+    this.pricingLoadError.set('');
+    this.pricingMessage.set('Calculating the fee in the selected currency…');
+    const params: Record<string, string> = { currency };
+    if (sourceCurrency) {
+      params['source_currency'] = sourceCurrency;
+      params['amount'] = amount || '0';
+    } else params['user_limit'] = this.form.controls.fields.controls['user_limit'].value;
+    this.quoteRequest = this.http
+      .get<{
+        data: {
+          fee: string;
+          converted: boolean;
+          source_fee: string;
+          source_currency: string;
+          currency: string;
+          rate?: string;
+          rate_time?: string;
+        };
+      }>('/api/v1/subscription_quote', { params })
+      .pipe(
+        takeUntilDestroyed(this.destroy),
+        finalize(() => this.pricingLoading.set(false)),
+      )
+      .subscribe({
+        next: ({ data }) => {
+          this.form.controls.fields.controls['fee'].setValue(data.fee);
+          this.form.markAsDirty();
+          this.pricingMessage.set(
+            `${data.fee} ${data.currency} / month${data.converted ? `, converted from ${data.source_fee} ${data.source_currency}` : ''}.`,
+          );
+          this.conversionNote.set(
+            data.converted
+              ? `1 ${data.source_currency} = ${Number(data.rate).toPrecision(7)} ${data.currency}. Rate dated ${data.rate_time?.slice(0, 10)}. The converted fee is saved when you save this tenant.`
+              : '',
+          );
+          if (sourceCurrency) {
+            this.customFee = data.fee;
+            this.customFeeCurrency = currency;
+          }
+        },
+        error: (e) => {
+          this.pricingMessage.set(
+            e.error?.error?.message ||
+              'Currency conversion is unavailable. Retry or enter an agreed Custom fee.',
+          );
+          this.pricingLoadError.set(this.pricingMessage());
+        },
+      });
+  }
+  private refreshPricing() {
+    this.quoteRequest?.unsubscribe();
+    this.conversionNote.set('');
+    this.pricingLoadError.set('');
+    const c = this.form.controls.fields.controls;
+    if (!this.automaticPricing()) {
+      this.pricingMessage.set('');
+      return;
+    }
+    const limit = Number(c['user_limit'].value);
+    const tier = this.options.pricingTiers?.find(
+      (t) => t.currency === c['currency'].value && limit >= t.min_users && limit <= t.max_users,
+    );
+    const baseTier = this.options.pricingTiers?.find(
+      (t) => t.currency === 'BTN' && limit >= t.min_users && limit <= t.max_users,
+    );
+    c['fee'].setValue(tier?.fee || '', { emitEvent: false });
+    if (!tier && baseTier && c['currency'].value && c['currency'].value !== 'BTN') {
+      this.requestConversion(c['currency'].value);
+      return;
+    }
+    this.pricingMessage.set(
+      tier
+        ? `Automatic tier: ${tier.min_users}–${tier.max_users} users. ${tier.fee} ${tier.currency} / month.`
+        : `No automatic price is configured for ${c['user_limit'].value || 'this number of'} users in ${c['currency'].value || 'the selected currency'}. Configure a tier covering this user limit, or select Custom and enter the agreed fee.`,
+    );
+  }
+  discountedFee() {
+    const c = this.form.controls.fields.controls;
+    if (!c['fee'].value) return 'Not available';
+    return (Number(c['fee'].value) * (1 - Number(c['discount_value'].value || 0) / 100)).toFixed(2);
+  }
   constructor() {
+    const c = this.form.controls.fields.controls;
+    c['country'].valueChanges.pipe(takeUntilDestroyed(this.destroy)).subscribe((country) => {
+      if (this.patching) return;
+      const zones = this.options.countryTimeZones?.[country] || [];
+      if (zones.length === 1) c['time_zone'].setValue(zones[0]);
+      else if (zones.length && !zones.includes(c['time_zone'].value)) c['time_zone'].setValue('');
+      if (this.commercialEditable) {
+        const currencies = (this.options.countryCurrencies?.[country] || []).filter((code) =>
+          this.options.currencies.some((option) => option.id === code),
+        );
+        if (currencies.length) c['currency'].setValue(currencies[0]);
+      }
+    });
+    c['pricing_mode'].valueChanges.pipe(takeUntilDestroyed(this.destroy)).subscribe((mode) => {
+      if (this.patching) return;
+      this.quoteRequest?.unsubscribe();
+      this.conversionNote.set('');
+      if (mode === 'automatic') {
+        this.customFee = c['fee'].value;
+        this.customFeeCurrency = c['currency'].value;
+        this.refreshPricing();
+      } else {
+        if (
+          this.customFeeCurrency &&
+          c['currency'].value &&
+          this.customFeeCurrency !== c['currency'].value &&
+          this.customFee
+        ) {
+          c['fee'].setValue('', { emitEvent: false });
+          this.requestConversion(c['currency'].value, this.customFeeCurrency, this.customFee);
+        } else {
+          c['fee'].setValue(this.customFee);
+          this.pricingMessage.set('');
+        }
+      }
+    });
+    c['user_limit'].valueChanges.pipe(takeUntilDestroyed(this.destroy)).subscribe(() => {
+      if (!this.patching && this.automaticPricing()) this.refreshPricing();
+    });
+    c['fee'].valueChanges.pipe(takeUntilDestroyed(this.destroy)).subscribe(() => {
+      if (!this.patching && !this.automaticPricing()) {
+        this.conversionNote.set('');
+        this.pricingMessage.set('');
+      }
+    });
+    c['currency'].valueChanges.pipe(takeUntilDestroyed(this.destroy)).subscribe((currency) => {
+      const previous = this.lastCurrency;
+      this.lastCurrency = currency;
+      if (this.patching || previous === currency) return;
+      this.quoteRequest?.unsubscribe();
+      this.conversionNote.set('');
+      if (this.automaticPricing()) this.refreshPricing();
+      else if (previous && currency && c['fee'].value && this.commercialEditable) {
+        const amount = c['fee'].value;
+        c['fee'].setValue('', { emitEvent: false });
+        this.requestConversion(currency, previous, amount);
+      }
+    });
     this.form.controls.fields.controls['industry_id'].valueChanges
       .pipe(takeUntilDestroyed(this.destroy))
       .subscribe((value) => {
@@ -600,7 +818,17 @@ export class TenantForm implements OnInit {
               : []),
           ],
           country: this.options.countries || [],
-          time_zone: this.options.timeZones || [],
+          time_zone: (() => {
+            const ids =
+              this.options.countryTimeZones?.[this.form.controls.fields.controls['country'].value];
+            return ids?.length
+              ? (this.options.timeZones || []).filter((z) => ids.includes(z.id))
+              : this.options.timeZones || [];
+          })(),
+          pricing_mode: [
+            { id: 'custom', label: 'Custom — negotiated fee' },
+            { id: 'automatic', label: 'Automatic — user-limit tiers' },
+          ],
           primary_contact_role: [{ id: 'tenant_admin', label: 'Tenant Admin' }],
           currency: this.options.currencies,
           payment_method: this.options.paymentMethods,
@@ -637,6 +865,10 @@ export class TenantForm implements OnInit {
       });
   }
   patch(t: Tenant) {
+    this.quoteRequest?.unsubscribe();
+    this.lastCurrency = t.subscription.currency;
+    this.conversionNote.set('');
+    this.patching = true;
     this.original = structuredClone(t);
     this.form.controls.fields.patchValue({
       company_name: t.company_name,
@@ -647,6 +879,7 @@ export class TenantForm implements OnInit {
       primary_contact_role: t.primary_contact_role || 'tenant_admin',
       description: t.description,
       industry_id: t.industry_id,
+      pricing_mode: t.subscription.pricing_mode || 'custom',
       currency: t.subscription.currency,
       fee: t.subscription.fee,
       payment_method: t.subscription.payment_method,
@@ -663,6 +896,19 @@ export class TenantForm implements OnInit {
     this.contacts.clear();
     t.contacts.forEach((c) => this.contacts.push(this.contact(c)));
     this.form.markAsPristine();
+    this.customFee = t.subscription.fee;
+    this.customFeeCurrency = t.subscription.currency;
+    const conversion = t.subscription.pricing_conversion;
+    if (conversion?.converted)
+      this.conversionNote.set(
+        `Saved conversion from ${conversion.source_fee} ${conversion.source_currency}, rate dated ${conversion.rate_time?.slice(0, 10)}. The saved fee is retained until pricing inputs change.`,
+      );
+    this.patching = false;
+    this.pricingMessage.set(
+      t.subscription.pricing_mode === 'automatic'
+        ? 'Saved automatic fee. Changes to the user limit or currency will use current tiers.'
+        : '',
+    );
   }
   draft(): Tenant {
     this.previewVersion();
@@ -696,6 +942,7 @@ export class TenantForm implements OnInit {
       },
       subscription: {
         ...base.subscription,
+        pricing_mode: f['pricing_mode'] || 'custom',
         currency: f['currency'],
         fee: f['fee'],
         payment_method: f['payment_method'],
@@ -775,13 +1022,28 @@ export class TenantForm implements OnInit {
     });
   }
   submit() {
-    if (this.industryBusy() || this.status() === 'saving' || this.status() === 'loading') return;
+    if (
+      this.pricingLoading() ||
+      this.industryBusy() ||
+      this.status() === 'saving' ||
+      this.status() === 'loading'
+    )
+      return;
     this.errors.set([]);
     this.serverErrors.set({});
     this.form.markAllAsTouched();
     this.customIndustryName.markAsTouched();
     if (!this.loaded) {
       this.fail(new Error('Load the saved tenant before editing.'));
+      return;
+    }
+    if (this.pricingUnavailable()) {
+      this.fail(
+        new Error(
+          this.pricingMessage() ||
+            'Configure an automatic pricing tier or choose Custom before saving.',
+        ),
+      );
       return;
     }
     const missingReference = FIELDS.some(
@@ -875,6 +1137,7 @@ export class TenantForm implements OnInit {
               favicon_attachment_id: t.branding.favicon_attachment_id,
             },
             subscription: {
+              pricing_mode: t.subscription.pricing_mode || 'custom',
               currency: t.subscription.currency,
               fee: t.subscription.fee,
               payment_method: t.subscription.payment_method,

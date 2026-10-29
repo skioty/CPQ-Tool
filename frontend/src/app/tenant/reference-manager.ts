@@ -1,3 +1,4 @@
+import { PricingManager } from './pricing-manager';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -5,7 +6,7 @@ import { ReferenceOption, ReferenceResponse } from './reference-data';
 import { Session } from '../navigation/session';
 import { switchMap } from 'rxjs';
 @Component({
-  imports: [FormsModule],
+  imports: [FormsModule, PricingManager],
   host: { class: 'directory-page' },
   template: `
     <div class="heading">
@@ -40,7 +41,12 @@ import { switchMap } from 'rxjs';
       </section>
     }
     @if (session.actor()?.role === 'super_admin') {
-      <div class="reference-layout">
+      <nav class="configuration-nav" aria-label="Configuration sections">
+        <a href="#subscription-pricing">Subscription pricing</a
+        ><a href="#reference-catalog">Reference catalog</a>
+      </nav>
+      <app-pricing-manager id="subscription-pricing" />
+      <div class="reference-layout" id="reference-catalog">
         <section class="card">
           <div class="card-heading">
             <h2>Add an option</h2>
@@ -83,11 +89,18 @@ import { switchMap } from 'rxjs';
             </div>
             <span class="badge">{{ loading() ? 'Loading…' : options().length + ' options' }}</span>
           </div>
-          <ul class="reference-list">
+          <label class="catalog-search" for="catalog-query"
+            >Search reference options<input
+              id="catalog-query"
+              type="search"
+              [(ngModel)]="catalogQuery"
+              placeholder="Search by name, type or code"
+          /></label>
+          <ul class="reference-list" tabindex="0" aria-label="Reference options">
             @if (loading()) {
               <li role="status">Loading reference options…</li>
             }
-            @for (o of options(); track o.id) {
+            @for (o of filteredOptions(); track o.id) {
               <li>
                 <div class="reference-type">
                   {{ o.kind === 'industry' ? 'IN' : o.kind === 'currency' ? 'CU' : 'PM' }}
@@ -133,9 +146,48 @@ import { switchMap } from 'rxjs';
     }
   `,
   styles: `
+    .catalog-search {
+      display: grid;
+      gap: 8px;
+      padding: 16px 24px;
+      font-size: 12px;
+      color: var(--muted);
+      border-bottom: 1px solid var(--line);
+    }
+    .catalog-search input {
+      width: 100%;
+    }
+    .reference-list {
+      max-height: 640px;
+      overflow: auto;
+      scrollbar-color: #b6c0cd transparent;
+    }
+
+    .configuration-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--line);
+    }
+    .configuration-nav a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+      padding: 8px 12px;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .configuration-nav a:hover {
+      background: var(--accent-soft);
+    }
+    #reference-catalog {
+      scroll-margin-top: 24px;
+    }
+
     .reference-layout {
       display: grid;
-      grid-template-columns: 310px minmax(0, 1fr);
+      grid-template-columns: minmax(240px, 310px) minmax(0, 1fr);
       gap: 24px;
       align-items: start;
     }
@@ -172,6 +224,7 @@ import { switchMap } from 'rxjs';
       padding: 18px 24px;
       border-top: 1px solid #edf0f4;
       display: flex;
+      flex-wrap: wrap;
       gap: 12px;
       align-items: center;
     }
@@ -188,7 +241,8 @@ import { switchMap } from 'rxjs';
     }
     .reference-name {
       flex: 1;
-      min-width: 0;
+      min-width: min(160px, 100%);
+      overflow-wrap: anywhere;
     }
     .reference-name strong {
       font-size: 12px;
@@ -242,6 +296,16 @@ export class ReferenceManager {
   deleting = signal<ReferenceOption | null>(null);
   busy = signal(false);
   loading = signal(true);
+  catalogQuery = '';
+  filteredOptions() {
+    const query = this.catalogQuery.trim().toLocaleLowerCase();
+    return this.options().filter((option) =>
+      [option.label, option.kind.replaceAll('_', ' '), option.code]
+        .join(' ')
+        .toLocaleLowerCase()
+        .includes(query),
+    );
+  }
   kind = 'industry';
   code = '';
   label = '';

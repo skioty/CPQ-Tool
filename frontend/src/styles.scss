@@ -2,23 +2,23 @@
 @use './app/navigation/directory-theme';
 @use './app/features/tenants/tenant-console';
 :root {
-  --ink: #1b2b40;
-  --muted: #63758a;
-  --line: #dce3eb;
-  --canvas: #f5f7fa;
-  --surface: #fff;
-  --accent: #2457a6;
-  --accent-hover: #1d478b;
-  --accent-soft: #eaf1fc;
-  --nav: #14263d;
-  --radius: 8px;
+  --ink: #292d2b;
+  --muted: #60675f;
+  --line: #dedfd6;
+  --canvas: #f5f4ef;
+  --surface: #fffefa;
+  --accent: #17675d;
+  --accent-hover: #104c45;
+  --accent-soft: #e7efea;
+  --nav: #242d29;
+  --radius: 6px;
   --success: #217451;
-  --success-soft: #eaf6ef;
+  --success-soft: #e9f1e6;
   --warning: #805014;
   --warning-soft: #fff3df;
   --danger: #a33225;
   --danger-soft: #fff1ee;
-  --focus: #155eae;
+  --focus: #236f63;
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -30,11 +30,15 @@
   --text-sm: 13px;
   --text-base: 14px;
   --control-height: 44px;
-  --control-border: #8391a3;
+  --control-border: #858d80;
   --content-width: 1280px;
   --layer-sticky: 10;
-  --radius-control: 8px;
-  --shadow: 0 2px 3px #17233a02, 0 8px 28px #17233a04;
+  --radius-control: 5px;
+  --shadow: none;
+  --nav-selected: #3a5046;
+  --nav-muted: #c7d2c6;
+  --surface-subtle: #f0f0e9;
+  --surface-hover: #f4f6ef;
   font-family:
     'Open Sans',
     Inter,
@@ -47,7 +51,14 @@
   background: var(--canvas);
   font-synthesis: none;
 }
-@font-face { font-family: 'Open Sans'; src: url('/fonts/open-sans-variable.ttf') format('truetype'); font-weight: 300 800; font-stretch: 75% 100%; font-style: normal; font-display: swap; }
+@font-face {
+  font-family: 'Open Sans';
+  src: url('/fonts/open-sans-variable.ttf') format('truetype');
+  font-weight: 300 800;
+  font-stretch: 75% 100%;
+  font-style: normal;
+  font-display: swap;
+}
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 100px;
@@ -93,7 +104,7 @@ button:disabled {
 }
 :where(input, select, textarea) {
   color: var(--ink);
-  background: white;
+  background: var(--surface);
   border: 1px solid var(--control-border);
   border-radius: var(--radius-control);
   min-height: var(--control-height);
@@ -101,7 +112,7 @@ button:disabled {
   min-width: 0;
 }
 :where(input, textarea)::placeholder {
-  color: #6b7789;
+  color: var(--muted);
 }
 :where(input, select, textarea):disabled {
   background: #f4f6f8;
@@ -116,7 +127,7 @@ button:disabled {
   padding: 10px 16px;
   border: 1px solid var(--control-border);
   border-radius: var(--radius-control);
-  background: white;
+  background: var(--surface);
   color: var(--ink);
   font-size: 13px;
   font-weight: 600;
@@ -126,7 +137,7 @@ button:disabled {
     border-color 0.15s;
 }
 :where(button, .button):hover:not(:disabled) {
-  background: #f5f7fa;
+  background: var(--canvas);
   border-color: #b9c3d0;
 }
 button.primary,
@@ -134,7 +145,7 @@ button.primary,
   background: var(--accent);
   border-color: var(--accent);
   color: white;
-  box-shadow: 0 2px 4px #a5291510;
+  box-shadow: none;
 }
 button.primary:hover:not(:disabled),
 .button.primary:hover:not(:disabled) {
@@ -205,11 +216,11 @@ p {
 }
 .badge[data-status='active'] {
   color: #207451;
-  background: #eaf6ef;
+  background: #e9f1e6;
 }
 .badge[data-status='inactive'] {
-  color: #66758b;
-  background: #f0f3f7;
+  color: #5e685c;
+  background: #eeeee7;
 }
 .badge[data-status='suspended'] {
   color: var(--warning);
@@ -250,7 +261,7 @@ p {
   margin-bottom: 24px;
 }
 .breadcrumb a {
-  color: #6b7789;
+  color: var(--muted);
   text-decoration: none;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -296,5 +307,136 @@ button.danger:hover:not(:disabled) {
   button,
   .button {
     border: 1px solid CanvasText;
+  }
+}
+
+/* Shared operational surfaces. Tenant dashboard branding remains scoped to its own tokens. */
+::selection {
+  background: var(--accent-soft);
+  color: var(--nav);
+}
+input,
+textarea {
+  caret-color: var(--accent);
+}
+:where(table, .tenant-row, .summary-grid, .pricing-summary) {
+  font-variant-numeric: tabular-nums;
+}
+:where(main) :where(.heading, .page-heading) {
+  gap: 16px;
+  flex-wrap: wrap;
+}
+:where(main) :where(.heading, .page-heading) h1 {
+  line-height: 1.3;
+}
+:where(main) :where(.card, .directory-panel, .detail-panel) {
+  min-width: 0;
+  box-shadow: none;
+}
+:where(main) :where(.card, .directory-panel) p {
+  line-height: 1.65;
+}
+:where(main) :where(.actions, .header-actions, .panel-heading) {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+:where(main) :where(dl, dd, form, fieldset) {
+  min-width: 0;
+}
+:where(main) dd {
+  overflow-wrap: anywhere;
+}
+:where(dialog) {
+  max-width: min(560px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 24px;
+  color: var(--ink);
+}
+:where(dialog)::backdrop {
+  background: #242d2966;
+}
+:where(input, select, textarea):hover:not(:disabled):not(:focus) {
+  border-color: #64768d;
+}
+:where(input, select, textarea)[readonly] {
+  background: var(--canvas);
+}
+:where(.breadcrumb, .detail-tabs) {
+  flex-wrap: wrap;
+}
+:where(.notice[role='status']) {
+  color: var(--accent-hover);
+  border-color: #c9d9cb;
+  background: var(--accent-soft);
+}
+@media (max-width: 600px) {
+  :where(main) :where(.heading, .page-heading) {
+    align-items: flex-start;
+  }
+  :where(main) :where(.header-actions, .heading > .actions) {
+    width: 100%;
+  }
+  :where(main) :where(.header-actions, .heading > .actions) > :where(a, button) {
+    flex: 1 1 auto;
+  }
+  :where(input, select, textarea) {
+    font-size: 16px;
+  }
+  :where(dialog) {
+    padding: 20px;
+  }
+}
+
+/* Quiet working surfaces; controls and semantic feedback carry emphasis. */
+:where(.directory-page) :where(.eyebrow) {
+  display: none;
+}
+:where(button, .button) {
+  font-weight: 600;
+}
+:where(.badge) {
+  border-radius: 4px;
+  padding: 3px 8px;
+}
+:where(.notice, .success, .error-summary) {
+  border-radius: 5px;
+  padding: 12px 16px;
+  font-size: 13px;
+}
+:where(.breadcrumb) {
+  margin-bottom: 20px;
+}
+
+/* Container safety: allow content to wrap, never hide it to conceal overflow. */
+:where(main) :where(section, article, aside, fieldset, form, details) {
+  min-width: 0;
+}
+:where(main) :where(fieldset) {
+  min-inline-size: 0;
+}
+:where(main) :where(button, .button) {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+:where(main) :where(label, legend, dt, dd, li, strong, small) {
+  overflow-wrap: anywhere;
+}
+:where(main) :where(input, select, textarea) {
+  max-width: 100%;
+}
+:where(main) :where(img, svg) {
+  max-width: 100%;
+}
+:where(main) :where(.panel-heading, .card-heading, .section-heading) > * {
+  min-width: 0;
+}
+@media (max-width: 600px) {
+  :where(main) :where(.panel-heading, .card-heading, .section-heading) {
+    flex-wrap: wrap;
   }
 }

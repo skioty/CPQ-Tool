@@ -10,6 +10,9 @@ module Api
           typography: TenantManagement::BusinessRules::FONTS,
           countries: TZInfo::Country.all.map { |c| {id:c.code,label:c.name} }.sort_by { |c| c[:label] },
           time_zones: TZInfo::Timezone.all_identifiers.map { |id| seconds=TZInfo::Timezone.get(id).current_period.observed_utc_offset; minutes=seconds.abs/60; {id:id,label:"#{id} (UTC#{seconds < 0 ? '-' : '+'}#{format('%02d:%02d',minutes/60,minutes%60)})"} },
+          country_currencies: JSON.parse(Rails.root.join("config/country_currencies.json").read).fetch("countries"),
+          country_time_zones: TZInfo::Country.all.to_h { |c| [c.code, c.zone_identifiers] },
+          pricing_tiers: TenantManagement::SubscriptionPricing.current!.tiers,
           can_manage_industries:@actor.super_admin? }
       end
       def create

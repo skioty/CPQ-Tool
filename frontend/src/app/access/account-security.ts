@@ -19,7 +19,7 @@ interface FactorState {
     <aside class="security-story">
       <span class="security-brand">CPQ console</span>
       <div>
-        <h2>Your workspace.<br />By invitation only.</h2>
+        <h2>Account security</h2>
         <p>Your password and authenticator protect access to your authorized workspaces.</p>
       </div>
     </aside>

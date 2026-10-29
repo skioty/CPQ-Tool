@@ -32,6 +32,14 @@ export interface Tenant {
   contacts: Contact[];
   branding: Branding;
   subscription: {
+    pricing_mode?: string;
+    pricing_conversion?: {
+      converted?: boolean;
+      source_fee?: string;
+      source_currency?: string;
+      rate_time?: string;
+      rate?: string;
+    } | null;
     currency: string;
     fee: string;
     payment_method: string;
@@ -46,7 +54,16 @@ export interface Choice {
   label: string;
   fontFamily?: string;
 }
+export interface PricingTier {
+  currency: string;
+  min_users: number;
+  max_users: number;
+  fee: string;
+}
 export interface FormOptions {
+  pricingTiers?: PricingTier[];
+  countryTimeZones?: Record<string, string[]>;
+  countryCurrencies?: Record<string, string[]>;
   countries?: Choice[];
   timeZones?: Choice[];
   canManageIndustries?: boolean;

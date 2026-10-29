@@ -101,7 +101,15 @@ describe('session integration', () => {
     http.expectOne('/api/v1/session').flush({}, { status: 401, statusText: 'Unauthorized' });
     expect(fixture.componentInstance.busy()).toBe(false);
     expect(fixture.componentInstance.form.controls.password.value).toBe('');
-    expect(fixture.componentInstance.error()).toContain('Invalid email');
+    expect(fixture.componentInstance.error()).toBe('Invalid email or password');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.error-summary')).toBeNull();
+    expect(fixture.nativeElement.querySelector('#signin-error').textContent).toBe(
+      'Invalid email or password',
+    );
+    expect(
+      fixture.nativeElement.querySelector('#login-password').getAttribute('aria-describedby'),
+    ).toBe('signin-error');
   });
   it('keeps sign-in focused, labels validation and toggles password visibility without submitting', () => {
     const fixture = TestBed.createComponent(Login);
@@ -196,7 +204,7 @@ describe('tenant directory', () => {
     expect(fixture.componentInstance.industryLabel('services')).toBe('Services');
   });
   it('keeps industry removal unavailable to ordinary CPQ Admins', () => {
-    TestBed.inject(Session).actor.set({id:'actor',role:'admin'});
+    TestBed.inject(Session).actor.set({ id: 'actor', role: 'admin' });
     TestBed.inject(FORM_OPTIONS).industries = [{ id: 'services', label: 'Services' }];
     const fixture = TestBed.createComponent(TenantList);
     fixture.detectChanges();

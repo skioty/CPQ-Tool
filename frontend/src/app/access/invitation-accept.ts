@@ -8,7 +8,7 @@ import { accessError } from './access-api';
 @Component({
   imports: [FormsModule, RouterLink],
   template: `<section class="card acceptance">
-    <p class="eyebrow">SELISE CPQ · SECURE ACCOUNT ACTIVATION</p>
+    <header class="activation-brand">SELISE CPQ <span>Account activation</span></header>
     <h1>{{ complete() ? 'Invitation accepted' : 'Your invitation' }}</h1>
     @if (loading()) {
       <p role="status">Checking your invitation…</p>
@@ -106,6 +106,29 @@ import { accessError } from './access-api';
     <p class="muted">No account is created from a contact record alone.</p>
   </section>`,
   styles: `
+    .activation-brand {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 8px;
+      margin: -32px -32px 28px;
+      padding: 20px 32px;
+      background: var(--nav);
+      color: white;
+      font-weight: 600;
+    }
+    .activation-brand span {
+      font-size: 12px;
+      color: #c4d3e5;
+      font-weight: 400;
+    }
+    @media (max-width: 450px) {
+      .activation-brand {
+        margin: -20px -20px 24px;
+        padding: 20px;
+      }
+    }
+
     :host {
       display: block;
       width: 100%;

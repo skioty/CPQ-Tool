@@ -9,18 +9,11 @@ import { finalize } from 'rxjs';
 @Component({
   imports: [ReactiveFormsModule, RouterLink],
   template: `<section class="signin-card" aria-labelledby="signin-title">
-    <header class="signin-brand">
-      <span class="company-name">SELISE <span>CPQ</span></span>
-      <span class="product-name">Platform administration</span>
-    </header>
     <div class="signin-content">
       <h1 id="signin-title">Sign in to CPQ console</h1>
       <p class="signin-intro">
         Use your administrator account to manage tenants and platform access.
       </p>
-      @if (error()) {
-        <p class="error-summary" role="alert">{{ error() }}</p>
-      }
       <form [formGroup]="form" (ngSubmit)="submit()" [attr.aria-busy]="busy()">
         <div class="field">
           <label for="login-email">Email address</label>
@@ -57,9 +50,11 @@ import { finalize } from 'rxjs';
               [readOnly]="busy()"
               [attr.aria-invalid]="form.controls.password.touched && form.controls.password.invalid"
               [attr.aria-describedby]="
-                form.controls.password.touched && form.controls.password.invalid
-                  ? 'login-password-error'
-                  : null
+                error()
+                  ? 'signin-error'
+                  : form.controls.password.touched && form.controls.password.invalid
+                    ? 'login-password-error'
+                    : null
               "
             />
             <button
@@ -74,7 +69,10 @@ import { finalize } from 'rxjs';
               {{ showPassword() ? 'Hide' : 'Show' }}
             </button>
           </div>
-          @if (form.controls.password.touched && form.controls.password.invalid) {
+          @if (error()) {
+            <p id="signin-error" class="field-error" role="alert">{{ error() }}</p>
+          }
+          @if (form.controls.password.touched && form.controls.password.invalid && !error()) {
             <p id="login-password-error" class="field-error">Enter your password.</p>
           }
         </div>
@@ -136,7 +134,7 @@ export class Login {
         error: (e) =>
           this.error.set(
             e.status === 401
-              ? 'Invalid email or password.'
+              ? 'Invalid email or password'
               : 'Login failed. Check the connection and retry.',
           ),
       });

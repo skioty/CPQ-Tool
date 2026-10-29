@@ -5,69 +5,88 @@ import { Router, RouterLink } from '@angular/router';
 import { TenantSession, accessError } from './access-api';
 @Component({
   imports: [FormsModule, RouterLink],
-  template: `<section class="tenant-login">
-    <p class="eyebrow">YOUR COMPANY WORKSPACE</p>
-    <h1>Tenant sign in</h1>
-    <p>Sign in with the account you activated through an invitation.</p>
-    @if (error()) {
-      <p class="error-summary" role="alert">{{ error() }}</p>
-    }
-    <form #login="ngForm" (ngSubmit)="submit()">
-      <label for="tenant-email">Email address</label
-      ><input
-        id="tenant-email"
-        type="email"
-        email
-        name="email"
-        [(ngModel)]="email"
-        required
-        autocomplete="username"
-        [disabled]="busy()"
-      /><label for="tenant-password">Password</label
-      ><input
-        id="tenant-password"
-        type="password"
-        name="password"
-        [(ngModel)]="password"
-        required
-        autocomplete="current-password"
-        [disabled]="busy()"
-      /><button class="primary" [disabled]="busy() || login.invalid">
-        {{ busy() ? 'Signing in…' : 'Sign in to workspace' }}
-      </button>
-    </form>
-    <p class="muted">Need access? Ask your responsible SELISE CPQ Admin for an invitation.</p>
-    <a routerLink="/login">Platform administrator sign-in</a>
+  template: `<section class="signin-card" aria-labelledby="tenant-signin-title">
+    <div class="signin-content">
+      <h1 id="tenant-signin-title">Sign in to your workspace</h1>
+      <p class="signin-intro">Use the account you activated through an invitation.</p>
+      <form #login="ngForm" (ngSubmit)="submit()" [attr.aria-busy]="busy()">
+        <div class="field">
+          <label for="tenant-email">Email address</label>
+          <input
+            id="tenant-email"
+            type="email"
+            email
+            name="email"
+            [(ngModel)]="email"
+            #emailField="ngModel"
+            required
+            autocomplete="username"
+            autocapitalize="none"
+            spellcheck="false"
+            [disabled]="busy()"
+            [attr.aria-invalid]="emailField.touched && emailField.invalid"
+            [attr.aria-describedby]="
+              emailField.touched && emailField.invalid ? 'tenant-email-error' : null
+            "
+          />
+          @if (emailField.touched && emailField.invalid) {
+            <p class="field-error" id="tenant-email-error">Enter a valid email address.</p>
+          }
+        </div>
+        <div class="field">
+          <label for="tenant-password">Password</label>
+          <div class="password-control">
+            <input
+              id="tenant-password"
+              [type]="showPassword() ? 'text' : 'password'"
+              name="password"
+              [(ngModel)]="password"
+              #passwordField="ngModel"
+              required
+              autocomplete="current-password"
+              [disabled]="busy()"
+              [attr.aria-invalid]="passwordField.touched && passwordField.invalid"
+              [attr.aria-describedby]="
+                error()
+                  ? 'tenant-signin-error'
+                  : passwordField.touched && passwordField.invalid
+                    ? 'tenant-password-error'
+                    : null
+              "
+            />
+            <button
+              type="button"
+              class="password-toggle"
+              (click)="showPassword.set(!showPassword())"
+              [disabled]="busy()"
+              [attr.aria-pressed]="showPassword()"
+              aria-controls="tenant-password"
+              [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
+            >
+              {{ showPassword() ? 'Hide' : 'Show' }}
+            </button>
+          </div>
+          @if (error()) {
+            <p id="tenant-signin-error" class="field-error" role="alert">{{ error() }}</p>
+          }
+          @if (passwordField.touched && passwordField.invalid && !error()) {
+            <p id="tenant-password-error" class="field-error">Enter your password.</p>
+          }
+        </div>
+        <button class="primary signin-submit" [disabled]="busy() || login.invalid">
+          {{ busy() ? 'Signing in…' : 'Sign in to workspace' }}
+        </button>
+      </form>
+      <p class="verification-note">Two-factor verification is required to continue.</p>
+      <nav class="signin-options" aria-label="Other sign-in options">
+        <a routerLink="/login">Platform administrator sign-in</a>
+      </nav>
+    </div>
+    <footer class="signin-footer">
+      Need access? Ask your responsible SELISE CPQ Admin for an invitation.
+    </footer>
   </section>`,
-  styles: `
-    :host {
-      display: block;
-      width: 100%;
-      max-width: 460px;
-    }
-    .tenant-login {
-      background: white;
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      padding: 32px;
-    }
-    form {
-      display: grid;
-      gap: 10px;
-      margin: 24px 0;
-    }
-    label {
-      font-size: 13px;
-      font-weight: 600;
-    }
-    button {
-      margin-top: 12px;
-    }
-    .muted {
-      font-size: 13px;
-      color: var(--muted);
-    }
-  `,
+  styleUrl: '../navigation/login.scss',
 })
 export class TenantLogin {
   private session = inject(TenantSession);
@@ -76,6 +95,7 @@ export class TenantLogin {
   email = '';
   password = '';
   readonly busy = signal(false);
+  readonly showPassword = signal(false);
   readonly error = signal('');
   submit() {
     if (this.busy()) return;
@@ -98,7 +118,7 @@ export class TenantLogin {
       error: (e) => {
         this.password = '';
         this.busy.set(false);
-        this.error.set(accessError(e));
+        this.error.set(e.status === 401 ? 'Invalid email or password' : accessError(e));
       },
     });
   }

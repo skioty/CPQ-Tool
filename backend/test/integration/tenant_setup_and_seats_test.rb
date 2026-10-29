@@ -29,6 +29,8 @@ class TenantSetupAndSeatsTest < ActionDispatch::IntegrationTest
     data=response.parsed_body
     assert_equal TZInfo::Country.all.map(&:code).sort,data["countries"].map{|c|c["id"]}.sort
     assert_equal TZInfo::Timezone.all_identifiers.sort,data["time_zones"].map{|z|z["id"]}.sort
+    assert_equal ["Asia/Thimphu"],data["country_time_zones"]["BT"]
+    assert_includes data["country_time_zones"]["US"],"America/New_York"
     assert_includes data["countries"],{"id"=>"BT","label"=>"Bhutan"}
     assert data["time_zones"].any? { |z|z["id"]=="Asia/Thimphu" && z["label"].include?("UTC+06:00") }
     %w[raw_materials services manufacturing].each { |code|assert data["data"].any?{|o|o["kind"]=="industry"&&o["code"]==code} }
@@ -105,4 +107,77 @@ class TenantSetupAndSeatsTest < ActionDispatch::IntegrationTest
     assert_equal before,first.reload.attributes
     assert_equal "tenant_admin",TenantAccess::Membership.find_by!(tenant_id:other.id,user_id:user.id).role
   end
+  test "pricing configuration permissions overlap validation and optimistic concurrency" do
+    get "/api/v1/subscription_pricing"
+    assert_response :success
+    version = response.parsed_body.dig("data","lock_version")
+    tiers = [{currency:"BTN",min_users:1,max_users:25,fee:"100.00"}]
+    patch "/api/v1/subscription_pricing",params:{pricing:{tiers:tiers,lock_version:version}},as: :json
+    assert_response :success
+    patch "/api/v1/subscription_pricing",params:{pricing:{tiers:tiers,lock_version:version}},as: :json
+    assert_response :conflict
+    version = TenantManagement::SubscriptionPricing.current!.lock_version
+    patch "/api/v1/subscription_pricing",params:{pricing:{tiers:tiers+[{currency:"BTN",min_users:25,max_users:50,fee:"200"}],lock_version:version}},as: :json
+    assert_response :unprocessable_entity
+    assert_equal 1,TenantManagement::SubscriptionPricing.current!.tiers.length
+    login(@admin)
+    get "/api/v1/subscription_pricing"
+    assert_response :forbidden
+    patch "/api/v1/subscription_pricing",params:{pricing:{tiers:[],lock_version:version}},as: :json
+    assert_response :forbidden
+  end
+  test "automatic fee is authoritative and custom pricing survives capacity changes" do
+    TenantManagement::SubscriptionPricing.current!.update!(tiers:[{currency:"BTN",min_users:1,max_users:25,fee:"100.00"},{currency:"BTN",min_users:26,max_users:50,fee:"180.00"}])
+    tenant=create_tenant(subscription:payload[:subscription].merge(pricing_mode:"automatic",fee:"1",payment_method:"other",payment_method_description:"Synthetic test only"))
+    assert_equal BigDecimal("100"),tenant.subscription.fee
+    assert_equal "automatic",TenantManagement::Serializer.detail(tenant)[:subscription][:pricing_mode]
+    patch "/api/v1/tenants/#{tenant.id}",params:{tenant:{user_limit:26}},as: :json,headers:{"If-Match"=>%Q("#{tenant.reload.lock_version}")}
+    assert_response :success
+    assert_equal BigDecimal("180"),tenant.subscription.reload.fee
+    patch "/api/v1/tenants/#{tenant.id}",params:{tenant:{user_limit:51}},as: :json,headers:{"If-Match"=>%Q("#{tenant.reload.lock_version}")}
+    assert_response :unprocessable_entity
+    assert_equal 26,tenant.reload.user_limit
+    patch "/api/v1/tenants/#{tenant.id}",params:{tenant:{subscription:{pricing_mode:"custom",fee:"321.45",discount:{type:"percentage",value:"10",duration:"3"}}}},as: :json,headers:{"If-Match"=>%Q("#{tenant.reload.lock_version}")}
+    assert_response :success
+    patch "/api/v1/tenants/#{tenant.id}",params:{tenant:{user_limit:51}},as: :json,headers:{"If-Match"=>%Q("#{tenant.reload.lock_version}")}
+    assert_response :success
+    assert_equal BigDecimal("321.45"),tenant.subscription.reload.fee
+    assert_equal BigDecimal("10"),tenant.subscription.discount_value
+    assert_equal "3",tenant.subscription.discount_duration.to_s
+  end
+
+  test "currency quotes country defaults and saved automatic conversion use the authoritative snapshot" do
+    get "/api/v1/reference_options"
+    assert_response :success
+    assert_equal ["INR"],response.parsed_body.dig("country_currencies","IN")
+    assert_equal "BTN",response.parsed_body.dig("country_currencies","BT").first
+    assert_equal ["USD"],response.parsed_body.dig("country_currencies","US")
+    TenantManagement::SubscriptionPricing.current!.update!(tiers:[{currency:"BTN",min_users:26,max_users:50,fee:"4500.00"}])
+    book=TenantManagement::ExchangeRateBook.current!
+    book.update!(rates:{"USD"=>"1","BTN"=>"90","INR"=>"90","EUR"=>"0.9"},rate_time:Time.current,fetched_at:Time.current)
+    get "/api/v1/subscription_quote",params:{user_limit:50,currency:"USD"}
+    assert_response :success
+    assert_equal "50.00",response.parsed_body.dig("data","fee")
+    assert_equal "BTN",response.parsed_body.dig("data","source_currency")
+    tenant=create_tenant(user_limit:50,country:"US",time_zone:"America/New_York",subscription:payload[:subscription].merge(pricing_mode:"automatic",currency:"USD",fee:"1",payment_method:"bank_transfer",discount:{type:"percentage",value:"15",duration:"3"}))
+    assert_equal BigDecimal("50"),tenant.subscription.fee
+    assert_equal "BTN",tenant.subscription.pricing_conversion["source_currency"]
+    assert_equal "4500.00",tenant.subscription.pricing_conversion["source_fee"]
+    get "/api/v1/tenants/#{tenant.id}"
+    assert_equal "USD",response.parsed_body.dig("data","subscription","currency")
+    assert_equal "BTN",response.parsed_body.dig("data","subscription","pricing_conversion","source_currency")
+    login(@admin)
+    get "/api/v1/subscription_quote",params:{source_currency:"BTN",currency:"USD",amount:"4500"}
+    assert_response :forbidden
+    patch "/api/v1/tenants/#{tenant.id}",params:{tenant:{subscription:{currency:"EUR"}}},as: :json,headers:{"If-Match"=>%Q("#{tenant.reload.lock_version}")}
+    assert_response :forbidden
+    login(@super)
+    book.update!(rate_time:3.days.ago,last_attempt_at:Time.current)
+    get "/api/v1/subscription_quote",params:{user_limit:50,currency:"USD"}
+    assert_response :unprocessable_entity
+    assert_equal "exchange_rate_unavailable",response.parsed_body.dig("error","code")
+    get "/api/v1/subscription_quote",params:{source_currency:"BTN",currency:"USD",amount:"-1"}
+    assert_response :unprocessable_entity
+  end
+
 end

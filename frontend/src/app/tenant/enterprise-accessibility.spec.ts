@@ -74,3 +74,44 @@ describe('tenant branding contrast', () => {
     }
   });
 });
+
+it('connects searchable controls to server errors and contextual help', () => {
+  const fixture = TestBed.createComponent(TenantField);
+  fixture.componentRef.setInput('field', {
+    key: 'country',
+    path: 'country',
+    label: 'Country',
+    section: 'Company',
+    kind: 'search',
+    help: 'Choose the registered country.',
+  });
+  fixture.componentRef.setInput('control', new FormControl('BT', { nonNullable: true }));
+  fixture.componentRef.setInput('choices', [{ id: 'BT', label: 'Bhutan' }]);
+  fixture.componentRef.setInput('serverErrors', ['Select an available country.']);
+  fixture.detectChanges();
+  const input = fixture.nativeElement.querySelector('[role=combobox]');
+  expect(input.getAttribute('aria-invalid')).toBe('true');
+  expect(input.getAttribute('aria-describedby')).toBe('country-help country-error');
+  expect(fixture.nativeElement.querySelector('#country-error').textContent).toContain(
+    'Select an available country.',
+  );
+});
+it('explains a non-integer user limit with a concrete correction', () => {
+  const fixture = TestBed.createComponent(TenantField);
+  const control = new FormControl('1.5', {
+    nonNullable: true,
+    validators: Validators.pattern(/^[1-9]\d*$/),
+  });
+  control.markAsTouched();
+  fixture.componentRef.setInput('field', {
+    key: 'user_limit',
+    path: 'user_limit',
+    label: 'User limit',
+    section: 'Company',
+  });
+  fixture.componentRef.setInput('control', control);
+  fixture.detectChanges();
+  expect(fixture.nativeElement.querySelector('[role=alert]').textContent).toContain(
+    'positive whole number',
+  );
+});

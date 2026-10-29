@@ -152,3 +152,11 @@ Invitation summaries contain `{id,kind,email,expires_at,state,delivery_status}`;
 - Authorized workspace response adds country, IANA time_zone and currency metadata. It intentionally excludes commercial subscription and platform-only administrative settings.
 
 Full local configuration and recipient walkthrough: [access and persistence](invitation-delivery-and-persistence.md).
+
+
+## Flexible pricing update
+
+Implemented pricing configuration, tenant `subscription.pricing_mode`, and country/timezone mapping supplement earlier fixed-fee contracts; monthly percentage-discount semantics are unchanged. See [current workflow and API](subscription-pricing-and-location.md).
+
+
+Country/currency mapping, the authenticated `subscription_quote` endpoint, dated FX conversion and server-generated `pricing_conversion` metadata are now implemented; see [pricing/location contract](subscription-pricing-and-location.md). Clients must not submit `pricing_conversion`; the server generates it.

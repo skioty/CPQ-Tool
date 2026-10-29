@@ -8,35 +8,17 @@
 .signin-card {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 6px;
   overflow: hidden;
-  box-shadow: 0 8px 32px #14263d08;
+  display: block;
+  box-shadow: none;
 }
-.signin-brand {
-  padding: 26px 36px;
-  border-bottom: 1px solid var(--line);
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px 20px;
-}
-.company-name {
-  color: var(--nav);
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-}
-.company-name span {
-  font-weight: 400;
-  letter-spacing: 0;
-}
-.product-name {
-  font-size: 12px;
-  color: var(--muted);
-}
+
+
+
+
 .signin-content {
-  padding: 32px 36px;
+  padding: 36px;
 }
 h1 {
   margin: 0;
@@ -75,7 +57,7 @@ input {
   border-radius: 6px;
 }
 input::placeholder {
-  color: #69798d;
+  color: var(--muted);
 }
 input[aria-invalid='true'] {
   border-color: var(--danger);
@@ -144,8 +126,13 @@ input[aria-invalid='true'] {
   font-weight: 600;
   text-underline-offset: 4px;
 }
-.tenant-entry { padding-top: 0; }
-.signin-options > a + .tenant-entry { border-top: 1px solid var(--line); padding-top: 18px; }
+.tenant-entry {
+  padding-top: 0;
+}
+.signin-options > a + .tenant-entry {
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+}
 .tenant-entry p {
   margin: 0;
   color: var(--muted);
@@ -153,7 +140,7 @@ input[aria-invalid='true'] {
 }
 .signin-footer {
   border-top: 1px solid var(--line);
-  background: #fafbfd;
+  background: var(--surface-subtle);
   padding: 18px 36px;
   color: var(--muted);
   font-size: 12px;
@@ -163,9 +150,7 @@ input[aria-invalid='true'] {
   :host {
     padding-block: 0;
   }
-  .signin-brand {
-    padding: 22px 24px;
-  }
+
   .signin-content {
     padding: 26px 24px;
   }
@@ -178,4 +163,17 @@ input[aria-invalid='true'] {
   color: var(--accent-hover);
   background: transparent;
   text-decoration-thickness: 2px;
+}
+
+@media (max-width: 640px) {
+  .signin-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .signin-content {
+    padding: 28px 24px;
+  }
+  .signin-footer {
+    padding: 16px 24px;
+  }
 }
