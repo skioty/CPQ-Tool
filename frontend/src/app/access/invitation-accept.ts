@@ -1,3 +1,4 @@
+import { InvitationContinuation } from './invitation-continuation';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -7,7 +8,7 @@ import { accessError } from './access-api';
 @Component({
   imports: [FormsModule, RouterLink],
   template: `<section class="card acceptance">
-    <p class="eyebrow">SELISE CPQ · SECURE ACCOUNT ACTIVATION</p>
+    <header class="activation-brand">SELISE CPQ <span>Account activation</span></header>
     <h1>{{ complete() ? 'Invitation accepted' : 'Your invitation' }}</h1>
     @if (loading()) {
       <p role="status">Checking your invitation…</p>
@@ -20,9 +21,9 @@ import { accessError } from './access-api';
         Your account access is ready. Tenant workspace access remains subject to Active tenant
         status.
       </p>
-      <a class="button primary" [routerLink]="kind === 'staff' ? '/login' : '/tenant-login'"
-        >Continue to sign in</a
-      >
+      <a class="button primary" [routerLink]="completionPath()">{{
+        preview()?.existing_account ? 'Open tenant workspace' : 'Continue to sign in'
+      }}</a>
     } @else if (preview(); as p) {
       <p>You have been invited as {{ p.kind === 'staff' ? 'a CPQ Admin' : 'a Tenant Admin' }}.</p>
       <dl>
@@ -40,7 +41,25 @@ import { accessError } from './access-api';
             : 'Choose your own password with 12–128 characters. This invitation can be accepted once.'
         }}
       </p>
+      @if (p.existing_account) {
+        <p>
+          First sign in as {{ p.email }} and verify your authenticator, then return here to accept.
+        </p>
+        <a class="button" routerLink="/tenant-login">Sign in with invited account</a>
+      }
       <form #accept="ngForm" (ngSubmit)="submit()">
+        @if (!p.existing_account) {
+          <label for="accept-name">Your name (required)</label>
+          <input
+            id="accept-name"
+            name="name"
+            [(ngModel)]="name"
+            required
+            maxlength="120"
+            autocomplete="name"
+            [disabled]="busy()"
+          />
+        }
         <label for="accept-password">{{
           p.existing_account ? 'Existing account password' : 'New password'
         }}</label
@@ -87,16 +106,42 @@ import { accessError } from './access-api';
     <p class="muted">No account is created from a contact record alone.</p>
   </section>`,
   styles: `
+    .activation-brand {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 8px;
+      margin: -32px -32px 28px;
+      padding: 20px 32px;
+      background: var(--nav);
+      color: white;
+      font-weight: 600;
+    }
+    .activation-brand span {
+      font-size: 12px;
+      color: #c4d3e5;
+      font-weight: 400;
+    }
+    @media (max-width: 450px) {
+      .activation-brand {
+        margin: -20px -20px 24px;
+        padding: 20px;
+      }
+    }
+
     :host {
       display: block;
       width: 100%;
       max-width: 560px;
+      min-width: 0;
     }
     .acceptance {
       background: var(--surface);
       border: 1px solid var(--line);
       border-radius: var(--radius);
       padding: 32px;
+      min-width: 0;
+      overflow-wrap: anywhere;
     }
     form {
       display: grid;
@@ -109,6 +154,12 @@ import { accessError } from './access-api';
     }
     button {
       margin-top: 12px;
+    }
+    input,
+    button {
+      width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
     }
     dl {
       display: grid;
@@ -127,7 +178,14 @@ import { accessError } from './access-api';
     }
     @media (max-width: 450px) {
       .acceptance {
-        padding: 24px;
+        padding: 20px;
+      }
+      dl {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 4px;
+      }
+      dd {
+        margin-bottom: 12px;
       }
     }
   `,
@@ -135,6 +193,8 @@ import { accessError } from './access-api';
 export class InvitationAccept {
   private http = inject(HttpClient);
   private token = '';
+  private continuation = inject(InvitationContinuation);
+  name = '';
   password = '';
   confirmation = '';
   kind = 'tenant';
@@ -143,11 +203,20 @@ export class InvitationAccept {
     kind: string;
     company_name: string | null;
     existing_account: boolean;
+    tenant_id?: string;
   } | null>(null);
   readonly loading = signal(true);
   readonly busy = signal(false);
   readonly complete = signal(false);
   readonly error = signal('');
+  completionPath() {
+    if (this.kind === 'staff') return '/login';
+    if (this.preview()?.existing_account)
+      return this.continuation.tenantId
+        ? '/workspaces/' + encodeURIComponent(this.continuation.tenantId)
+        : '/workspaces';
+    return '/tenant-login';
+  }
   constructor() {
     inject(DestroyRef).onDestroy(() => {
       this.token = '';
@@ -157,7 +226,8 @@ export class InvitationAccept {
     inject(ActivatedRoute)
       .fragment.pipe(takeUntilDestroyed(inject(DestroyRef)))
       .subscribe((fragment) => {
-        this.token = new URLSearchParams(fragment || '').get('token') || '';
+        this.token = new URLSearchParams(fragment || '').get('token') || this.continuation.token;
+        this.continuation.token = this.token;
         if (fragment) history.replaceState(history.state, '', location.pathname + location.search);
         if (!this.token) {
           this.loading.set(false);
@@ -171,11 +241,13 @@ export class InvitationAccept {
               kind: string;
               company_name: string | null;
               existing_account: boolean;
+              tenant_id?: string;
             };
           }>('/api/v1/invitation_preview', { token: this.token })
           .subscribe({
             next: (r) => {
               this.preview.set(r.data);
+              this.continuation.tenantId = r.data.tenant_id || '';
               this.kind = r.data.kind;
               this.loading.set(false);
             },
@@ -194,6 +266,7 @@ export class InvitationAccept {
       .post('/api/v1/invitation_acceptance', {
         token: this.token,
         password: this.password,
+        name: this.name,
         password_confirmation: this.confirmation,
       })
       .subscribe({
@@ -201,6 +274,7 @@ export class InvitationAccept {
           this.password = '';
           this.confirmation = '';
           this.token = '';
+          this.continuation.token = '';
           this.complete.set(true);
           this.busy.set(false);
         },

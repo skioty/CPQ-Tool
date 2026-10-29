@@ -16,7 +16,8 @@ import { Choice } from './tenant.types';
         open() && filtered().length ? id() + '-option-' + active() : null
       "
       [attr.aria-required]="required()"
-      [attr.aria-invalid]="control().touched && control().invalid"
+      [attr.aria-invalid]="invalid() || (control().touched && control().invalid)"
+      [attr.aria-describedby]="description()"
       [disabled]="control().disabled"
       [value]="typing() ? query() : selectedLabel()"
       (focus)="focus()"
@@ -88,9 +89,12 @@ import { Choice } from './tenant.types';
       color: var(--muted);
     }
     li {
+      min-height: 44px;
+      overflow-wrap: anywhere;
       padding: 10px;
       cursor: pointer;
     }
+    li:hover:not([aria-disabled='true']),
     li[aria-selected='true'] {
       background: var(--accent-soft);
       color: var(--accent);
@@ -106,6 +110,8 @@ export class SearchChoice {
   readonly control = input.required<FormControl<string>>();
   readonly choices = input<Choice[]>([]);
   readonly required = input(false);
+  readonly invalid = input(false);
+  readonly description = input<string | null>(null);
   readonly open = signal(false);
   readonly typing = signal(false);
   readonly query = signal('');

@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { catchError, of, tap } from 'rxjs';
-import { FORM_OPTIONS, FormOptions } from './tenant.types';
+import { FORM_OPTIONS, FormOptions, PricingTier } from './tenant.types';
 export const approvedFormOptions = (): FormOptions => ({
   industries: [],
   admins: [],
@@ -37,6 +37,9 @@ export interface ReferenceResponse {
   countries?: { id: string; label: string }[];
   time_zones?: { id: string; label: string }[];
   can_manage_industries?: boolean;
+  country_time_zones?: Record<string, string[]>;
+  country_currencies?: Record<string, string[]>;
+  pricing_tiers?: PricingTier[];
 }
 @Injectable({ providedIn: 'root' })
 export class ReferenceData {
@@ -53,6 +56,9 @@ export class ReferenceData {
           paymentMethods: choices('payment_method'),
           admins: r.admins,
           typography: r.typography,
+          countryTimeZones: r.country_time_zones || {},
+          countryCurrencies: r.country_currencies || {},
+          pricingTiers: r.pricing_tiers || [],
           countries: r.countries || [],
           timeZones: r.time_zones || [],
           canManageIndustries: r.can_manage_industries === true,

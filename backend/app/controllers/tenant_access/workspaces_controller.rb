@@ -16,7 +16,7 @@ module TenantAccess
       Platform::TenantContext.with_membership(user: @user, tenant_id: params[:id]) do |tenant|
         branding = tenant.branding
         render json: {data: {id: tenant.id, company_name: tenant.company_name, display_name:tenant.display_name, description: tenant.description,
-          company_name_display: tenant.company_name_display, role: "tenant_admin",
+          country:tenant.country, time_zone:tenant.time_zone, currency:tenant.subscription&.currency, company_name_display: tenant.company_name_display, role: "tenant_admin",
           branding: {primary_colour: branding.primary_colour, secondary_colour: branding.secondary_colour,
             typography: branding.typography, logo_attachment_id: branding.logo_attachment_id, favicon_attachment_id: branding.favicon_attachment_id}}}
       end

@@ -1,11 +1,19 @@
 <a class="skip" href="#main">Skip to main content</a>
-<div class="workspace" [class.auth-layout]="isLogin">
+<div
+  class="workspace"
+  [class.auth-layout]="isLogin"
+  [class.nav-collapsed]="!isLogin && collapsed()"
+>
   @if (!isLogin) {
-    <aside class="sidebar">
+    <aside
+      class="sidebar"
+      (pointerenter)="sidebarPointer($event, true)"
+      (pointerleave)="sidebarPointer($event, false)"
+      (focusin)="sidebarFocus($event, true)"
+      (focusout)="sidebarFocus($event, false)"
+    >
       <div class="sidebar-heading">
-        <a class="brand" routerLink="/tenants" aria-label="CPQ home"
-          ><span>CPQ / CONSOLE<small>Organization workspace</small></span></a
-        >
+        <a class="brand" routerLink="/tenants" aria-label="CPQ home"><span>CPQ console</span></a>
         <button
           class="menu-toggle"
           #menuButton
@@ -28,36 +36,41 @@
         <a
           routerLink="/tenants"
           aria-label="Tenant list"
+          title="Tenant management"
           [class.active]="router.url.startsWith('/tenants')"
           [attr.aria-current]="router.url.startsWith('/tenants') ? 'page' : null"
-          >Tenant management</a
+          ><svg aria-hidden="true" viewBox="0 0 24 24">
+            <rect x="4" y="3" width="16" height="18" rx="2" />
+            <path d="M8 7h2m4 0h2M8 11h2m4 0h2m-6 10v-6h4v6" /></svg
+          ><span class="nav-label">Tenant management</span></a
         >
         @if (session.actor()?.role === 'super_admin') {
           <a
             routerLink="/administrators"
+            aria-label="User management"
+            title="User management"
             [class.active]="router.url.startsWith('/administrators')"
             [attr.aria-current]="router.url.startsWith('/administrators') ? 'page' : null"
-            >User management</a
+            ><svg aria-hidden="true" viewBox="0 0 24 24">
+              <circle cx="9" cy="8" r="3" />
+              <path d="M3 21v-3a6 6 0 0 1 12 0v3m2-16a3 3 0 0 1 0 6m4 10v-3a6 6 0 0 0-4-5" /></svg
+            ><span class="nav-label">User management</span></a
           >
           <a
             routerLink="/reference-options"
+            aria-label="Reference options"
+            title="Reference options"
             [class.active]="router.url.startsWith('/reference-options')"
             [attr.aria-current]="router.url.startsWith('/reference-options') ? 'page' : null"
-            >Reference options</a
+            ><svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M4 6h16M4 12h16M4 18h16" />
+              <circle cx="9" cy="6" r="2" />
+              <circle cx="15" cy="12" r="2" />
+              <circle cx="9" cy="18" r="2" /></svg
+            ><span class="nav-label">Reference options</span></a
           >
         }
       </nav>
-      <div class="sidebar-bottom">
-        <small>{{
-          session.actor()?.role === 'super_admin' ? 'CPQ SUPER ADMIN' : 'CPQ ADMIN'
-        }}</small>
-        <p>
-          {{
-            session.actor()?.role === 'super_admin' ? 'All organizations' : 'Assigned organizations'
-          }}
-        </p>
-        <small>Tenant management</small>
-      </div>
     </aside>
   }
   <div class="content-shell">
@@ -67,11 +80,13 @@
           @if (isTenantArea) {
             Company workspace
           } @else {
-            SELISE <strong>CPQ</strong>
+            CPQ console
           }
         </a>
       } @else {
-        <div class="topbar-location"><strong>Platform administration</strong></div>
+        <div class="topbar-location">
+          <strong>{{ pageLabel }}</strong>
+        </div>
       }
       <div class="account">
         @if (isTenantArea) {
@@ -109,7 +124,7 @@
     </main>
     @if (!isLogin) {
       <footer class="workspace-footer">
-        <span>CPQ Console</span><span>Tenant management</span>
+        <span>CPQ console</span><span>Tenant management</span>
       </footer>
     }
   </div>

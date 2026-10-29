@@ -22,6 +22,13 @@ services:
       dockerfile: infra/backend.Dockerfile
     environment: &backend_environment
       RAILS_ENV: development
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL:-}
+      SMTP_ADDRESS: ${SMTP_ADDRESS:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_AUTHENTICATION: ${SMTP_AUTHENTICATION:-plain}
+      MAIL_FROM: ${MAIL_FROM:-}
       TENANT_RETENTION_DAYS: ${TENANT_RETENTION_DAYS:-90}
       MICROSOFT_TENANT_ID: ${MICROSOFT_TENANT_ID:-}
       MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID:-}

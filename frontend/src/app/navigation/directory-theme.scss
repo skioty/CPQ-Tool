@@ -23,7 +23,7 @@
   }
   .directory-panel,
   .card {
-    background: white;
+    background: var(--surface);
     border: 1px solid var(--line);
     border-radius: var(--radius);
     box-shadow: var(--shadow);
@@ -47,7 +47,7 @@
   .panel-label {
     font-size: 12px;
     letter-spacing: 1.6px;
-    color: #687487;
+    color: var(--muted);
   }
   .filters {
     display: flex;
@@ -60,7 +60,7 @@
     display: grid;
     gap: 7px;
     font-size: 12px;
-    color: #667386;
+    color: var(--muted);
     font-weight: 500;
   }
   .search-label {
@@ -100,14 +100,14 @@
     justify-content: space-between;
     gap: 12px;
     font-size: 12px;
-    color: #687487;
+    color: var(--muted);
   }
   .results-bar p {
     margin: 0;
-    color: #657185;
+    color: var(--muted);
   }
   .results-bar strong {
-    color: #344258;
+    color: var(--ink);
   }
   .row-head,
   .tenant-row {
@@ -120,11 +120,11 @@
     padding: 17px 26px;
   }
   .row-head {
-    background: #fafbfc;
+    background: var(--surface-subtle);
     border-block: 1px solid var(--line);
     font-size: 12px;
     letter-spacing: 1.3px;
-    color: #687487;
+    color: var(--muted);
     padding-block: 12px;
     font-weight: 650;
   }
@@ -134,7 +134,7 @@
     margin: 0;
   }
   .tenant-row {
-    border-bottom: 1px solid #edf0f4;
+    border-bottom: 1px solid var(--line);
     transition: background 0.15s;
     min-height: 84px;
   }
@@ -152,17 +152,17 @@
     width: 42px;
     height: 42px;
     border-radius: 11px;
-    background: #eef1f8;
+    background: var(--accent-soft);
     border: 1px solid #e4e9f2;
     display: grid;
     place-content: center;
     font-size: 12px;
     letter-spacing: 0.3px;
     font-weight: 700;
-    color: #60769c;
+    color: var(--accent);
   }
   .tenant-row:nth-child(3n + 2) .company-avatar {
-    background: #f9f0e8;
+    background: #efede1;
     border-color: #f0e4d8;
     color: #b58a59;
   }
@@ -185,7 +185,7 @@
   }
   .tenant-identity p {
     font-size: 12px;
-    color: #687487;
+    color: var(--muted);
     margin: 4px 0 0;
     overflow: hidden;
     white-space: nowrap;
@@ -202,7 +202,7 @@
   .row-subscription small,
   .row-status small {
     display: block;
-    color: #687487;
+    color: var(--muted);
     font-size: 12px;
     margin-top: 4px;
   }
@@ -235,7 +235,7 @@
     justify-content: space-between;
     align-items: center;
     font-size: 12px;
-    color: #687487;
+    color: var(--muted);
     gap: 15px;
   }
   .pagination div {
@@ -317,14 +317,14 @@
   .section-kicker {
     font-size: 12px;
     letter-spacing: 1px;
-    color: #687487;
+    color: var(--muted);
   }
   .detail-hero {
     padding: 25px 28px;
     display: flex;
     align-items: center;
     gap: 18px;
-    background: white;
+    background: var(--surface);
     border: 1px solid var(--line);
     border-radius: var(--radius);
     margin-bottom: 26px;
@@ -333,9 +333,9 @@
     height: 60px;
     width: 60px;
     font-size: 19px;
-    background: #f9eee9;
-    color: #b67b61;
-    border-color: #f1e2d9;
+    background: #efede1;
+    color: #70634a;
+    border-color: var(--line);
   }
   .detail-hero h1 {
     font-size: 28px;
@@ -355,7 +355,7 @@
   }
   .detail-hero .hero-meta small {
     font-size: 12px;
-    color: #687487;
+    color: var(--muted);
   }
   dl {
     display: grid;
@@ -365,11 +365,11 @@
     font-size: 12px;
   }
   dt {
-    color: #687487;
+    color: var(--muted);
   }
   dd {
     margin: 0;
-    color: #344258;
+    color: var(--ink);
     overflow-wrap: anywhere;
   }
   .contacts-list {
@@ -382,7 +382,7 @@
     display: flex;
     gap: 12px;
     align-items: center;
-    border-bottom: 1px solid #edf0f5;
+    border-bottom: 1px solid var(--line);
   }
   .contact-row:last-child {
     border-bottom: 0;
@@ -391,7 +391,7 @@
     width: 36px;
     flex-shrink: 0;
     height: 36px;
-    background: #f1f3f8;
+    background: var(--surface-subtle);
     color: #8190a8;
     border-radius: 50%;
     display: grid;
@@ -408,7 +408,7 @@
   }
   .contact-row p {
     font-size: 12px;
-    color: #687487;
+    color: var(--muted);
     margin: 3px 0 0;
   }
   .contact-row .badge {
@@ -422,7 +422,7 @@
   }
   .admin-owner h3 {
     font-size: 12px;
-    color: #687487;
+    color: var(--muted);
     font-weight: 500;
     margin: 0 0 8px;
   }
@@ -444,7 +444,7 @@
   }
   .swatch-label {
     font-size: 12px;
-    color: #687487;
+    color: var(--muted);
   }
   .subscription-total {
     font-size: 30px;
@@ -456,7 +456,7 @@
     font-size: 12px;
     letter-spacing: 0;
     font-weight: 400;
-    color: #687487;
+    color: var(--muted);
   }
   .lifecycle-panel {
     display: flex;
@@ -497,7 +497,7 @@
   .inline-preview footer {
     padding: 16px 5px 5px;
     font-size: 12px;
-    color: #687487;
+    color: var(--muted);
   }
   .muted {
     color: var(--muted);

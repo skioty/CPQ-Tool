@@ -11,12 +11,14 @@ module Platform
     end
     def preview
       record = Invitations.find_token!(params[:token])
-      render json: {data: {email: record.email, kind: record.kind, expires_at: record.expires_at,
+      render json: {data: {tenant_id:record.tenant_id, email: record.email, kind: record.kind, expires_at: record.expires_at,
         company_name: record.tenant_id && TenantManagement::Tenant.find(record.tenant_id).company_name,
         existing_account: record.kind == "tenant" && TenantAccess::User.exists?(["lower(email) = ?", record.email])}}
     end
     def create
-      kind = Invitations.accept!(token: params[:token], password: params[:password], confirmation: params[:password_confirmation])
+      user = current_tenant_user
+      verified = user && session[:mfa_verified_for] == "tenant_user:#{user.id}" && user.totp_secret_ciphertext.present?
+      kind = Invitations.accept!(token: params[:token], password: params[:password], confirmation: params[:password_confirmation], name:params[:name], authenticated_user: verified ? user : nil)
       render json: {data: {kind: kind, accepted: true}}
     end
   end

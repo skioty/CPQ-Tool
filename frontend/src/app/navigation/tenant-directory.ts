@@ -5,14 +5,14 @@ export interface DirectoryTenant {
   id: string;
   created_at?: string;
   user_count?: number;
-  user_limit?:number;
-  occupied_seats?:number;
-  primary_contact_role?:string;
+  user_limit?: number;
+  occupied_seats?: number;
+  primary_contact_role?: string;
   permitted_actions?: string[];
   company_name: string | null;
-  display_name?: string|null;
-  country?: string|null;
-  time_zone?: string|null;
+  display_name?: string | null;
+  country?: string | null;
+  time_zone?: string | null;
   company_name_display: boolean | null;
   description: string | null;
   industry_id: string | null;
@@ -28,6 +28,14 @@ export interface DirectoryTenant {
   }[];
   branding: Record<string, string | null>;
   subscription: {
+    pricing_mode?: string;
+    pricing_conversion?: {
+      converted?: boolean;
+      source_fee?: string;
+      source_currency?: string;
+      rate_time?: string;
+      rate?: string;
+    } | null;
     currency: string | null;
     fee: string | null;
     payment_method: string | null;
@@ -37,7 +45,13 @@ export interface DirectoryTenant {
 }
 export interface TenantPage {
   data: DirectoryTenant[];
-  summary?: {total:number;active:number;inactive:number;suspended:number;industries:number};
+  summary?: {
+    total: number;
+    active: number;
+    inactive: number;
+    suspended: number;
+    industries: number;
+  };
   meta: { page: number; per_page: number; total_count: number; total_pages: number };
 }
 export interface LifecycleAction {

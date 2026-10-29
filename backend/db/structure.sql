@@ -155,6 +155,41 @@ CREATE TABLE public.platform_brand_assets (
 
 
 --
+-- Name: platform_exchange_rate_books; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.platform_exchange_rate_books (
+    id bigint NOT NULL,
+    rates jsonb DEFAULT '{}'::jsonb NOT NULL,
+    rate_time timestamp(6) without time zone,
+    fetched_at timestamp(6) without time zone,
+    last_attempt_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT single_exchange_rate_book CHECK ((id = 1))
+);
+
+
+--
+-- Name: platform_exchange_rate_books_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.platform_exchange_rate_books_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: platform_exchange_rate_books_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.platform_exchange_rate_books_id_seq OWNED BY public.platform_exchange_rate_books.id;
+
+
+--
 -- Name: platform_external_identities; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -187,7 +222,10 @@ CREATE TABLE public.platform_invitations (
     revoked_at timestamp(6) without time zone,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
+    email_delivery_status character varying DEFAULT 'not_requested'::character varying NOT NULL,
+    recipient_name character varying,
     CONSTRAINT invitation_delivery_status CHECK (((delivery_status)::text = ANY ((ARRAY['pending'::character varying, 'sent'::character varying, 'failed'::character varying])::text[]))),
+    CONSTRAINT invitation_email_delivery_status CHECK (((email_delivery_status)::text = ANY ((ARRAY['not_requested'::character varying, 'sending'::character varying, 'sent'::character varying, 'failed'::character varying, 'unconfigured'::character varying])::text[]))),
     CONSTRAINT invitation_target_kind CHECK (((((kind)::text = 'staff'::text) AND (administrator_id IS NOT NULL) AND (tenant_id IS NULL)) OR (((kind)::text = 'tenant'::text) AND (tenant_id IS NOT NULL) AND (administrator_id IS NULL))))
 );
 
@@ -218,6 +256,39 @@ CREATE TABLE public.platform_reference_options (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL
 );
+
+
+--
+-- Name: platform_subscription_pricings; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.platform_subscription_pricings (
+    id bigint NOT NULL,
+    tiers jsonb DEFAULT '[]'::jsonb NOT NULL,
+    lock_version integer DEFAULT 0 NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT single_subscription_pricing CHECK ((id = 1))
+);
+
+
+--
+-- Name: platform_subscription_pricings_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.platform_subscription_pricings_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: platform_subscription_pricings_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.platform_subscription_pricings_id_seq OWNED BY public.platform_subscription_pricings.id;
 
 
 --
@@ -311,7 +382,10 @@ CREATE TABLE public.platform_tenant_subscriptions (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     payment_method_description text,
-    first_invoiced_at timestamp(6) without time zone
+    first_invoiced_at timestamp(6) without time zone,
+    pricing_mode character varying DEFAULT 'custom'::character varying NOT NULL,
+    pricing_conversion jsonb,
+    CONSTRAINT subscription_pricing_mode CHECK (((pricing_mode)::text = ANY ((ARRAY['custom'::character varying, 'automatic'::character varying])::text[])))
 );
 
 
@@ -389,8 +463,23 @@ CREATE TABLE public.tenant_access_users (
     totp_last_used_at bigint,
     totp_failed_attempts integer DEFAULT 0 NOT NULL,
     totp_locked_until timestamp(6) without time zone,
-    recovery_code_digests jsonb DEFAULT '[]'::jsonb NOT NULL
+    recovery_code_digests jsonb DEFAULT '[]'::jsonb NOT NULL,
+    name character varying
 );
+
+
+--
+-- Name: platform_exchange_rate_books id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.platform_exchange_rate_books ALTER COLUMN id SET DEFAULT nextval('public.platform_exchange_rate_books_id_seq'::regclass);
+
+
+--
+-- Name: platform_subscription_pricings id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.platform_subscription_pricings ALTER COLUMN id SET DEFAULT nextval('public.platform_subscription_pricings_id_seq'::regclass);
 
 
 --
@@ -434,6 +523,14 @@ ALTER TABLE ONLY public.platform_brand_assets
 
 
 --
+-- Name: platform_exchange_rate_books platform_exchange_rate_books_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.platform_exchange_rate_books
+    ADD CONSTRAINT platform_exchange_rate_books_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: platform_external_identities platform_external_identities_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -463,6 +560,14 @@ ALTER TABLE ONLY public.platform_provisioning_failures
 
 ALTER TABLE ONLY public.platform_reference_options
     ADD CONSTRAINT platform_reference_options_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: platform_subscription_pricings platform_subscription_pricings_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.platform_subscription_pricings
+    ADD CONSTRAINT platform_subscription_pricings_pkey PRIMARY KEY (id);
 
 
 --
@@ -794,6 +899,9 @@ ALTER TABLE ONLY public.platform_invitations
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261028000200'),
+('20261028000100'),
+('20261027000100'),
 ('20261026000300'),
 ('20261026000200'),
 ('20261026000100'),

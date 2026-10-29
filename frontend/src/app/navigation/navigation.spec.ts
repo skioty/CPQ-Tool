@@ -1,3 +1,4 @@
+import { FORM_OPTIONS } from '../tenant/tenant.types';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
@@ -88,6 +89,7 @@ describe('session integration', () => {
   });
   it('login prevents duplicate submits and clears password after API failure', () => {
     const fixture = TestBed.createComponent(Login);
+    http.expectOne('/api/v1/microsoft/status').flush({ data: { configured: false } });
     fixture.detectChanges();
     fixture.componentInstance.form.setValue({
       email: 'user@example.invalid',
@@ -99,7 +101,51 @@ describe('session integration', () => {
     http.expectOne('/api/v1/session').flush({}, { status: 401, statusText: 'Unauthorized' });
     expect(fixture.componentInstance.busy()).toBe(false);
     expect(fixture.componentInstance.form.controls.password.value).toBe('');
-    expect(fixture.componentInstance.error()).toContain('Invalid email');
+    expect(fixture.componentInstance.error()).toBe('Invalid email or password');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.error-summary')).toBeNull();
+    expect(fixture.nativeElement.querySelector('#signin-error').textContent).toBe(
+      'Invalid email or password',
+    );
+    expect(
+      fixture.nativeElement.querySelector('#login-password').getAttribute('aria-describedby'),
+    ).toBe('signin-error');
+  });
+  it('keeps sign-in focused, labels validation and toggles password visibility without submitting', () => {
+    const fixture = TestBed.createComponent(Login);
+    http.expectOne('/api/v1/microsoft/status').flush({ data: { configured: false } });
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('h1').textContent).toBe('Sign in to CPQ console');
+    expect(fixture.nativeElement.querySelector('.story-monogram')).toBeNull();
+    expect(fixture.nativeElement.querySelector('a[href="/security/microsoft"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('a[href="/tenant-login"]')).toBeTruthy();
+    const toggle = fixture.nativeElement.querySelector('.password-toggle') as HTMLButtonElement;
+    expect(toggle.type).toBe('button');
+    toggle.click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('#login-password').type).toBe('text');
+    expect(toggle.getAttribute('aria-label')).toBe('Hide password');
+    toggle.click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('#login-password').type).toBe('password');
+    fixture.componentInstance.form.controls.email.setValue('invalid');
+    fixture.componentInstance.form.controls.email.markAsTouched();
+    fixture.detectChanges();
+    expect(
+      fixture.nativeElement.querySelector('#login-email').getAttribute('aria-describedby'),
+    ).toBe('login-email-error');
+    expect(fixture.nativeElement.querySelector('#login-email-error').textContent).toContain(
+      'valid email',
+    );
+    http.expectNone((request) => request.method === 'POST');
+  });
+  it('offers Microsoft sign-in only when the existing provider reports it is configured', () => {
+    const fixture = TestBed.createComponent(Login);
+    http.expectOne('/api/v1/microsoft/status').flush({ data: { configured: true } });
+    fixture.detectChanges();
+    expect(
+      fixture.nativeElement.querySelector('a[href="/security/microsoft"]').textContent,
+    ).toContain('Sign in with Microsoft');
   });
 });
 
@@ -126,6 +172,51 @@ describe('tenant directory', () => {
     http = TestBed.inject(HttpTestingController);
   });
   afterEach(() => http.verify());
+  it('removes industries through the directory dropdown and clears a removed active filter', () => {
+    TestBed.inject(Session).actor.set({ id: 'actor', role: 'super_admin' });
+    TestBed.inject(FORM_OPTIONS).industries = [{ id: 'services', label: 'Services' }];
+    const fixture = TestBed.createComponent(TenantList);
+    fixture.detectChanges();
+    http.expectOne((r) => r.url === '/api/v1/tenants').flush(page);
+    fixture.componentInstance.industryControl.setValue('services');
+    fixture.componentInstance.search();
+    http.expectOne((r) => r.url === '/api/v1/tenants').flush(page);
+    fixture.detectChanges();
+    (
+      fixture.nativeElement.querySelector('app-industry-picker .trigger') as HTMLButtonElement
+    ).click();
+    fixture.detectChanges();
+    const removes = fixture.nativeElement.querySelectorAll('app-industry-picker .remove');
+    expect(removes.length).toBe(1); // All industries is never removable.
+    removes[0].click();
+    http
+      .expectOne('/api/v1/reference_options')
+      .flush({ data: [{ id: 'reference-id', kind: 'industry', code: 'services' }] });
+    const remove = http.expectOne('/api/v1/reference_options/reference-id');
+    expect(remove.request.method).toBe('PATCH');
+    expect(remove.request.body).toEqual({ option: { enabled: false } });
+    remove.flush({});
+    const refreshed = http.expectOne((r) => r.url === '/api/v1/tenants');
+    expect(refreshed.request.params.get('industry')).toBeNull();
+    refreshed.flush(page);
+    expect(fixture.componentInstance.industry).toBe('');
+    expect(fixture.componentInstance.options.industries.length).toBe(0);
+    expect(fixture.componentInstance.industryLabel('services')).toBe('Services');
+  });
+  it('keeps industry removal unavailable to ordinary CPQ Admins', () => {
+    TestBed.inject(Session).actor.set({ id: 'actor', role: 'admin' });
+    TestBed.inject(FORM_OPTIONS).industries = [{ id: 'services', label: 'Services' }];
+    const fixture = TestBed.createComponent(TenantList);
+    fixture.detectChanges();
+    http.expectOne((r) => r.url === '/api/v1/tenants').flush(page);
+    (
+      fixture.nativeElement.querySelector('app-industry-picker .trigger') as HTMLButtonElement
+    ).click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('app-industry-picker .remove')).toBeNull();
+    fixture.componentInstance.removeIndustry({ id: 'services', label: 'Services' });
+    http.expectNone('/api/v1/reference_options');
+  });
   it('lists real API records and paginates with the submitted search', () => {
     const fixture = TestBed.createComponent(TenantList);
     fixture.detectChanges();

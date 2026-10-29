@@ -45,6 +45,8 @@ export interface Field {
         [control]="control()"
         [choices]="choices()"
         [required]="required()"
+        [invalid]="invalid()"
+        [description]="describedBy()"
       />
     } @else if (field().kind === 'select') {
       <select
@@ -67,6 +69,7 @@ export interface Field {
       </select>
     } @else {
       <input
+        [readOnly]="readonly()"
         [attr.inputmode]="field().key === 'user_limit' ? 'numeric' : numeric() ? 'decimal' : null"
         [id]="field().key"
         [formControl]="control()"
@@ -80,13 +83,7 @@ export interface Field {
     }
     @if (invalid()) {
       <p class="error" role="alert" [id]="field().key + '-error'">
-        {{
-          serverErrors().length
-            ? serverErrors().join(' ')
-            : control().hasError('required')
-              ? field().label + ' is required.'
-              : 'Enter a valid value for ' + field().label + '.'
-        }}
+        {{ errorMessage() }}
       </p>
     }
   `,
@@ -135,9 +132,24 @@ export class TenantField {
   readonly control = input.required<FormControl<string>>();
   readonly choices = input<Choice[]>([]);
   readonly required = input(false);
+  readonly readonly = input(false);
   readonly serverErrors = input<string[]>([]);
   invalid() {
     return (this.control().touched && this.control().invalid) || this.serverErrors().length > 0;
+  }
+  errorMessage() {
+    if (this.serverErrors().length) return this.serverErrors().join(' ');
+    const c = this.control(),
+      label = this.field().label;
+    if (c.hasError('required')) return label + ' is required.';
+    if (c.hasError('email')) return 'Enter a valid email address.';
+    if (c.hasError('choice')) return 'Choose a matching option from the list.';
+    if (c.hasError('maxlength'))
+      return label + ' must be ' + c.getError('maxlength').requiredLength + ' characters or fewer.';
+    if (c.hasError('max')) return label + ' must be ' + c.getError('max').max + ' or less.';
+    if (this.field().key === 'user_limit') return 'Enter a positive whole number of users.';
+    if (this.field().kind === 'colour') return 'Enter a six-digit HEX colour, such as #17365D.';
+    return 'Enter a valid value for ' + label + '.';
   }
   numeric() {
     return ['fee', 'discount_value', 'discount_duration'].includes(this.field().key);

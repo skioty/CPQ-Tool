@@ -3,13 +3,14 @@ module Platform
     def index
       tenant = tenant!
       members = TenantAccess::Membership.includes(:user).where(tenant_id: tenant.id).map { |member| {id: member.id, email: member.user.email, role: member.role, enabled: member.enabled && member.user.enabled} }
-      render json: {data: Invitation.where(tenant_id: tenant.id).order(created_at: :desc).limit(100).map(&:summary), members: members, invitation_delivery: "manual_link",
+      render json: {data: Invitation.where(tenant_id: tenant.id).order(created_at: :desc).limit(100).map(&:summary), members: members, invitation_delivery: "email_or_manual", company_name: tenant.company_name,
         user_limit:tenant.user_limit,occupied_seats:TenantManagement::Seats.emails(tenant).length,
         primary_contact:tenant.contacts.find_by(primary:true)&.attributes&.slice("email","name"),primary_contact_role:tenant.primary_contact_role}
     end
     def create
       tenant = tenant!
-      record = Invitations.issue!(actor: @actor, kind: "tenant", email: params.require(:email), tenant: tenant)
+      record = Invitations.issue!(actor: @actor, kind: "tenant", email: params.require(:email), tenant: tenant, replace:false)
+      InvitationDelivery.send!(record) if params[:delivery] == "email"
       render json: {data: record.summary, invitation_token: record.issued_token}, status: 201
     end
     def resend
@@ -23,11 +24,17 @@ module Platform
       end
       fresh = Invitations.issue!(actor: @actor, kind: record.kind, email: record.email,
         tenant: record.tenant_id && TenantManagement::Tenant.find(record.tenant_id), administrator: account)
+      InvitationDelivery.send!(fresh) if record.kind == "tenant" && params[:delivery] == "email"
       render json: {data: fresh.summary, invitation_token: fresh.issued_token}
     end
     def revoke
       record = authorized_invitation!
-      record.with_lock do
+      Invitation.transaction do
+        if record.tenant_id
+          tenant = TenantManagement::Tenant.lock.find(record.tenant_id)
+          Access.new.authorize!(@actor, :read, tenant)
+        end
+        record.lock!
         raise TenantManagement::Error.new("conflict", "Accepted invitations cannot be revoked; account access is separate", status: 409) if record.accepted_at
         record.update!(revoked_at: Time.current)
         account_event!("invitation_revoked", record)

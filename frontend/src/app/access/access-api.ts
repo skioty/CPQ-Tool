@@ -1,3 +1,4 @@
+import { InvitationContinuation } from './invitation-continuation';
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { catchError, of, tap, throwError } from 'rxjs';
@@ -12,6 +13,7 @@ export interface Invitation {
   state: string;
   expires_at: string;
   delivery_status: string;
+  email_delivery_status?: string;
 }
 export interface StaffAccount {
   id: string;
@@ -27,6 +29,7 @@ export interface StaffAccount {
 export class TenantSession {
   private http = inject(HttpClient);
   private platform = inject(Session);
+  private continuation = inject(InvitationContinuation);
   readonly actor = signal<{ id: string; email: string } | null>(null);
   private revision = 0;
   refresh() {
@@ -49,9 +52,12 @@ export class TenantSession {
     this.actor.set(null);
     this.platform.clear();
     return this.http
-      .post<{ data?: { id: string; email: string }; challenge?: boolean; csrf_token: string }>('/api/v1/tenant_session', {
-        tenant_user: { email, password },
-      })
+      .post<{ data?: { id: string; email: string }; challenge?: boolean; csrf_token: string }>(
+        '/api/v1/tenant_session',
+        {
+          tenant_user: { email, password },
+        },
+      )
       .pipe(
         tap((r) => {
           this.actor.set(r.data || null);
@@ -65,6 +71,8 @@ export class TenantSession {
         this.revision++;
         this.actor.set(null);
         this.platform.clear();
+        this.continuation.token = '';
+        this.continuation.tenantId = '';
       }),
     );
   }

@@ -5,6 +5,7 @@ import { provideRouter } from '@angular/router';
 import { Session } from './navigation/session';
 import { signal } from '@angular/core';
 import { of, throwError } from 'rxjs';
+import { vi } from 'vitest';
 
 describe('App', () => {
   beforeEach(async () => {
@@ -56,6 +57,59 @@ describe('App', () => {
     fixture.detectChanges();
     await fixture.whenStable();
     expect(fixture.componentInstance.message()).toBe('');
+  });
+  it('expands on pointer entry and collapses on exit without a manual arrow', () => {
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    expect(fixture.componentInstance.collapsed()).toBe(true);
+    fixture.componentInstance.sidebarPointer({ pointerType: 'mouse' } as PointerEvent, true);
+    fixture.detectChanges();
+    expect(fixture.componentInstance.collapsed()).toBe(false);
+    fixture.componentInstance.sidebarPointer({ pointerType: 'mouse' } as PointerEvent, false);
+    fixture.detectChanges();
+    expect(fixture.componentInstance.collapsed()).toBe(true);
+    fixture.componentInstance.sidebarPointer({ pointerType: 'touch' } as PointerEvent, true);
+    expect(fixture.componentInstance.collapsed()).toBe(true);
+    expect(fixture.nativeElement.querySelector('.collapse-toggle')).toBeNull();
+    expect(
+      fixture.nativeElement
+        .querySelector('a[title="Reference options"]')
+        .getAttribute('aria-label'),
+    ).toBe('Reference options');
+  });
+  it('keeps navigation expanded while keyboard focus remains inside', () => {
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    const sidebar = fixture.nativeElement.querySelector('.sidebar') as HTMLElement;
+    const link = sidebar.querySelector('a')!;
+    fixture.componentInstance.sidebarFocus(
+      { currentTarget: sidebar } as unknown as FocusEvent,
+      true,
+    );
+    fixture.componentInstance.sidebarPointer({ pointerType: 'mouse' } as PointerEvent, false);
+    expect(fixture.componentInstance.collapsed()).toBe(false);
+    fixture.componentInstance.sidebarFocus(
+      { currentTarget: sidebar, relatedTarget: link } as unknown as FocusEvent,
+      false,
+    );
+    expect(fixture.componentInstance.collapsed()).toBe(false);
+    fixture.componentInstance.sidebarFocus(
+      { currentTarget: sidebar, relatedTarget: document.body } as unknown as FocusEvent,
+      false,
+    );
+    expect(fixture.componentInstance.collapsed()).toBe(true);
+  });
+  it('keeps invitation pages full width even with a saved collapsed navigation preference', () => {
+    const fixture = TestBed.createComponent(App);
+    vi.spyOn(fixture.componentInstance.router, 'url', 'get').mockReturnValue('/invitations/accept');
+    fixture.componentInstance.collapsed.set(true);
+    fixture.detectChanges();
+    const workspace = fixture.nativeElement.querySelector('.workspace') as HTMLElement;
+    expect(workspace.classList.contains('auth-layout')).toBe(true);
+    expect(workspace.classList.contains('nav-collapsed')).toBe(false);
+    expect(fixture.nativeElement.querySelector('.sidebar')).toBeNull();
+    expect(getComputedStyle(workspace).gridTemplateColumns).toBe('minmax(0, 1fr)');
+    vi.restoreAllMocks();
   });
   it('should create the app', () => {
     const fixture = TestBed.createComponent(App);

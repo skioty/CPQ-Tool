@@ -24,7 +24,11 @@ export class App {
   readonly tenantSession = inject(TenantSession);
   readonly router = inject(Router);
   get isLogin() {
-    return this.router.url.startsWith('/login') || this.router.url.startsWith('/security') || this.isTenantArea;
+    return (
+      this.router.url.startsWith('/login') ||
+      this.router.url.startsWith('/security') ||
+      this.isTenantArea
+    );
   }
   get isTenantArea() {
     return ['/tenant-login', '/workspaces', '/invitations/accept'].some((path) =>
@@ -44,6 +48,21 @@ export class App {
   }
   readonly message = signal('');
   readonly menuOpen = signal(false);
+  readonly collapsed = signal(true);
+  private pointerInside = false;
+  private focusInside = false;
+  sidebarPointer(event: PointerEvent, inside: boolean) {
+    if (event.pointerType !== 'mouse' && event.pointerType !== 'pen') return;
+    this.pointerInside = inside;
+    this.collapsed.set(!this.pointerInside && !this.focusInside);
+  }
+  sidebarFocus(event: FocusEvent, inside: boolean) {
+    const sidebar = event.currentTarget as HTMLElement;
+    if (!inside && event.relatedTarget instanceof Node && sidebar.contains(event.relatedTarget))
+      return;
+    this.focusInside = inside;
+    this.collapsed.set(!this.pointerInside && !this.focusInside);
+  }
   private readonly main = viewChild<ElementRef<HTMLElement>>('mainContent');
   private readonly injector = inject(Injector);
   constructor() {

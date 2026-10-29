@@ -26,6 +26,16 @@ module TenantManagement
       if tenant.persisted? && !actor.super_admin? && changes.key?("subscription") && changes["subscription"].any? { |k, v| old_sub[k] != v }
         raise Error.new("forbidden", "Commercial changes require Super Admin", status: 403)
       end
+      mode = sub.fetch("pricing_mode", "custom")
+      errors["subscription.pricing_mode"] = ["Choose Automatic or Custom"] unless %w[automatic custom].include?(mode)
+      # Reprice only when commercial inputs change; schedule edits never silently alter saved fees.
+      if mode == "automatic" && (!tenant.persisted? || mode != old_sub["pricing_mode"] || sub["currency"] != old_sub["currency"] || data["user_limit"] != current["user_limit"] || sub["fee"] != old_sub["fee"])
+        quote = SubscriptionPricing.quote_details!(sub["currency"], data["user_limit"])
+        changes["subscription"] ||= {}
+        changes["subscription"]["fee"] = quote.fetch(:fee)
+        changes["subscription"]["pricing_conversion"] = quote.except(:fee).stringify_keys
+        sub["fee"] = quote.fetch(:fee)
+      end
       decimal = ->(key, raw, max) do
         if !raw.to_s.match?(/\A\d+(?:\.\d{1,2})?\z/) || BigDecimal(raw.to_s) > max
           errors[key] = ["Must be between 0 and #{max.to_s('F')} with at most two decimal places"]
@@ -52,7 +62,9 @@ module TenantManagement
         "payment_method" => [sub["payment_method"], old_sub["payment_method"], "subscription.payment_method"] }.each do |kind, (value, old, path)|
         next if kind == "payment_method" && value.blank? && sub["fee"].to_f == 0
         next if tenant.persisted? && value.present? && value == old
-        errors[path] = ["Select an enabled option"] unless ReferenceOption.exists?(kind: kind, code: value, enabled: true)
+        # Hold the catalogue row until the writer commits: deletion/deactivation must
+        # serialize with a tenant selecting the option, not race an existence check.
+        errors[path] = ["Select an enabled option"] unless ReferenceOption.where(kind: kind, code: value, enabled: true).lock("FOR SHARE").first
       end
       branding = data["branding"] || {}
       %w[primary_colour secondary_colour].each do |key|

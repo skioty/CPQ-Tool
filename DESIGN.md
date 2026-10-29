@@ -1,0 +1,6 @@
+# CPQ console interface
+
+Operate mode. Preserve SELISE CPQ identity, warm ivory/charcoal/deep teal palette, Open Sans and tenant-defined themes. Refine the existing product into a precise administrative workspace: compact status rail instead of dashboard metric cards, structured directory rows, white working surfaces, muted separators, minimal radii and clear primary actions. No marketing slogans, decorative glyphs, oversized cards or new metrics. Preserve hover/focus sidebar behavior, mobile drawer, all permissions, API/state handlers and tenant-brand boundaries. Desktop layouts prioritize scanning; mobile stacks labels and actions without horizontal overflow. Authentication is a focused, branded access form. Progressive disclosure keeps policy details available without dominating tasks.
+
+
+Palette update explicitly requested by the user: ivory canvas #f5f4ef, warm white #fffefa, charcoal navigation #242d29, teal action #17675d. Muted olive-gray text and separators replace cool blue-gray chrome. Warmth belongs to the working surfaces; teal is reserved for action/selection, with distinct semantic status colors. Preserve configured tenant colors and saved branding. Avoid gradients, artificial noise, decorative logos or marketing claims. Existing Open Sans and structural layout remain.

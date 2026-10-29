@@ -13,7 +13,7 @@ class InvitationConcurrencyTest < ActiveSupport::TestCase
         ActiveRecord::Base.connection_pool.with_connection do
           ready << true;start.pop
           begin
-            results << Platform::Invitations.accept!(token:raw,password:password,confirmation:password)
+            results << Platform::Invitations.accept!(token:raw,password:password,confirmation:password,name:"Synthetic recipient")
           rescue TenantManagement::Error => error
             results << error.code
           end
@@ -21,7 +21,7 @@ class InvitationConcurrencyTest < ActiveSupport::TestCase
       end
     end
     2.times{ready.pop};2.times{start<<true};workers.each(&:join)
-    assert_equal ["invalid_invitation","staff"],2.times.map{results.pop}.sort
+    assert_equal ["invitation_already_used","staff"],2.times.map{results.pop}.sort
     assert account.reload.enabled?
     assert record.reload.accepted_at
     assert_equal 1,Platform::AccountEvent.where(subject_id:record.id,action:"invitation_accepted").count

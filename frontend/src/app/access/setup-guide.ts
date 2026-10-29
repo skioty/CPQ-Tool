@@ -135,14 +135,18 @@ export interface SetupReview {
       list-style: none;
       padding: 0;
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 20px;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0;
       margin: 24px 0;
     }
     .setup-steps li {
       display: flex;
       align-items: flex-start;
       gap: 16px;
+      border: 0;
+      border-bottom: 1px solid var(--line);
+      border-radius: 0;
+      padding: 24px 0;
     }
     .setup-steps li > div {
       min-width: 0;

@@ -45,7 +45,9 @@ Rails.application.routes.draw do
   get "up" => "rails/health#show", as: :rails_health_check
   namespace :api do
     namespace :v1 do
-      resources :reference_options, only: [:index, :create, :update]
+      get "subscription_quote", to: "subscription_quotes#show"
+      resource :subscription_pricing, only: [:show, :update]
+      resources :reference_options, only: [:index, :create, :update, :destroy]
       resources :brand_assets, only: [:create, :show]
       resources :tenants, only: [:index, :show, :create, :update] do
         post :lifecycle, on: :member

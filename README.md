@@ -1,5 +1,9 @@
 # CPQ Tool
 
+Current subscription pricing and country/timezone selection: [workflow and API](docs/subscription-pricing-and-location.md). Automatic tier prices require Super Admin configuration; existing fees remain Custom.
+
+> Current access and persistence update: [Tenant Admin invitations, email configuration, console and backups](docs/invitation-delivery-and-persistence.md). Email is optional and delivery outcomes are explicit; existing manual-link sharing remains available. This supersedes historical statements that no email delivery is supported.
+
 > Current tenant setup and seat policy: [implemented contract and migration notes](docs/tenant-setup-and-capacity.md). User limits are now approved and enforced; older statements that seat limits are unavailable are superseded. Primary-contact access still requires explicit invitation acceptance.
 
 

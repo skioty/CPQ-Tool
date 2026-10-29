@@ -90,3 +90,13 @@ Confirmed by user: Super Admin manages CPQ Admin staff through single-use activa
 ## Manual invitation delivery — confirmed by user
 
 The user explicitly dropped SMTP and selected the previously offered alternative: copyable links for private manual sharing. This supersedes the SMTP choice above. Expiry (72 hours), single-use consumption, role checks, replacement/revocation and Active-only workspace access remain unchanged. No email provider is needed. Raw tokens appear only once in authenticated issuance responses, not persisted/history. Owner: Member 3 access backend, Members 1/4 UI, Member 2 review. See account-onboarding.md.
+
+
+## Approved flexible pricing and location defaults
+
+Approved by user; implemented. Owners: Member 2 commercial persistence, Members 1/4 forms/reference configuration, Member 3 access review. Super Admin selects Automatic user-limit tier pricing or Custom negotiated fees per tenant. No prices assumed. Monthly billing and percentage discounts/duration remain. Existing fees migrate to Custom. Tier changes apply on the next relevant Automatic tenant edit, not retroactively. Country-zone choices use TZInfo mappings. See [current workflow and API](subscription-pricing-and-location.md).
+
+
+## Approved country currency defaults and converted pricing
+
+The user requested country-based currency defaults and equivalent value for the BTN fee in another currency. Implemented: CLDR current-tender country defaults; independently editable timezone; currency-specific tiers take precedence, otherwise convert BTN tiers using a dated, durable daily-rate snapshot. Custom negotiated fees convert only on explicit draft currency changes. Saved fees do not float with later rate refreshes. Prototype precision remains two decimal places. Owners: Member 2 backend pricing, Members 1/4 UI, Member 3 permissions review. See [details and source attribution](subscription-pricing-and-location.md).

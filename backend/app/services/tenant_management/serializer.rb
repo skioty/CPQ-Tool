@@ -17,6 +17,8 @@ module TenantManagement
         responsible_admin_ids: tenant.assignments.order(:administrator_id).pluck(:administrator_id),
         branding: Payload::BRANDING.index_with { |key| branding&.public_send(key) },
         subscription: {
+          pricing_mode: subscription&.pricing_mode || "custom",
+          pricing_conversion: subscription&.pricing_conversion,
           currency: subscription&.currency,
           fee: subscription&.fee&.to_s("F"),
           payment_method: subscription&.payment_method,

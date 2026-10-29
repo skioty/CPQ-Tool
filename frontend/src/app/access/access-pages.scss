@@ -1,11 +1,11 @@
 .access-layout {
   display: grid;
-  grid-template-columns: minmax(260px, 0.8fr) minmax(0, 1.5fr);
+  grid-template-columns: minmax(280px, 0.85fr) minmax(0, 1.5fr);
   gap: 24px;
   align-items: start;
 }
 .access-layout > .card:first-child {
-  border-top: 3px solid var(--nav);
+  border-top: 1px solid var(--line);
 }
 .staff-identity {
   display: flex;
@@ -20,8 +20,8 @@
   place-items: center;
   border-radius: 12px;
   flex-shrink: 0;
-  background: #edf2f9;
-  color: #405b7b;
+  background: var(--accent-soft);
+  color: var(--accent);
   font-size: 12px;
   font-weight: 700;
 }
@@ -30,7 +30,7 @@
 }
 .account-editor {
   margin-top: 16px;
-  border-top: 1px solid #edf0f5;
+  border-top: 1px solid var(--line);
   padding-top: 12px;
 }
 .account-editor summary {
@@ -58,8 +58,8 @@
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: #edf2f9;
-  color: #405b7b;
+  background: var(--accent-soft);
+  color: var(--accent);
   font-size: 22px;
   margin: 0 auto 16px;
 }
@@ -139,5 +139,49 @@ form button {
   }
   .row-actions > * {
     width: 100%;
+  }
+}
+
+.access-layout > .card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 24px;
+}
+.staff-list li {
+  padding-block: 20px;
+}
+.staff-avatar {
+  border-radius: 5px;
+  background: #eeeee7;
+}
+.empty-access-icon {
+  display: none;
+}
+
+:host {
+  display: block;
+  min-width: 0;
+}
+.staff-identity > div {
+  min-width: 0;
+}
+.staff-identity strong {
+  overflow-wrap: anywhere;
+}
+.staff-title > :first-child {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+.access-layout > .card > :last-child {
+  margin-bottom: 0;
+}
+form select,
+form textarea {
+  width: 100%;
+  min-width: 0;
+}
+@media (max-width: 600px) {
+  .access-layout > .card {
+    padding: 20px;
   }
 }

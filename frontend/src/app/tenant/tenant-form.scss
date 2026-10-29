@@ -1,6 +1,6 @@
 :host {
   display: block;
-  max-width: var(--content-width);
+  max-width: 1100px;
   margin: auto;
 }
 .page-heading {
@@ -20,7 +20,7 @@
   border: 1px solid var(--line);
   padding: 10px 16px;
   border-radius: 6px;
-  background: white;
+  background: var(--surface);
   min-height: 44px;
 }
 .form-navigation {
@@ -52,7 +52,7 @@
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: #e8edf3;
+  background: var(--surface-subtle);
   font-size: 12px;
 }
 .layout {
@@ -205,8 +205,8 @@ input[type='checkbox'] {
 .contact {
   min-width: 0;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #fafbfc;
+  border-radius: 5px;
+  background: var(--surface-subtle);
   padding: 20px;
   margin: 20px 0 0;
 }
@@ -263,7 +263,7 @@ input[type='checkbox'] {
   padding: 10px;
   border: 1px solid var(--line);
   border-radius: 6px;
-  background: white;
+  background: var(--surface);
   color: var(--ink);
   margin-right: 8px;
   cursor: pointer;
@@ -403,7 +403,7 @@ input[type='checkbox'] {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 24px;
   padding: 20px 24px;
-  background: white;
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 8px;
   margin-bottom: 24px;
@@ -415,10 +415,12 @@ input[type='checkbox'] {
   border: 0;
   background: transparent;
   padding: 0 0 16px;
-  border-bottom: 3px solid #dce3eb;
+  border-bottom: 2px solid var(--line);
   border-radius: 0;
   color: var(--muted);
   font-size: 14px;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .registration-stepper button.active,
 .registration-stepper button.complete {
@@ -430,8 +432,8 @@ input[type='checkbox'] {
   height: 28px;
   display: grid;
   place-items: center;
-  background: #edf1f6;
-  border-radius: 50%;
+  background: var(--surface-subtle);
+  border-radius: 4px;
   flex-shrink: 0;
 }
 .active .step-index,
@@ -443,7 +445,7 @@ input[type='checkbox'] {
   display: grid;
   place-items: center;
   min-height: 130px;
-  background: #f5f7fa;
+  background: var(--canvas);
   border: 1px dashed var(--line);
   border-radius: 6px;
   margin: 12px 0;
@@ -469,4 +471,67 @@ input[type='checkbox'] {
   .layout {
     grid-template-columns: 1fr;
   }
+}
+
+.industry-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.industry-actions button {
+  min-height: 44px;
+}
+
+.calculated-fee {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  min-width: 0;
+}
+.calculated-fee label {
+  font-size: 14px;
+  color: var(--muted);
+  font-weight: 550;
+}
+.calculated-amount {
+  display: block;
+  min-height: 44px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--canvas);
+  font-weight: 600;
+}
+.calculated-fee small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.pricing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pricing-actions .button,
+.pricing-actions button {
+  font-size: 12px;
+  min-height: 44px;
+}
+
+.pricing-summary {
+  margin-top: 20px;
+  padding: 16px 20px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-subtle);
+  color: #233750;
+}
+.pricing-summary p {
+  margin: 6px 0;
+}
+.pricing-summary small {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
 }
